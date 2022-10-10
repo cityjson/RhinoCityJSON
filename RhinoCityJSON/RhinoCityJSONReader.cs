@@ -7,6 +7,40 @@ using Newtonsoft.Json;
 
 namespace RhinoCityJSON
 {
+    class CJObject
+    {
+        private string name_ = "None";
+        private string lod_ = "None";
+        private string parentName_ = "None";
+
+        private string geometryType_ = "None";
+
+        private List<string> surfaceNames_ = new List<string>();
+        private List<Rhino.Geometry.Brep> brepList_ = new List<Rhino.Geometry.Brep>();
+
+        public CJObject(string name)
+        {
+            name_ = name;
+        }
+
+        public string getName() { return name_; }
+        public void setName(string name) { name_ = name; }
+        public string getLod() { return lod_; }
+        public void setLod(string lod) { lod_ = lod; }
+        public string getParendName() { return parentName_; }
+        public void setParendName(string parentName) { parentName_ = parentName; }
+        public string getGeometryType() { return geometryType_; }
+        public void setGeometryType(string geometryType) { geometryType_ = geometryType; }
+        public List<string> getSurfaceNames() { return surfaceNames_; }
+        public void setSurfaceNames(List<string> surfaceTypes) { surfaceNames_ = surfaceTypes; }
+        public List<Rhino.Geometry.Brep> getBrepList() { return brepList_; }
+        public void setBrepList(List<Rhino.Geometry.Brep> brepList) { brepList_ = brepList; }
+        public int getBrepCount() { return brepList_.Count; }
+
+
+    }
+
+
     public class RhinoCityJSONReader : GH_Component
     {
         /// <summary>
@@ -80,14 +114,18 @@ namespace RhinoCityJSON
                 return;
             }
 
+            // collect semantic data
+            List<CJObject> cjObjects = new List<CJObject>();
+
             // TODO put in function
+            List<string> surfacenames = new List<string>();
+            List<string> boundaryLODs = new List<string>();
+            List<string> surfaceTypes = new List<string>();
 
             // get scalers
             double scaleX = Jcity.transform.scale[0];
             double scaleY = Jcity.transform.scale[1];
             double scaleZ = Jcity.transform.scale[2];
-
-            DA.SetData(1, scaleZ);
 
             // ceate vertlist
             var jsonverts = Jcity.vertices;
@@ -101,12 +139,17 @@ namespace RhinoCityJSON
                 vertList.Add(vert);                
             }
 
-            List<Rhino.Geometry.Brep> brepList = new List<Rhino.Geometry.Brep>();
+           
 
             // create surfaces
             foreach (var objectGroup in Jcity.CityObjects)
             {
-                foreach(var cObject in objectGroup)
+                // getObject name
+                CJObject obb = new CJObject(objectGroup.Name);
+
+
+                string objectname = objectGroup.Name; // TODO remove
+                foreach (var cObject in objectGroup)
                 {
                     if (cObject.geometry == null) // parents
                     {
@@ -118,20 +161,27 @@ namespace RhinoCityJSON
                         // this is all the geometry in one shape with info
                         if (boundaryGroup.type == "Solid")
                         {
+
+                            List<Rhino.Geometry.Brep> breps = new List<Rhino.Geometry.Brep>();
                             foreach (var solid in boundaryGroup.boundaries)
                             {
                                 foreach (var surface in solid)
                                 {
                                     foreach (var brep in getBrepSurface(surface, vertList))
                                     {
-                                        brepList.Add(brep);
+                                        breps.Add(brep);
                                     }
                                 }
                             }
+
+                            obb.setBrepList(breps);
+                            obb = fetchSematicData(obb, boundaryGroup);
+
                         }
                         else if (boundaryGroup.type == "CompositeSolid" || boundaryGroup.type == "MultiSolid")
                         {
-                            foreach(var composit in boundaryGroup.boundaries)
+                            List<Rhino.Geometry.Brep> breps = new List<Rhino.Geometry.Brep>();
+                            foreach (var composit in boundaryGroup.boundaries)
                             {
                                 foreach (var solid in composit)
                                 {
@@ -139,30 +189,59 @@ namespace RhinoCityJSON
                                     {
                                         foreach (var brep in getBrepSurface(surface, vertList))
                                         {
-                                            brepList.Add(brep);
+                                            breps.Add(brep);
                                         }
                                     }
                                 }
-                            }  
+                            }
+
+                            obb.setBrepList(breps);
+                            obb = fetchSematicData(obb, boundaryGroup);
                         }
                         else
                         {
+                            List<Rhino.Geometry.Brep> breps = new List<Rhino.Geometry.Brep>();
                             foreach (var surface in boundaryGroup.boundaries)
                             {
-                                foreach (var brep in getBrepSurface(surface, vertList))
+                                foreach(var brep in getBrepSurface(surface, vertList))
                                 {
-                                    brepList.Add(brep);
+                                    breps.Add(brep);
                                 }
                             }
 
-                                
-                        }                         
+                            obb.setBrepList(breps);
+                            obb = fetchSematicData(obb, boundaryGroup);
+
+                        }
                     }
                 }
+                cjObjects.Add(obb);
             }
-            if (brepList.Count > 0)
+
+
+
+
+            if (cjObjects.Count > 0)
             {
+                List<Rhino.Geometry.Brep> brepList = new List<Rhino.Geometry.Brep>();
+                List<Tuple<string, string, string>> semanticDataList = new List<Tuple<string, string, string>>();
+                foreach (CJObject cjObject in cjObjects)
+                {
+                    foreach (var brep in cjObject.getBrepList())
+                    {
+                        brepList.Add(brep);
+                    }
+
+                    foreach (var name in cjObject.getSurfaceNames())
+                    {
+                        semanticDataList.Add(Tuple.Create<string, string, string>(cjObject.getName(), cjObject.getLod(), name));
+                    }
+                }
+
+
                 DA.SetDataList(0, brepList);
+                DA.SetDataList(1, semanticDataList);
+                //DA.SetDataList(1, semanticTypes);
             }
         }
 
@@ -230,6 +309,117 @@ namespace RhinoCityJSON
             return brepList;
         }
 
+
+        private List<string> getSurfaceTypes(dynamic boundaryGroup)
+        {
+            List<string> surfacetypes = new List<string>();
+
+            foreach (Newtonsoft.Json.Linq.JObject surfacetype in boundaryGroup.semantics.surfaces)
+            {
+                surfacetypes.Add(forcefullKeyStringStrip(surfacetype.ToString(Formatting.None)));
+            }
+            return surfacetypes;
+        }
+
+        private List<int> getSematicValues(dynamic boundaryGroup)
+        {
+            List<int> semanticValues = new List<int>();
+
+
+            foreach (int sVaule in boundaryGroup.semantics.values)
+            {
+                semanticValues.Add(sVaule);
+            }
+            if (semanticValues.Count == 0)
+            {
+                foreach (var boundary in boundaryGroup.boundaries)
+                {
+                    semanticValues.Add(0);
+                }
+            }
+
+
+            return semanticValues;
+        }
+
+        private string forcefullKeyStringStrip(string inputString)
+        {
+            int c = 0;
+            string strippedString = "";
+            bool valueString = false;
+
+            foreach (char lttr in inputString)
+            {
+                if (valueString && lttr != '"')
+                {
+                    strippedString += lttr;
+                }
+
+                else if (lttr == '"' && c == 2)
+                {
+                    if (lttr == '"' && strippedString.Length > 0)
+                    {
+                        break;
+                    }
+
+                    valueString = true;                    
+                }
+                else if (lttr == '"')
+                {
+                    c++;
+                }
+            }
+
+            return strippedString;
+        }
+
+
+        CJObject fetchSematicData(CJObject obb, dynamic boundaryGroup)
+        {
+
+            List<string> surfacenames = new List<string>();
+            List<string> boundaryLODs = new List<string>();
+            List<string> surfaceTypes = new List<string>();
+
+            obb.setLod((string)boundaryGroup.lod);
+
+            bool hasSemanticSurf = true;
+            int brepCount = obb.getBrepCount();
+
+            if (boundaryGroup.semantics is null)
+            {
+                hasSemanticSurf = false;
+            }
+
+            // semantic data
+            List<string> semanticTypes = new List<string>();
+            List<int> semanticValues = new List<int>();
+
+            if (hasSemanticSurf)
+            {
+                semanticTypes = getSurfaceTypes(boundaryGroup);
+                semanticValues = getSematicValues(boundaryGroup);
+            }
+
+            if (semanticValues.Count == 0)
+            {
+                for (int i = 0; i < brepCount; i++)
+                {
+                    surfaceTypes.Add("none");
+                }
+            }
+            else
+            {
+                for (int i = 0; i < brepCount; i++)
+                {
+                    surfaceTypes.Add(semanticTypes[semanticValues[i]]);
+                }
+            }
+
+            obb.setSurfaceNames(surfaceTypes);
+
+            return obb;
+        }
 
         public override GH_Exposure Exposure
         {
