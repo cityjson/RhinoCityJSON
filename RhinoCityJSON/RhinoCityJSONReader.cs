@@ -66,7 +66,7 @@ namespace RhinoCityJSON
             {
                 return false;
             }
-            else if (file.version != "1.1")
+            else if (file.version != "1.1" && file.version != "1.0")
             {
                 return false;
             }
@@ -228,6 +228,7 @@ namespace RhinoCityJSON
         {
             pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.item, "");
             pManager.AddBooleanParameter("Translate", "T", "Translate according to CityJSON data", GH_ParamAccess.item, false);
+            pManager.AddTextParameter("LoD", "L", "desired Lod, keep empty for all", GH_ParamAccess.item, "");
             pManager.AddBooleanParameter("Activate", "A", "Activate reader", GH_ParamAccess.item, false);
         }
 
@@ -239,9 +240,11 @@ namespace RhinoCityJSON
         protected override void SolveInstance(IGH_DataAccess DA)
         { 
             string path = "";
+            string lod = "";
             bool boolOn = false;
             if (!DA.GetData(0, ref path)) return;
-            DA.GetData(2, ref boolOn);
+            DA.GetData(2, ref lod);
+            DA.GetData(3, ref boolOn);
 
             if (!boolOn)
             {
@@ -259,6 +262,23 @@ namespace RhinoCityJSON
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid filepath found");
                 return;
+            }
+            // check lod validity
+            bool setLoD = false;
+            if (lod != "")
+            {
+                if (lod == "0" || lod == "0.0" || lod == "0.1" || lod == "0.2" || lod == "0.3" ||
+                    lod == "1" || lod == "1.0" || lod == "1.1" || lod == "1.2" || lod == "1.3" ||
+                    lod == "2" || lod == "2.0" || lod == "2.1" || lod == "2.2" || lod == "2.3" ||
+                    lod == "3" || lod == "3.0" || lod == "3.1" || lod == "3.2" || lod == "3.3")
+                {
+                    setLoD = true;
+                }
+                else
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid lod input found");
+                    return;
+                }
             }
 
             // Check if valid CityJSON format
@@ -288,6 +308,8 @@ namespace RhinoCityJSON
                 vertList.Add(vert);
             }
 
+           
+
             // create surfaces
             foreach (var objectGroup in Jcity.CityObjects)
             {
@@ -300,6 +322,11 @@ namespace RhinoCityJSON
 
                     foreach (var boundaryGroup in cObject.geometry)
                     {
+                        if (setLoD && (string)boundaryGroup.lod != lod)
+                        {
+                            continue;
+                        }
+                        
                         // this is all the geometry in one shape with info
                         if (boundaryGroup.type == "Solid")
                         {
