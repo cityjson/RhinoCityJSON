@@ -345,8 +345,10 @@ namespace RhinoCityJSON
         {
             List<String> pathList = new List<string>();
             List<String> loDList = new List<string>();
+            bool translate = false;
             bool boolOn = false;
             if (!DA.GetDataList(0, pathList)) return;
+            DA.GetData(1, ref translate);
             DA.GetDataList(2, loDList);
             DA.GetData(3, ref boolOn);
 
@@ -395,6 +397,13 @@ namespace RhinoCityJSON
             }
 
             List<Rhino.Geometry.Brep> breps = new List<Rhino.Geometry.Brep>();
+
+            // coordinates of the first input
+            double globalX = 0.0;
+            double globalY = 0.0;
+            double globalZ = 0.0;
+            bool isFirst = true;
+
             foreach (var path in pathList)
             {
                 // Check if valid CityJSON format
@@ -410,6 +419,26 @@ namespace RhinoCityJSON
                 double scaleY = Jcity.transform.scale[1];
                 double scaleZ = Jcity.transform.scale[2];
 
+                // translation vectors
+                double localX = 0.0;
+                double localY = 0.0;
+                double localZ = 0.0;
+
+                // get location
+                if (isFirst && !translate)
+                {
+                    isFirst = false;
+                    globalX = Jcity.transform.translate[0];
+                    globalY = Jcity.transform.translate[1];
+                    globalZ = Jcity.transform.translate[2];
+                }
+                else if (!isFirst && !translate)
+                {
+                    localX = Jcity.transform.translate[0] - globalX;
+                    localY = Jcity.transform.translate[1] - globalY;
+                    localZ = Jcity.transform.translate[2] - globalZ;
+                }
+
                 // ceate vertlist
                 var jsonverts = Jcity.vertices;
                 List<Rhino.Geometry.Point3d> vertList = new List<Rhino.Geometry.Point3d>();
@@ -417,8 +446,8 @@ namespace RhinoCityJSON
                 {
                     double x = jsonvert[0];
                     double y = jsonvert[1];
-                    double z = jsonvert[2];
-                    Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x * scaleX, y * scaleY, z * scaleZ);
+                    double z = jsonvert[2] ;
+                    Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x * scaleX + localX, y * scaleY + localY, z * scaleZ + localZ);
                     vertList.Add(vert);
                 }
 
