@@ -312,7 +312,101 @@ namespace RhinoCityJSON
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a2754e9"); }
+            get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a274e16"); }
+        }
+
+    }
+
+
+    public class ReaderSettings : GH_Component
+    {
+        public ReaderSettings()
+          : base("ReaderSettings", "RSettings",
+              "Sets the additional configuration for the SReader and reader",
+              "RhinoCityJSON", "Reading")
+        {
+        }
+
+        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        {
+            pManager.AddBooleanParameter("Translate", "T", "Translate according to CityJSON data, if no origin is supplied absolute values will be used", GH_ParamAccess.item, false);
+            pManager.AddPointParameter("Model origin", "O", "The Origin of the model ({0,0,0} point)", GH_ParamAccess.list, new Rhino.Geometry.Point3d(0, 0, 0));
+            pManager.AddNumberParameter("True north", "Tn", "The direction of the true north", GH_ParamAccess.list, 0.0);
+            pManager.AddTextParameter("LoD", "L", "Desired Lod, keep empty for all", GH_ParamAccess.list, "");
+        }
+
+        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        {
+            pManager.AddGenericParameter("Settings", "S", "Set settings", GH_ParamAccess.item);
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            bool translate = false;
+            var p = new Rhino.Geometry.Point3d(0, 0, 0);
+            var pList = new List<Rhino.Geometry.Point3d>();
+            var north = 0.0;
+            var northList = new List<double>();
+            var loDList = new List<string>();
+
+            DA.GetData(0, ref translate);
+            DA.GetDataList(1, pList);
+            DA.GetDataList(2, northList);
+            DA.GetDataList(3, loDList);
+
+            if (northList.Count > 1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Multiple true norths submitted");
+                return;
+            }
+            north = northList[0];
+
+            if (pList.Count > 1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Multiple true origin points submitted");
+                return;
+            }
+            p = pList[0];
+
+            foreach (string lod in loDList)
+            {
+                if (lod != "")
+                {
+                    if (lod == "0" || lod == "0.0" || lod == "0.1" || lod == "0.2" || lod == "0.3" ||
+                        lod == "1" || lod == "1.0" || lod == "1.1" || lod == "1.2" || lod == "1.3" ||
+                        lod == "2" || lod == "2.0" || lod == "2.1" || lod == "2.2" || lod == "2.3" ||
+                        lod == "3" || lod == "3.0" || lod == "3.1" || lod == "3.2" || lod == "3.3")
+                    {
+                    }
+                    else
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid lod input found");
+                        return;
+                    }
+                }
+
+            }
+            
+            var settingsTuple = Tuple.Create(translate, p, north, loDList);
+            DA.SetData(0, new Grasshopper.Kernel.Types.GH_ObjectWrapper(settingsTuple));
+        }
+
+        protected override System.Drawing.Bitmap Icon
+        {
+            get
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Each component must have a unique Guid to identify it. 
+        /// It is vital this Guid doesn't change otherwise old ghx files 
+        /// that use the old ID will partially fail during loading.
+        /// </summary>
+        public override Guid ComponentGuid
+        {
+            get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a275e15"); }
         }
 
     }
@@ -331,9 +425,10 @@ namespace RhinoCityJSON
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.list, "");
-            pManager.AddBooleanParameter("Translate", "T", "Translate according to CityJSON data", GH_ParamAccess.item, false);
-            pManager.AddTextParameter("LoD", "L", "desired Lod, keep empty for all", GH_ParamAccess.list, "");
             pManager.AddBooleanParameter("Activate", "A", "Activate reader", GH_ParamAccess.item, false);
+            pManager.AddGenericParameter("Settings", "S", "Settings coming from the RSettings component", GH_ParamAccess.list);
+            pManager[2].Optional = true;
+
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -344,20 +439,23 @@ namespace RhinoCityJSON
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             List<String> pathList = new List<string>();
-            List<String> loDList = new List<string>();
-            bool translate = false;
+            var settingsList = new List<Grasshopper.Kernel.Types.GH_ObjectWrapper>();
+            var readSettingsList = new List<Tuple<bool, Rhino.Geometry.Point3d, double, List<string>>>();
             bool boolOn = false;
             if (!DA.GetDataList(0, pathList)) return;
-            DA.GetData(1, ref translate);
-            DA.GetDataList(2, loDList);
-            DA.GetData(3, ref boolOn);
+            DA.GetData(1, ref boolOn);
+            DA.GetDataList(2, settingsList);
 
             if (!boolOn)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Node is offline");
                 return;
             }
-
+            else if (settingsList.Count > 1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Only a single settings input allowed");
+                return;
+            }
             // validate the data and warn the user if invalid data is supplied.
             else if (pathList[0] == "")
             {
@@ -373,7 +471,24 @@ namespace RhinoCityJSON
                 }
             }
 
-            // check lod validity
+
+            List<string> loDList = new List<string>();
+            bool translate = false;
+
+            if (settingsList.Count > 0)
+            {
+                // extract settings
+                foreach (Grasshopper.Kernel.Types.GH_ObjectWrapper objWrap in settingsList)
+                {
+                    readSettingsList.Add(objWrap.Value as Tuple<bool, Rhino.Geometry.Point3d, double, List<string>>);
+                }
+
+                Tuple<bool, Rhino.Geometry.Point3d, double, List<string>> settings = readSettingsList[0];
+
+                loDList = settings.Item4;
+                translate = settings.Item1;
+            }
+              // check lod validity
             bool setLoD = false;
 
             foreach (string lod in loDList)
@@ -425,7 +540,13 @@ namespace RhinoCityJSON
                 double localZ = 0.0;
 
                 // get location
-                if (isFirst && !translate)
+                if (translate)
+                {
+                    localX = Jcity.transform.translate[0];
+                    localY = Jcity.transform.translate[1];
+                    localZ = Jcity.transform.translate[2];
+                }
+                else if (isFirst && !translate)
                 {
                     isFirst = false;
                     globalX = Jcity.transform.translate[0];
@@ -446,7 +567,7 @@ namespace RhinoCityJSON
                 {
                     double x = jsonvert[0];
                     double y = jsonvert[1];
-                    double z = jsonvert[2] ;
+                    double z = jsonvert[2];
                     Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x * scaleX + localX, y * scaleY + localY, z * scaleZ + localZ);
                     vertList.Add(vert);
                 }
