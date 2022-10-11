@@ -226,7 +226,7 @@ namespace RhinoCityJSON
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.item, "");
+            pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.list, "");
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -236,54 +236,62 @@ namespace RhinoCityJSON
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            string path = "";
-            if (!DA.GetData(0, ref path)) return;
+            List<string> pathList = new List<string>();
+            if (!DA.GetDataList(0,  pathList)) return;
 
             // validate the data and warn the user if invalid data is supplied.
-            if (path == "")
+            if (pathList.Count == 0)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Path is empty");
                 return;
             }
-            if (!System.IO.File.Exists(path))
+            else if (pathList[0] == "")
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid filepath found");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Path is empty");
                 return;
             }
-
-            // Check if valid CityJSON format
-            var Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
-            if (!ReaderSupport.CheckValidity(Jcity))
+            foreach (var path in pathList)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
-                return;
+                if (!System.IO.File.Exists(path))
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid filepath found");
+                    return;
+                }
             }
 
             List<string> lodLevels = new List<string>();
 
-
-            foreach (var objectGroup in Jcity.CityObjects)
+            foreach (var path in pathList)
             {
-                foreach (var cObject in objectGroup)
+                // Check if valid CityJSON format
+                var Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
+                if (!ReaderSupport.CheckValidity(Jcity))
                 {
-                    if (cObject.geometry == null) // parents
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
+                    return;
+                }
+                foreach (var objectGroup in Jcity.CityObjects)
+                {
+                    foreach (var cObject in objectGroup)
                     {
-                        continue;
-                    }
-
-                    foreach (var boundaryGroup in cObject.geometry)
-                    {
-                        string currentLoD = boundaryGroup.lod;
-
-                        if (!lodLevels.Contains(currentLoD))
+                        if (cObject.geometry == null) // parents
                         {
-                            lodLevels.Add(currentLoD);
+                            continue;
                         }
 
+                        foreach (var boundaryGroup in cObject.geometry)
+                        {
+                            string currentLoD = boundaryGroup.lod;
+
+                            if (!lodLevels.Contains(currentLoD))
+                            {
+                                lodLevels.Add(currentLoD);
+                            }
+
+                        }
                     }
                 }
             }
-
             lodLevels.Sort();
             DA.SetDataList(0, lodLevels);
 
@@ -322,9 +330,9 @@ namespace RhinoCityJSON
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.item, "");
+            pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.list, "");
             pManager.AddBooleanParameter("Translate", "T", "Translate according to CityJSON data", GH_ParamAccess.item, false);
-            pManager.AddTextParameter("LoD", "L", "desired Lod, keep empty for all", GH_ParamAccess.item, "");
+            pManager.AddTextParameter("LoD", "L", "desired Lod, keep empty for all", GH_ParamAccess.list, "");
             pManager.AddBooleanParameter("Activate", "A", "Activate reader", GH_ParamAccess.item, false);
         }
 
@@ -335,11 +343,11 @@ namespace RhinoCityJSON
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            string path = "";
-            string lod = "";
+            List<String> pathList = new List<string>();
+            List<String> loDList = new List<string>();
             bool boolOn = false;
-            if (!DA.GetData(0, ref path)) return;
-            DA.GetData(2, ref lod);
+            if (!DA.GetDataList(0, pathList)) return;
+            DA.GetDataList(2, loDList);
             DA.GetData(3, ref boolOn);
 
             if (!boolOn)
@@ -349,110 +357,95 @@ namespace RhinoCityJSON
             }
 
             // validate the data and warn the user if invalid data is supplied.
-            if (path == "")
+            else if (pathList[0] == "")
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Path is empty");
                 return;
             }
-            if (!System.IO.File.Exists(path))
+            foreach (var path in pathList)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid filepath found");
-                return;
-            }
-            // check lod validity
-            bool setLoD = false;
-            if (lod != "")
-            {
-                if (lod == "0" || lod == "0.0" || lod == "0.1" || lod == "0.2" || lod == "0.3" ||
-                    lod == "1" || lod == "1.0" || lod == "1.1" || lod == "1.2" || lod == "1.3" ||
-                    lod == "2" || lod == "2.0" || lod == "2.1" || lod == "2.2" || lod == "2.3" ||
-                    lod == "3" || lod == "3.0" || lod == "3.1" || lod == "3.2" || lod == "3.3")
+                if (!System.IO.File.Exists(path))
                 {
-                    setLoD = true;
-                }
-                else
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid lod input found");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid filepath found");
                     return;
                 }
             }
 
-            // Check if valid CityJSON format
-            var Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
-            if (!ReaderSupport.CheckValidity(Jcity))
+            // check lod validity
+            bool setLoD = false;
+
+            foreach (string lod in loDList)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
-                return;
+                if (lod != "")
+                {
+                    if (lod == "0" || lod == "0.0" || lod == "0.1" || lod == "0.2" || lod == "0.3" ||
+                        lod == "1" || lod == "1.0" || lod == "1.1" || lod == "1.2" || lod == "1.3" ||
+                        lod == "2" || lod == "2.0" || lod == "2.1" || lod == "2.2" || lod == "2.3" ||
+                        lod == "3" || lod == "3.0" || lod == "3.1" || lod == "3.2" || lod == "3.3")
+                    {
+                        setLoD = true;
+                    }
+                    else
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid lod input found");
+                        return;
+                    }
+                }
+
             }
 
             List<Rhino.Geometry.Brep> breps = new List<Rhino.Geometry.Brep>();
-
-            // get scalers
-            double scaleX = Jcity.transform.scale[0];
-            double scaleY = Jcity.transform.scale[1];
-            double scaleZ = Jcity.transform.scale[2];
-
-            // ceate vertlist
-            var jsonverts = Jcity.vertices;
-            List<Rhino.Geometry.Point3d> vertList = new List<Rhino.Geometry.Point3d>();
-            foreach (var jsonvert in jsonverts)
+            foreach (var path in pathList)
             {
-                double x = jsonvert[0];
-                double y = jsonvert[1];
-                double z = jsonvert[2];
-                Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x * scaleX, y * scaleY, z * scaleZ);
-                vertList.Add(vert);
-            }
-
-            // create surfaces
-            foreach (var objectGroup in Jcity.CityObjects)
-            {
-                foreach (var cObject in objectGroup)
+                // Check if valid CityJSON format
+                var Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
+                if (!ReaderSupport.CheckValidity(Jcity))
                 {
-                    if (cObject.geometry == null) // parents
-                    {
-                        continue;
-                    }
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
+                    return;
+                }
 
-                    foreach (var boundaryGroup in cObject.geometry)
+                // get scalers
+                double scaleX = Jcity.transform.scale[0];
+                double scaleY = Jcity.transform.scale[1];
+                double scaleZ = Jcity.transform.scale[2];
+
+                // ceate vertlist
+                var jsonverts = Jcity.vertices;
+                List<Rhino.Geometry.Point3d> vertList = new List<Rhino.Geometry.Point3d>();
+                foreach (var jsonvert in jsonverts)
+                {
+                    double x = jsonvert[0];
+                    double y = jsonvert[1];
+                    double z = jsonvert[2];
+                    Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x * scaleX, y * scaleY, z * scaleZ);
+                    vertList.Add(vert);
+                }
+
+                // create surfaces
+                foreach (var objectGroup in Jcity.CityObjects)
+                {
+                    foreach (var cObject in objectGroup)
                     {
-                        if (setLoD && (string)boundaryGroup.lod != lod)
+                        if (cObject.geometry == null) // parents
                         {
                             continue;
                         }
 
-                        // this is all the geometry in one shape with info
-                        if (boundaryGroup.type == "Solid")
+                        foreach (var boundaryGroup in cObject.geometry)
                         {
-                            foreach (var solid in boundaryGroup.boundaries)
+                            if (setLoD && !loDList.Contains((string)boundaryGroup.lod))
                             {
-                                List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
-
-                                foreach (var surface in solid)
-                                {
-                                    var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
-                                    if (!readersurf.Item2)
-                                    {
-                                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
-                                    }
-                                    foreach (var brep in readersurf.Item1)
-                                    {
-                                        localBreps.Add(brep);
-                                    }
-                                }
-                                foreach (var brep in Brep.JoinBreps(localBreps, 0.2))
-                                {
-                                    breps.Add(brep);
-                                }
+                                continue;
                             }
-                        }
-                        else if (boundaryGroup.type == "CompositeSolid" || boundaryGroup.type == "MultiSolid")
-                        {
-                            foreach (var composit in boundaryGroup.boundaries)
+
+                            // this is all the geometry in one shape with info
+                            if (boundaryGroup.type == "Solid")
                             {
-                                foreach (var solid in composit)
+                                foreach (var solid in boundaryGroup.boundaries)
                                 {
                                     List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
+
                                     foreach (var surface in solid)
                                     {
                                         var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
@@ -471,31 +464,56 @@ namespace RhinoCityJSON
                                     }
                                 }
                             }
-                        }
-                        else
-                        {
-                            List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
-                            foreach (var surface in boundaryGroup.boundaries)
+                            else if (boundaryGroup.type == "CompositeSolid" || boundaryGroup.type == "MultiSolid")
                             {
-                                var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
-                                if (!readersurf.Item2)
+                                foreach (var composit in boundaryGroup.boundaries)
                                 {
-                                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
-                                }
-                                foreach (var brep in readersurf.Item1)
-                                {
-                                    localBreps.Add(brep);
+                                    foreach (var solid in composit)
+                                    {
+                                        List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
+                                        foreach (var surface in solid)
+                                        {
+                                            var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
+                                            if (!readersurf.Item2)
+                                            {
+                                                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
+                                            }
+                                            foreach (var brep in readersurf.Item1)
+                                            {
+                                                localBreps.Add(brep);
+                                            }
+                                        }
+                                        foreach (var brep in Brep.JoinBreps(localBreps, 0.2))
+                                        {
+                                            breps.Add(brep);
+                                        }
+                                    }
                                 }
                             }
-                            foreach (var brep in Brep.JoinBreps(localBreps, 0.2))
+                            else
                             {
-                                breps.Add(brep);
+                                List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
+                                foreach (var surface in boundaryGroup.boundaries)
+                                {
+                                    var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
+                                    if (!readersurf.Item2)
+                                    {
+                                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
+                                    }
+                                    foreach (var brep in readersurf.Item1)
+                                    {
+                                        localBreps.Add(brep);
+                                    }
+                                }
+                                foreach (var brep in Brep.JoinBreps(localBreps, 0.2))
+                                {
+                                    breps.Add(brep);
+                                }
                             }
                         }
                     }
                 }
             }
-
             if (breps.Count > 0)
             {
                 DA.SetDataList(0, breps);
