@@ -215,6 +215,102 @@ namespace RhinoCityJSON
     }
 
 
+    public class LoDReader : GH_Component
+    {
+        public LoDReader()
+          : base("LoDReader", "LReader",
+              "Fetches the Lod levels stored in a CityJSON file",
+              "RhinoCityJSON", "Reading")
+        {
+        }
+
+        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        {
+            pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.item, "");
+        }
+
+        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        {
+            pManager.AddTextParameter("LoD", "L", "LoD levels", GH_ParamAccess.item);
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            string path = "";
+            if (!DA.GetData(0, ref path)) return;
+
+            // validate the data and warn the user if invalid data is supplied.
+            if (path == "")
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Path is empty");
+                return;
+            }
+            if (!System.IO.File.Exists(path))
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid filepath found");
+                return;
+            }
+
+            // Check if valid CityJSON format
+            var Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
+            if (!ReaderSupport.CheckValidity(Jcity))
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
+                return;
+            }
+
+            List<string> lodLevels = new List<string>();
+
+
+            foreach (var objectGroup in Jcity.CityObjects)
+            {
+                foreach (var cObject in objectGroup)
+                {
+                    if (cObject.geometry == null) // parents
+                    {
+                        continue;
+                    }
+
+                    foreach (var boundaryGroup in cObject.geometry)
+                    {
+                        string currentLoD = boundaryGroup.lod;
+
+                        if (!lodLevels.Contains(currentLoD))
+                        {
+                            lodLevels.Add(currentLoD);
+                        }
+
+                    }
+                }
+            }
+
+            lodLevels.Sort();
+            DA.SetDataList(0, lodLevels);
+
+        }
+
+        protected override System.Drawing.Bitmap Icon
+        {
+            get
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Each component must have a unique Guid to identify it. 
+        /// It is vital this Guid doesn't change otherwise old ghx files 
+        /// that use the old ID will partially fail during loading.
+        /// </summary>
+        public override Guid ComponentGuid
+        {
+            get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a2754e9"); }
+        }
+
+    }
+
+
+
     public class SimpleRhinoCityJSONReader : GH_Component
     {
         public SimpleRhinoCityJSONReader()
@@ -238,7 +334,7 @@ namespace RhinoCityJSON
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
-        { 
+        {
             string path = "";
             string lod = "";
             bool boolOn = false;
@@ -308,8 +404,6 @@ namespace RhinoCityJSON
                 vertList.Add(vert);
             }
 
-           
-
             // create surfaces
             foreach (var objectGroup in Jcity.CityObjects)
             {
@@ -326,7 +420,7 @@ namespace RhinoCityJSON
                         {
                             continue;
                         }
-                        
+
                         // this is all the geometry in one shape with info
                         if (boundaryGroup.type == "Solid")
                         {
