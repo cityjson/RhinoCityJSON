@@ -329,10 +329,12 @@ namespace RhinoCityJSON
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddBooleanParameter("Translate", "T", "Translate according to CityJSON data, if no origin is supplied absolute values will be used", GH_ParamAccess.item, false);
-            pManager.AddPointParameter("Model origin", "O", "The Origin of the model ({0,0,0} point)", GH_ParamAccess.list, new Rhino.Geometry.Point3d(0, 0, 0));
+            pManager.AddBooleanParameter("Translate", "T", "Translate according to the stored translation vector", GH_ParamAccess.item, false);
+            pManager.AddPointParameter("Model origin", "O", "The Origin of the model. This coordiante will be set as the {0,0,0} point for the imported JSON", GH_ParamAccess.list);
             pManager.AddNumberParameter("True north", "Tn", "The direction of the true north", GH_ParamAccess.list, 0.0);
             pManager.AddTextParameter("LoD", "L", "Desired Lod, keep empty for all", GH_ParamAccess.list, "");
+
+            pManager[1].Optional = true; // origin is optional
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -344,6 +346,7 @@ namespace RhinoCityJSON
         {
             bool translate = false;
             var p = new Rhino.Geometry.Point3d(0, 0, 0);
+            bool setP = false;
             var pList = new List<Rhino.Geometry.Point3d>();
             var north = 0.0;
             var northList = new List<double>();
@@ -366,7 +369,11 @@ namespace RhinoCityJSON
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Multiple true origin points submitted");
                 return;
             }
-            p = pList[0];
+            else if (pList != null && pList.Count == 1)
+            {
+                setP = true;
+                p = pList[0];
+            }
 
             foreach (string lod in loDList)
             {
@@ -387,7 +394,7 @@ namespace RhinoCityJSON
 
             }
             
-            var settingsTuple = Tuple.Create(translate, p, north, loDList);
+            var settingsTuple = Tuple.Create(translate, p, setP, north, loDList);
             DA.SetData(0, new Grasshopper.Kernel.Types.GH_ObjectWrapper(settingsTuple));
         }
 
@@ -428,7 +435,6 @@ namespace RhinoCityJSON
             pManager.AddBooleanParameter("Activate", "A", "Activate reader", GH_ParamAccess.item, false);
             pManager.AddGenericParameter("Settings", "S", "Settings coming from the RSettings component", GH_ParamAccess.list);
             pManager[2].Optional = true;
-
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -439,9 +445,13 @@ namespace RhinoCityJSON
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             List<String> pathList = new List<string>();
+
             var settingsList = new List<Grasshopper.Kernel.Types.GH_ObjectWrapper>();
-            var readSettingsList = new List<Tuple<bool, Rhino.Geometry.Point3d, double, List<string>>>();
+            var readSettingsList = new List<Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>>>();
+
             bool boolOn = false;
+
+
             if (!DA.GetDataList(0, pathList)) return;
             DA.GetData(1, ref boolOn);
             DA.GetDataList(2, settingsList);
@@ -473,6 +483,7 @@ namespace RhinoCityJSON
 
 
             List<string> loDList = new List<string>();
+            Point3d worldOrigin = new Point3d(0, 0, 0);
             bool translate = false;
 
             if (settingsList.Count > 0)
@@ -480,12 +491,17 @@ namespace RhinoCityJSON
                 // extract settings
                 foreach (Grasshopper.Kernel.Types.GH_ObjectWrapper objWrap in settingsList)
                 {
-                    readSettingsList.Add(objWrap.Value as Tuple<bool, Rhino.Geometry.Point3d, double, List<string>>);
+                    readSettingsList.Add(objWrap.Value as Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>>);
                 }
 
-                Tuple<bool, Rhino.Geometry.Point3d, double, List<string>> settings = readSettingsList[0];
+                Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>> settings = readSettingsList[0];
 
-                loDList = settings.Item4;
+                loDList = settings.Item5;
+                if (settings.Item3) // if world origin is set
+                {
+                    worldOrigin = settings.Item2;
+                }
+
                 translate = settings.Item1;
             }
               // check lod validity
@@ -517,7 +533,12 @@ namespace RhinoCityJSON
             double globalX = 0.0;
             double globalY = 0.0;
             double globalZ = 0.0;
+
             bool isFirst = true;
+
+            double originX = worldOrigin.X;
+            double originY = worldOrigin.Y;
+            double originZ = worldOrigin.Z;
 
             foreach (var path in pathList)
             {
@@ -568,7 +589,12 @@ namespace RhinoCityJSON
                     double x = jsonvert[0];
                     double y = jsonvert[1];
                     double z = jsonvert[2];
-                    Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x * scaleX + localX, y * scaleY + localY, z * scaleZ + localZ);
+
+                    Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(
+                        x * scaleX + localX - originX,
+                        y * scaleY + localY - originY, 
+                        z * scaleZ + localZ - originZ
+                        );
                     vertList.Add(vert);
                 }
 
