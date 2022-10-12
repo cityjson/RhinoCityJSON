@@ -73,53 +73,103 @@ namespace RhinoCityJSON
             return true;
         }
 
-        static public Tuple<List<Rhino.Geometry.Brep>, bool> getBrepSurface(dynamic surface, dynamic vertList)
+        static public Tuple<List<Rhino.Geometry.Brep>, bool> getBrepSurface(dynamic surface, List<Rhino.Geometry.Point3d> vertList)
         {
+            bool isTriangle = false;
+
             List<Rhino.Geometry.Brep> brepList = new List<Rhino.Geometry.Brep>();
             bool hasError = false;
 
             // this is one complete surface (surface + holes)
             Rhino.Collections.CurveList surfaceCurves = new Rhino.Collections.CurveList();
 
-            for (int i = 0; i < surface.Count; i++)
+            // check if is triangle
+            if (surface.Count == 1)
             {
-                // one ring 
-                List<Rhino.Geometry.Point3d> curvePoints = new List<Rhino.Geometry.Point3d>();
-                foreach (int vertIdx in surface[i])
+                if (surface[0].Count < 5 && surface[0].Count > 2)
                 {
-                    curvePoints.Add(vertList[vertIdx]);
-                }
-                if (curvePoints.Count > 0)
-                {
-                    curvePoints.Add(curvePoints[0]);
-
-                    try
-                    {
-                        Rhino.Geometry.Polyline ring = new Rhino.Geometry.Polyline(curvePoints);
-                        surfaceCurves.Add(ring);
-                    }
-                    catch (Exception)
-                    {
-                        continue;
-                    }
-
+                    isTriangle = true;
                 }
             }
 
-            if (surfaceCurves.Count > 0)
+            if (isTriangle)
             {
-                Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.25); //TODO monior value
-                surfaceCurves.Clear();
-                try
+                List<int> currentSurf = surface[0].ToObject<List<int>>();
+                NurbsSurface nSurface;
+
+                if (currentSurf.Count == 3)
                 {
-                    brepList.Add(planarFace[0]);
+                    nSurface = NurbsSurface.CreateFromCorners(
+                        vertList[currentSurf[0]], 
+                        vertList[currentSurf[1]], 
+                        vertList[currentSurf[2]]
+                        );
                 }
-                catch
+                else
+                {
+                    nSurface = NurbsSurface.CreateFromCorners(
+                        vertList[currentSurf[0]],
+                        vertList[currentSurf[1]],
+                        vertList[currentSurf[2]],
+                        vertList[currentSurf[3]]
+                        );
+                }
+
+                if (nSurface is null)
                 {
                     hasError = true;
                 }
+                else
+                {
+                    brepList.Add(nSurface.ToBrep());
+                }
+                return Tuple.Create(brepList, hasError);
+
             }
-            return Tuple.Create(brepList, hasError);
+            else // if is not traingle
+            {
+                for (int i = 0; i < surface.Count; i++)
+                {
+                    // one ring 
+                    List<Rhino.Geometry.Point3d> curvePoints = new List<Rhino.Geometry.Point3d>();
+                    foreach (int vertIdx in surface[i])
+                    {
+                        curvePoints.Add(vertList[vertIdx]);
+                    }
+                    if (curvePoints.Count > 0)
+                    {
+                        curvePoints.Add(curvePoints[0]);
+
+                        try
+                        {
+                            Rhino.Geometry.Polyline ring = new Rhino.Geometry.Polyline(curvePoints);
+                            surfaceCurves.Add(ring);
+                        }
+                        catch (Exception)
+                        {
+                            continue;
+                        }
+
+                    }
+                }
+
+                if (surfaceCurves.Count > 0)
+                {
+                    Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.25); //TODO monior value
+                    surfaceCurves.Clear();
+                    try
+                    {
+                        brepList.Add(planarFace[0]);
+                    }
+                    catch
+                    {
+                        hasError = true;
+                    }
+                }
+                return Tuple.Create(brepList, hasError);
+            }
+
+            
         }
 
 
