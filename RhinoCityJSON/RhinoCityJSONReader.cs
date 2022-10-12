@@ -301,7 +301,7 @@ namespace RhinoCityJSON
         {
             get
             {
-                return null;
+                return RhinoCityJSON.Properties.Resources.lodicon;
             }
         }
 
@@ -416,7 +416,7 @@ namespace RhinoCityJSON
         {
             get
             {
-                return null;
+                return RhinoCityJSON.Properties.Resources.settingsicon;
             }
         }
 
@@ -502,7 +502,7 @@ namespace RhinoCityJSON
             bool translate = false;
 
             double rotationAngle = 0;
-            bool rotate = false;
+            bool rotate = false; // TODO implement
 
             if (settingsList.Count > 0)
             {
@@ -737,7 +737,7 @@ namespace RhinoCityJSON
         {
             get
             {
-                return null;
+                return RhinoCityJSON.Properties.Resources.sreadericon;
             }
         }
 
@@ -982,7 +982,7 @@ namespace RhinoCityJSON
         {
             get
             {
-                return null;
+                return RhinoCityJSON.Properties.Resources.readericon;
             }
         }
 
