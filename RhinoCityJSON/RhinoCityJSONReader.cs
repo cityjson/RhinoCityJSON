@@ -653,7 +653,7 @@ namespace RhinoCityJSON
                                     foreach (var surface in solid)
                                     {
                                         var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
-                                        if (!readersurf.Item2)
+                                        if (readersurf.Item2)
                                         {
                                             AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
                                         }
