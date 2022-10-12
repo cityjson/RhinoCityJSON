@@ -357,13 +357,6 @@ namespace RhinoCityJSON
             DA.GetDataList(2, northList);
             DA.GetDataList(3, loDList);
 
-            if (northList.Count > 1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Multiple true norths submitted");
-                return;
-            }
-            north = northList[0];
-
             if (pList.Count > 1)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Multiple true origin points submitted");
@@ -374,6 +367,27 @@ namespace RhinoCityJSON
                 setP = true;
                 p = pList[0];
             }
+
+            if (northList.Count > 1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Multiple true north angles submitted");
+                return;
+            }
+            else if (northList[0] != 0 && !setP)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "True north rotation only functions if origin is given");
+                return;
+            }
+            else
+            {
+                north = northList[0];
+            }
+
+            if (north < -360 || north > 360)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "True north rotation is larger than 360 degrees");
+            }
+
 
             foreach (string lod in loDList)
             {
@@ -481,10 +495,14 @@ namespace RhinoCityJSON
                 }
             }
 
-
+            // get the settings
             List<string> loDList = new List<string>();
+
             Point3d worldOrigin = new Point3d(0, 0, 0);
             bool translate = false;
+
+            double rotationAngle = 0;
+            bool rotate = false;
 
             if (settingsList.Count > 0)
             {
@@ -495,14 +513,20 @@ namespace RhinoCityJSON
                 }
 
                 Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>> settings = readSettingsList[0];
+                translate = settings.Item1;
+                rotationAngle = Math.PI * settings.Item4 / 180.0;
 
-                loDList = settings.Item5;
+                if (rotationAngle != 0)
+                {
+                    rotate = true;
+                }
+
                 if (settings.Item3) // if world origin is set
                 {
                     worldOrigin = settings.Item2;
                 }
 
-                translate = settings.Item1;
+                loDList = settings.Item5;
             }
               // check lod validity
             bool setLoD = false;
@@ -590,10 +614,14 @@ namespace RhinoCityJSON
                     double y = jsonvert[1];
                     double z = jsonvert[2];
 
+                    double tX = x * scaleX + localX - originX;
+                    double tY = y * scaleY + localY - originY;
+                    double tZ = z * scaleZ + localZ - originZ;
+
                     Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(
-                        x * scaleX + localX - originX,
-                        y * scaleY + localY - originY, 
-                        z * scaleZ + localZ - originZ
+                        tX * Math.Cos(rotationAngle) - tY * Math.Sin(rotationAngle),
+                        tY * Math.Cos(rotationAngle) + tX * Math.Sin(rotationAngle),
+                        tZ
                         );
                     vertList.Add(vert);
                 }
