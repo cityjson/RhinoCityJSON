@@ -100,8 +100,8 @@ namespace RhinoCityJSON
                 if (currentSurf.Count == 3)
                 {
                     nSurface = NurbsSurface.CreateFromCorners(
-                        vertList[currentSurf[0]], 
-                        vertList[currentSurf[1]], 
+                        vertList[currentSurf[0]],
+                        vertList[currentSurf[1]],
                         vertList[currentSurf[2]]
                         );
                 }
@@ -115,62 +115,57 @@ namespace RhinoCityJSON
                         );
                 }
 
-                if (nSurface is null)
+                if (nSurface != null)
+                {
+                    brepList.Add(nSurface.ToBrep());
+                    return Tuple.Create(brepList, false);
+                }             
+            }
+
+
+            for (int i = 0; i < surface.Count; i++)
+            {
+                // one ring 
+                List<Rhino.Geometry.Point3d> curvePoints = new List<Rhino.Geometry.Point3d>();
+                foreach (int vertIdx in surface[i])
+                {
+                    curvePoints.Add(vertList[vertIdx]);
+                }
+                if (curvePoints.Count > 0)
+                {
+                    curvePoints.Add(curvePoints[0]);
+
+                    try
+                    {
+                        Rhino.Geometry.Polyline ring = new Rhino.Geometry.Polyline(curvePoints);
+                        surfaceCurves.Add(ring);
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                }
+            }
+
+            if (surfaceCurves.Count > 0)
+            {
+                Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.25); //TODO monior value
+                surfaceCurves.Clear();
+                try
+                {
+                    brepList.Add(planarFace[0]);
+                }
+                catch
                 {
                     hasError = true;
                 }
-                else
-                {
-                    brepList.Add(nSurface.ToBrep());
-                }
-                return Tuple.Create(brepList, hasError);
-
             }
-            else // if is not traingle
-            {
-                for (int i = 0; i < surface.Count; i++)
-                {
-                    // one ring 
-                    List<Rhino.Geometry.Point3d> curvePoints = new List<Rhino.Geometry.Point3d>();
-                    foreach (int vertIdx in surface[i])
-                    {
-                        curvePoints.Add(vertList[vertIdx]);
-                    }
-                    if (curvePoints.Count > 0)
-                    {
-                        curvePoints.Add(curvePoints[0]);
-
-                        try
-                        {
-                            Rhino.Geometry.Polyline ring = new Rhino.Geometry.Polyline(curvePoints);
-                            surfaceCurves.Add(ring);
-                        }
-                        catch (Exception)
-                        {
-                            continue;
-                        }
-
-                    }
-                }
-
-                if (surfaceCurves.Count > 0)
-                {
-                    Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.25); //TODO monior value
-                    surfaceCurves.Clear();
-                    try
-                    {
-                        brepList.Add(planarFace[0]);
-                    }
-                    catch
-                    {
-                        hasError = true;
-                    }
-                }
-                return Tuple.Create(brepList, hasError);
-            }
+            return Tuple.Create(brepList, hasError);
+        }
 
             
-        }
+        
 
 
         static public List<string> getSurfaceTypes(dynamic boundaryGroup)
@@ -728,7 +723,7 @@ namespace RhinoCityJSON
                                         foreach (var surface in solid)
                                         {
                                             var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
-                                            if (!readersurf.Item2)
+                                            if (readersurf.Item2)
                                             {
                                                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
                                             }
