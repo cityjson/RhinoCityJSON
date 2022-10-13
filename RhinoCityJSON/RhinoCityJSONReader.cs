@@ -150,7 +150,7 @@ namespace RhinoCityJSON
 
             if (surfaceCurves.Count > 0)
             {
-                Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.25); //TODO monior value
+                Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.05); //TODO monior value
                 surfaceCurves.Clear();
                 try
                 {
@@ -163,9 +163,6 @@ namespace RhinoCityJSON
             }
             return Tuple.Create(brepList, hasError);
         }
-
-            
-        
 
 
         static public List<string> getSurfaceTypes(dynamic boundaryGroup)
@@ -433,7 +430,6 @@ namespace RhinoCityJSON
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "True north rotation is larger than 360 degrees");
             }
 
-
             foreach (string lod in loDList)
             {
                 if (lod != "")
@@ -547,7 +543,6 @@ namespace RhinoCityJSON
             bool translate = false;
 
             double rotationAngle = 0;
-            bool rotate = false; // TODO implement
 
             if (settingsList.Count > 0)
             {
@@ -561,16 +556,10 @@ namespace RhinoCityJSON
                 translate = settings.Item1;
                 rotationAngle = Math.PI * settings.Item4 / 180.0;
 
-                if (rotationAngle != 0)
-                {
-                    rotate = true;
-                }
-
                 if (settings.Item3) // if world origin is set
                 {
                     worldOrigin = settings.Item2;
                 }
-
                 loDList = settings.Item5;
             }
               // check lod validity
@@ -688,8 +677,12 @@ namespace RhinoCityJSON
                                 continue;
                             }
 
-                            // this is all the geometry in one shape with info
-                            if (boundaryGroup.type == "Solid")
+                            if (boundaryGroup.template != null)
+                            {
+                                continue;
+                            }
+                                // this is all the geometry in one shape with info
+                            else if (boundaryGroup.type == "Solid")
                             {
                                 foreach (var solid in boundaryGroup.boundaries)
                                 {
