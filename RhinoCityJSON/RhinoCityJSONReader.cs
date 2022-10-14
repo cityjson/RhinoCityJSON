@@ -155,7 +155,6 @@ namespace RhinoCityJSON
                     {
                         continue;
                     }
-
                 }
             }
 
@@ -525,7 +524,7 @@ namespace RhinoCityJSON
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
+            pManager.AddGroupParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -616,7 +615,7 @@ namespace RhinoCityJSON
 
             }
 
-            List<Rhino.Geometry.Brep> breps = new List<Rhino.Geometry.Brep>();
+            Dictionary<string, List<Brep>> lodNestedBreps = new Dictionary<string, List<Brep>>();
 
             // coordinates of the first input
             double globalX = 0.0;
@@ -787,10 +786,12 @@ namespace RhinoCityJSON
                                 continue;
                             }
 
-                            if (boundaryGroup.template != null) 
+                            List<Rhino.Geometry.Brep> breps = new List<Rhino.Geometry.Brep>();
+
+                            if (boundaryGroup.template != null)
                             {
-                                List<Brep> shapeList = templateGeoList[(int) boundaryGroup.template];
-                                var anchorPoint = vertList[(int) boundaryGroup.boundaries[0]];
+                                List<Brep> shapeList = templateGeoList[(int)boundaryGroup.template];
+                                var anchorPoint = vertList[(int)boundaryGroup.boundaries[0]];
 
                                 foreach (Brep shape in shapeList)
                                 {
@@ -803,9 +804,9 @@ namespace RhinoCityJSON
                                     transShape.Translate(x, y, z);
                                     breps.Add(transShape);
                                 }
-
                             }
-                                // this is all the geometry in one shape with info
+
+                            // this is all the geometry in one shape with info
                             else if (boundaryGroup.type == "Solid")
                             {
                                 foreach (var solid in boundaryGroup.boundaries)
@@ -857,13 +858,39 @@ namespace RhinoCityJSON
                                     breps.Add(brep);
                                 }
                             }
+                            try
+                            {
+                                lodNestedBreps.Add((string)boundaryGroup.lod, breps);
+                            }
+                            catch (ArgumentException)
+                            {
+                                foreach (var brep in breps)
+                                {
+                                    lodNestedBreps[(string)boundaryGroup.lod].Add(brep);
+                                }
+                            }
                         }
                     }
                 }
             }
-            if (breps.Count > 0)
+
+            var outputList = new List<Grasshopper.Kernel.Types.GH_GeometryGroup>();
+
+            foreach (KeyValuePair<string, List<Brep>> entry in lodNestedBreps)
             {
-                DA.SetDataList(0, breps);
+                Grasshopper.Kernel.Types.GH_GeometryGroup loDGroup = new Grasshopper.Kernel.Types.GH_GeometryGroup();
+
+                foreach (var brep in entry.Value)
+                {
+                    loDGroup.Objects.Add(GH_Convert.ToGeometricGoo(brep));
+                }
+                outputList.Add(loDGroup);
+            }
+
+
+            if (outputList.Count > 0)
+            {
+                DA.SetDataList(0, outputList);
             }
         }
 
