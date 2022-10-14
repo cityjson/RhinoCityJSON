@@ -38,6 +38,17 @@ namespace RhinoCityJSON
         public int getBrepCount() { return brepList_.Count; }
     }
 
+    static class ErrorCollection // TODO put all the errors centrally 
+    {
+        static public int surfaceCreationErrorCode = 00001;
+        static public int emptyPathErrorCode = 00002;
+
+        static public Dictionary<int, string> errorCollection = new Dictionary<int, string>()
+        {
+            {surfaceCreationErrorCode, "Not all surfaces have been correctly created"},
+            {emptyPathErrorCode, "Path is empty"}
+        };
+    }
 
     class ReaderSupport 
     {
@@ -150,13 +161,13 @@ namespace RhinoCityJSON
 
             if (surfaceCurves.Count > 0)
             {
-                Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.05); //TODO monior value
+                Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.1); //TODO monior value
                 surfaceCurves.Clear();
                 try
                 {
                     brepList.Add(planarFace[0]);
                 }
-                catch
+                catch (Exception)
                 {
                     hasError = true;
                 }
@@ -164,6 +175,26 @@ namespace RhinoCityJSON
             return Tuple.Create(brepList, hasError);
         }
 
+
+        static public Tuple<List<Rhino.Geometry.Brep>, bool> getBrepShape(dynamic solid, List<Rhino.Geometry.Point3d> vertList)
+        {
+            List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
+            bool hasError = false;
+
+            foreach (var surface in solid)
+            {
+                var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
+                if (readersurf.Item2)
+                {
+                    hasError = true;
+                }
+                foreach (var brep in readersurf.Item1)
+                {
+                    localBreps.Add(brep);
+                }
+            }
+            return Tuple.Create(localBreps, hasError);
+        }
 
         static public List<string> getSurfaceTypes(dynamic boundaryGroup)
         {
@@ -284,12 +315,12 @@ namespace RhinoCityJSON
             // validate the data and warn the user if invalid data is supplied.
             if (pathList.Count == 0)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Path is empty");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[ErrorCollection.surfaceCreationErrorCode]);
                 return;
             }
             else if (pathList[0] == "")
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Path is empty");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[ErrorCollection.surfaceCreationErrorCode]);
                 return;
             }
             foreach (var path in pathList)
@@ -660,7 +691,86 @@ namespace RhinoCityJSON
                     vertList.Add(vert);
                 }
 
-                // create surfaces
+                // create template vertlist and templates
+                List<Rhino.Geometry.Point3d> vertListTemplate = new List<Rhino.Geometry.Point3d>();
+                var templateGeoList = new List<List<Brep>>();
+
+                if (Jcity["geometry-templates"] != null)
+                { 
+                    foreach (var jsonvert in Jcity["geometry-templates"]["vertices-templates"])
+                    {
+                        double x = jsonvert[0];
+                        double y = jsonvert[1];
+                        double z = jsonvert[2];
+
+                        Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x, y, z);
+                        vertListTemplate.Add(vert);
+                    }
+                    foreach (var template in Jcity["geometry-templates"]["templates"])
+                    {
+                        var templateGeo = new List<Brep>();
+                        if (setLoD && !loDList.Contains((string)template.lod))
+                        {
+                            continue;
+                        }
+
+                        // this is all the geometry in one shape with info
+                        else if (template.type == "Solid")
+                        {
+                            foreach (var solid in template.boundaries)
+                            {
+                                var readershape = ReaderSupport.getBrepShape(solid, vertListTemplate);
+
+                                if (readershape.Item2)
+                                {
+                                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
+                                }
+
+                                foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
+                                {
+                                    templateGeo.Add(brep);
+                                }
+                            }
+                        }
+                        else if (template.type == "CompositeSolid" || template.type == "MultiSolid")
+                        {
+                            foreach (var composit in template.boundaries)
+                            {
+                                foreach (var solid in composit)
+                                {
+                                    var readershape = ReaderSupport.getBrepShape(solid, vertListTemplate);
+
+                                    if (readershape.Item2)
+                                    {
+                                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
+                                    }
+
+                                    foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
+                                    {
+                                        templateGeo.Add(brep);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var readershape = ReaderSupport.getBrepShape(template.boundaries, vertListTemplate);
+
+                            if (readershape.Item2)
+                            {
+                                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
+                            }
+
+                            foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
+                            {
+                                templateGeo.Add(brep);
+                            } 
+                        }
+                        templateGeoList.Add(templateGeo);
+                    }
+                }
+
+                 // create surfaces
                 foreach (var objectGroup in Jcity.CityObjects)
                 {
                     foreach (var cObject in objectGroup)
@@ -677,30 +787,37 @@ namespace RhinoCityJSON
                                 continue;
                             }
 
-                            if (boundaryGroup.template != null)
+                            if (boundaryGroup.template != null) 
                             {
-                                continue;
+                                List<Brep> shapeList = templateGeoList[(int) boundaryGroup.template];
+                                var anchorPoint = vertList[(int) boundaryGroup.boundaries[0]];
+
+                                foreach (Brep shape in shapeList)
+                                {
+                                    double x = anchorPoint[0];
+                                    double y = anchorPoint[1];
+                                    double z = anchorPoint[2];
+
+                                    Brep transShape = shape.DuplicateBrep();
+
+                                    transShape.Translate(x, y, z);
+                                    breps.Add(transShape);
+                                }
+
                             }
                                 // this is all the geometry in one shape with info
                             else if (boundaryGroup.type == "Solid")
                             {
                                 foreach (var solid in boundaryGroup.boundaries)
                                 {
-                                    List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
+                                    var readershape = ReaderSupport.getBrepShape(solid, vertList);
 
-                                    foreach (var surface in solid)
+                                    if (readershape.Item2)
                                     {
-                                        var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
-                                        if (readersurf.Item2)
-                                        {
-                                            AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
-                                        }
-                                        foreach (var brep in readersurf.Item1)
-                                        {
-                                            localBreps.Add(brep);
-                                        }
+                                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
                                     }
-                                    foreach (var brep in Brep.JoinBreps(localBreps, 0.2))
+
+                                    foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
                                     {
                                         breps.Add(brep);
                                     }
@@ -712,20 +829,14 @@ namespace RhinoCityJSON
                                 {
                                     foreach (var solid in composit)
                                     {
-                                        List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
-                                        foreach (var surface in solid)
+                                        var readershape = ReaderSupport.getBrepShape(solid, vertList);
+
+                                        if (readershape.Item2)
                                         {
-                                            var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
-                                            if (readersurf.Item2)
-                                            {
-                                                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
-                                            }
-                                            foreach (var brep in readersurf.Item1)
-                                            {
-                                                localBreps.Add(brep);
-                                            }
+                                            AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
                                         }
-                                        foreach (var brep in Brep.JoinBreps(localBreps, 0.2))
+
+                                        foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
                                         {
                                             breps.Add(brep);
                                         }
@@ -734,20 +845,14 @@ namespace RhinoCityJSON
                             }
                             else
                             {
-                                List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
-                                foreach (var surface in boundaryGroup.boundaries)
+                                var readershape = ReaderSupport.getBrepShape(boundaryGroup.boundaries, vertList);
+
+                                if (readershape.Item2)
                                 {
-                                    var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
-                                    if (!readersurf.Item2)
-                                    {
-                                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
-                                    }
-                                    foreach (var brep in readersurf.Item1)
-                                    {
-                                        localBreps.Add(brep);
-                                    }
+                                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
                                 }
-                                foreach (var brep in Brep.JoinBreps(localBreps, 0.2))
+
+                                foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
                                 {
                                     breps.Add(brep);
                                 }
