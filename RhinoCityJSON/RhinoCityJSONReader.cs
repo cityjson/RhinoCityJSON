@@ -12,7 +12,6 @@ namespace RhinoCityJSON
         private string name_ = "None";
         private string lod_ = "None";
         private string parentName_ = "None";
-
         private string geometryType_ = "None";
 
         private List<string> surfaceNames_ = new List<string>();
@@ -205,6 +204,97 @@ namespace RhinoCityJSON
             }
             return surfacetypes;
         }
+
+
+        static public Tuple<List<List<Brep>>, bool> getTemplateGeo(dynamic Jcity, bool setLoD, List<string> loDList)
+        {
+            List<Rhino.Geometry.Point3d> vertListTemplate = new List<Rhino.Geometry.Point3d>();
+            var templateGeoList = new List<List<Brep>>();
+
+            bool hasError = false;
+
+            if (Jcity["geometry-templates"] != null)
+            {
+                foreach (var jsonvert in Jcity["geometry-templates"]["vertices-templates"])
+                {
+                    double x = jsonvert[0];
+                    double y = jsonvert[1];
+                    double z = jsonvert[2];
+
+                    Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x, y, z);
+                    vertListTemplate.Add(vert);
+                }
+                foreach (var template in Jcity["geometry-templates"]["templates"])
+                {
+                    var templateGeo = new List<Brep>();
+                    if (setLoD && !loDList.Contains((string)template.lod))
+                    {
+                        continue;
+                    }
+
+                    // this is all the geometry in one shape with info
+                    else if (template.type == "Solid")
+                    {
+                        foreach (var solid in template.boundaries)
+                        {
+                            var readershape = ReaderSupport.getBrepShape(solid, vertListTemplate);
+
+                            if (readershape.Item2)
+                            {
+                                hasError = true;
+                            }
+
+                            foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
+                            {
+                                templateGeo.Add(brep);
+                            }
+                        }
+                    }
+                    else if (template.type == "CompositeSolid" || template.type == "MultiSolid")
+                    {
+                        foreach (var composit in template.boundaries)
+                        {
+                            foreach (var solid in composit)
+                            {
+                                var readershape = ReaderSupport.getBrepShape(solid, vertListTemplate);
+
+                                if (readershape.Item2)
+                                {
+                                    hasError = true;
+                                }
+
+                                foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
+                                {
+                                    templateGeo.Add(brep);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var readershape = ReaderSupport.getBrepShape(template.boundaries, vertListTemplate);
+
+                        if (readershape.Item2)
+                        {
+                            hasError = true;
+                        }
+
+                        foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
+                        {
+                            templateGeo.Add(brep);
+                        }
+                    }
+                    templateGeoList.Add(templateGeo);
+                }
+                return Tuple.Create(templateGeoList, hasError);
+            }
+
+            var emptyList = new List<List<Brep>>();
+
+            return null;
+
+        }
+
 
         static public string forcefullKeyStringStrip(string inputString)
         {
@@ -525,6 +615,7 @@ namespace RhinoCityJSON
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGroupParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
+            pManager.AddTextParameter("Geometry", "S", "Geometry output", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -692,84 +783,15 @@ namespace RhinoCityJSON
 
                 // create template vertlist and templates
                 List<Rhino.Geometry.Point3d> vertListTemplate = new List<Rhino.Geometry.Point3d>();
-                var templateGeoList = new List<List<Brep>>();
+                var templateGeoListTup = ReaderSupport.getTemplateGeo(Jcity, setLoD, loDList);
+                var templateGeoList = templateGeoListTup.Item1;
 
-                if (Jcity["geometry-templates"] != null)
-                { 
-                    foreach (var jsonvert in Jcity["geometry-templates"]["vertices-templates"])
-                    {
-                        double x = jsonvert[0];
-                        double y = jsonvert[1];
-                        double z = jsonvert[2];
-
-                        Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x, y, z);
-                        vertListTemplate.Add(vert);
-                    }
-                    foreach (var template in Jcity["geometry-templates"]["templates"])
-                    {
-                        var templateGeo = new List<Brep>();
-                        if (setLoD && !loDList.Contains((string)template.lod))
-                        {
-                            continue;
-                        }
-
-                        // this is all the geometry in one shape with info
-                        else if (template.type == "Solid")
-                        {
-                            foreach (var solid in template.boundaries)
-                            {
-                                var readershape = ReaderSupport.getBrepShape(solid, vertListTemplate);
-
-                                if (readershape.Item2)
-                                {
-                                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
-                                }
-
-                                foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
-                                {
-                                    templateGeo.Add(brep);
-                                }
-                            }
-                        }
-                        else if (template.type == "CompositeSolid" || template.type == "MultiSolid")
-                        {
-                            foreach (var composit in template.boundaries)
-                            {
-                                foreach (var solid in composit)
-                                {
-                                    var readershape = ReaderSupport.getBrepShape(solid, vertListTemplate);
-
-                                    if (readershape.Item2)
-                                    {
-                                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
-                                    }
-
-                                    foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
-                                    {
-                                        templateGeo.Add(brep);
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            var readershape = ReaderSupport.getBrepShape(template.boundaries, vertListTemplate);
-
-                            if (readershape.Item2)
-                            {
-                                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
-                            }
-
-                            foreach (var brep in Brep.JoinBreps(readershape.Item1, 0.2))
-                            {
-                                templateGeo.Add(brep);
-                            } 
-                        }
-                        templateGeoList.Add(templateGeo);
-                    }
+                if (templateGeoListTup.Item2)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
                 }
 
-                 // create surfaces
+                // create surfaces
                 foreach (var objectGroup in Jcity.CityObjects)
                 {
                     foreach (var cObject in objectGroup)
@@ -786,10 +808,14 @@ namespace RhinoCityJSON
                                 continue;
                             }
 
+                            string loD = (string)boundaryGroup.lod;
+
                             List<Rhino.Geometry.Brep> breps = new List<Rhino.Geometry.Brep>();
 
                             if (boundaryGroup.template != null)
                             {
+                                loD = "none";
+
                                 List<Brep> shapeList = templateGeoList[(int)boundaryGroup.template];
                                 var anchorPoint = vertList[(int)boundaryGroup.boundaries[0]];
 
@@ -802,6 +828,7 @@ namespace RhinoCityJSON
                                     Brep transShape = shape.DuplicateBrep();
 
                                     transShape.Translate(x, y, z);
+
                                     breps.Add(transShape);
                                 }
                             }
@@ -860,13 +887,13 @@ namespace RhinoCityJSON
                             }
                             try
                             {
-                                lodNestedBreps.Add((string)boundaryGroup.lod, breps);
+                                lodNestedBreps.Add(loD, breps);
                             }
                             catch (ArgumentException)
                             {
                                 foreach (var brep in breps)
                                 {
-                                    lodNestedBreps[(string)boundaryGroup.lod].Add(brep);
+                                    lodNestedBreps[loD].Add(brep);
                                 }
                             }
                         }
@@ -922,7 +949,7 @@ namespace RhinoCityJSON
         }
     }
 
-    public class RhinoCityJSONReader : GH_Component
+    /*public class RhinoCityJSONReader : GH_Component
     {
         /// <summary>
         /// Each implementation of GH_Component must provide a public 
@@ -942,10 +969,11 @@ namespace RhinoCityJSON
         /// Registers all the input parameters for this component.
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
-        {            
-            pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.item, "");
-            pManager.AddBooleanParameter("Translate", "T", "Translate according to CityJSON data", GH_ParamAccess.item, false);
+        {
+            pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.list, "");
             pManager.AddBooleanParameter("Activate", "A", "Activate reader", GH_ParamAccess.item, false);
+            pManager.AddGenericParameter("Settings", "S", "Settings coming from the RSettings component", GH_ParamAccess.list);
+            pManager[2].Optional = true;
         }
 
         /// <summary>
@@ -953,7 +981,7 @@ namespace RhinoCityJSON
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
+            pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item); // todo Merge
             pManager.AddTextParameter("Info", "I", "Semantic information output", GH_ParamAccess.item);
         }
 
@@ -964,64 +992,170 @@ namespace RhinoCityJSON
         /// to store data in output parameters.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            string path = "";
+            List<String> pathList = new List<string>();
+
+            var settingsList = new List<Grasshopper.Kernel.Types.GH_ObjectWrapper>();
+            var readSettingsList = new List<Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>>>();
+
             bool boolOn = false;
-            if (!DA.GetData(0, ref path)) return;
-            DA.GetData(2, ref boolOn);
+
+            if (!DA.GetDataList(0, pathList)) return;
+            DA.GetData(1, ref boolOn);
+            DA.GetDataList(2, settingsList);
 
             if (!boolOn)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Node is offline");
                 return;
             }
-
+            else if (settingsList.Count > 1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Only a single settings input allowed");
+                return;
+            }
             // validate the data and warn the user if invalid data is supplied.
-            if (path == "")
+            else if (pathList[0] == "")
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Path is empty");
                 return;
             }
-            if (!System.IO.File.Exists(path))
+            foreach (var path in pathList)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid filepath found");
-                return;
+                if (!System.IO.File.Exists(path))
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid filepath found");
+                    return;
+                }
             }
 
-            // Check if valid CityJSON format
-            var Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
-            if (!ReaderSupport.CheckValidity(Jcity))
+            // get the settings
+            List<string> loDList = new List<string>();
+
+            Point3d worldOrigin = new Point3d(0, 0, 0);
+            bool translate = false;
+
+            double rotationAngle = 0;
+
+            if (settingsList.Count > 0)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
-                return;
+                // extract settings
+                foreach (Grasshopper.Kernel.Types.GH_ObjectWrapper objWrap in settingsList)
+                {
+                    readSettingsList.Add(objWrap.Value as Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>>);
+                }
+
+                Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>> settings = readSettingsList[0];
+                translate = settings.Item1;
+                rotationAngle = Math.PI * settings.Item4 / 180.0;
+
+                if (settings.Item3) // if world origin is set
+                {
+                    worldOrigin = settings.Item2;
+                }
+                loDList = settings.Item5;
+            }
+            // check lod validity
+            bool setLoD = false;
+
+            foreach (string lod in loDList)
+            {
+                if (lod != "")
+                {
+                    if (lod == "0" || lod == "0.0" || lod == "0.1" || lod == "0.2" || lod == "0.3" ||
+                        lod == "1" || lod == "1.0" || lod == "1.1" || lod == "1.2" || lod == "1.3" ||
+                        lod == "2" || lod == "2.0" || lod == "2.1" || lod == "2.2" || lod == "2.3" ||
+                        lod == "3" || lod == "3.0" || lod == "3.1" || lod == "3.2" || lod == "3.3")
+                    {
+                        setLoD = true;
+                    }
+                    else
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid lod input found");
+                        return;
+                    }
+                }
+
             }
 
-            // collect semantic data
-            List<CJObject> cjObjects = new List<CJObject>();
 
-            // TODO put in function
-            List<string> surfacenames = new List<string>();
-            List<string> boundaryLODs = new List<string>();
-            List<string> surfaceTypes = new List<string>();
 
-            // get scalers
-            double scaleX = Jcity.transform.scale[0];
-            double scaleY = Jcity.transform.scale[1];
-            double scaleZ = Jcity.transform.scale[2];
+            // coordinates of the first input
+            double globalX = 0.0;
+            double globalY = 0.0;
+            double globalZ = 0.0;
 
-            // ceate vertlist
-            var jsonverts = Jcity.vertices;
-            List<Rhino.Geometry.Point3d> vertList = new List<Rhino.Geometry.Point3d>();
-            foreach (var jsonvert in jsonverts)
+            bool isFirst = true;
+
+            double originX = worldOrigin.X;
+            double originY = worldOrigin.Y;
+            double originZ = worldOrigin.Z;
+
+            foreach (var path in pathList)
             {
-                double x = jsonvert[0];
-                double y = jsonvert[1];
-                double z = jsonvert[2];
-                Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x * scaleX, y * scaleY, z * scaleZ);
-                vertList.Add(vert);                
+                // Check if valid CityJSON format
+                var Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
+                if (!ReaderSupport.CheckValidity(Jcity))
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
+                    return;
+                }
+
+                // get scalers
+                double scaleX = Jcity.transform.scale[0];
+                double scaleY = Jcity.transform.scale[1];
+                double scaleZ = Jcity.transform.scale[2];
+
+                // translation vectors
+                double localX = 0.0;
+                double localY = 0.0;
+                double localZ = 0.0;
+
+                // get location
+                if (translate)
+                {
+                    localX = Jcity.transform.translate[0];
+                    localY = Jcity.transform.translate[1];
+                    localZ = Jcity.transform.translate[2];
+                }
+                else if (isFirst && !translate)
+                {
+                    isFirst = false;
+                    globalX = Jcity.transform.translate[0];
+                    globalY = Jcity.transform.translate[1];
+                    globalZ = Jcity.transform.translate[2];
+                }
+                else if (!isFirst && !translate)
+                {
+                    localX = Jcity.transform.translate[0] - globalX;
+                    localY = Jcity.transform.translate[1] - globalY;
+                    localZ = Jcity.transform.translate[2] - globalZ;
+                }
+
+                // ceate vertlist
+                var jsonverts = Jcity.vertices;
+                List<Rhino.Geometry.Point3d> vertList = new List<Rhino.Geometry.Point3d>();
+                foreach (var jsonvert in jsonverts)
+                {
+                    double x = jsonvert[0];
+                    double y = jsonvert[1];
+                    double z = jsonvert[2];
+
+                    double tX = x * scaleX + localX - originX;
+                    double tY = y * scaleY + localY - originY;
+                    double tZ = z * scaleZ + localZ - originZ;
+
+                    Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(
+                        tX * Math.Cos(rotationAngle) - tY * Math.Sin(rotationAngle),
+                        tY * Math.Cos(rotationAngle) + tX * Math.Sin(rotationAngle),
+                        tZ
+                        );
+                    vertList.Add(vert);
+                }
             }
 
-            // create surfaces
-            foreach (var objectGroup in Jcity.CityObjects)
+
+                // create surfaces
+                foreach (var objectGroup in Jcity.CityObjects)
             {
                 // getObject name
                 CJObject obb = new CJObject(objectGroup.Name);
@@ -1165,5 +1299,5 @@ namespace RhinoCityJSON
         {
             get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a2754e7"); }
         }
-    }
+    }*/
 }
