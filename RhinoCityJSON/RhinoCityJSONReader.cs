@@ -7,6 +7,30 @@ using Newtonsoft.Json;
 
 namespace RhinoCityJSON
 {
+    class CJTempate
+    {
+        private int idx_ = 0;
+        private string lod_ = "none";
+        private bool hasError_ = false;
+
+        private List<Brep> brepList_ = new List<Rhino.Geometry.Brep>();
+
+        public CJTempate(int idx)
+        {
+            idx_ = idx;
+        }
+
+
+        public string getLod() { return lod_; }
+        public void setLod(string lod) { lod_ = lod; }
+        public bool getError() { return hasError_; }
+        public void setError(bool hasError) { hasError_ = hasError; }
+        public List<Rhino.Geometry.Brep> getBrepList() { return brepList_; }
+        public void setBrepList(List<Rhino.Geometry.Brep> brepList) { brepList_ = brepList; }
+        public int getBrepCount() { return brepList_.Count; }
+    }
+
+
     class CJObject
     {
         private string name_ = "None";
@@ -206,15 +230,16 @@ namespace RhinoCityJSON
         }
 
 
-        static public Tuple<List<List<Brep>>, bool> getTemplateGeo(dynamic Jcity, bool setLoD, List<string> loDList)
+        static public List<CJTempate> getTemplateGeo(dynamic Jcity, bool setLoD, List<string> loDList)
         {
             List<Rhino.Geometry.Point3d> vertListTemplate = new List<Rhino.Geometry.Point3d>();
-            var templateGeoList = new List<List<Brep>>();
+            var templateGeoList = new List<CJTempate>();
 
             bool hasError = false;
 
             if (Jcity["geometry-templates"] != null)
             {
+
                 foreach (var jsonvert in Jcity["geometry-templates"]["vertices-templates"])
                 {
                     double x = jsonvert[0];
@@ -284,9 +309,15 @@ namespace RhinoCityJSON
                             templateGeo.Add(brep);
                         }
                     }
-                    templateGeoList.Add(templateGeo);
+
+                    CJTempate newTemplate = new CJTempate(templateGeoList.Count);
+                    newTemplate.setBrepList(templateGeo);
+                    newTemplate.setLod((string) template.lod);
+                    newTemplate.setError(hasError);
+
+                    templateGeoList.Add(newTemplate);
                 }
-                return Tuple.Create(templateGeoList, hasError);
+                return templateGeoList;
             }
 
             var emptyList = new List<List<Brep>>();
@@ -782,13 +813,15 @@ namespace RhinoCityJSON
                 }
 
                 // create template vertlist and templates
-                List<Rhino.Geometry.Point3d> vertListTemplate = new List<Rhino.Geometry.Point3d>();
-                var templateGeoListTup = ReaderSupport.getTemplateGeo(Jcity, setLoD, loDList);
-                var templateGeoList = templateGeoListTup.Item1;
+                List<CJTempate> templateGeoList = ReaderSupport.getTemplateGeo(Jcity, setLoD, loDList);
 
-                if (templateGeoListTup.Item2)
+                foreach (CJTempate template in templateGeoList)
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
+                    if (template.getError())
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
+                        break;
+                    }
                 }
 
                 // create surfaces
@@ -814,9 +847,11 @@ namespace RhinoCityJSON
 
                             if (boundaryGroup.template != null)
                             {
-                                loD = "none";
 
-                                List<Brep> shapeList = templateGeoList[(int)boundaryGroup.template];
+                                CJTempate shapeTemplate = templateGeoList[(int)boundaryGroup.template];
+                                loD = shapeTemplate.getLod();
+
+                                List<Brep> shapeList = shapeTemplate.getBrepList();
                                 var anchorPoint = vertList[(int)boundaryGroup.boundaries[0]];
 
                                 foreach (Brep shape in shapeList)
