@@ -65,7 +65,7 @@ namespace RhinoCityJSON
         {
             foreach (var surfaceName in surfaceNames)
             {
-                cleanedSurfaceNames_.Add(surfaceName);
+                cleanedSurfaceNames_.Add(surfaceName.Substring(1, surfaceName.Length -2));
             }
         }
         public List<Rhino.Geometry.Brep> getBrepList() { return brepList_; }
@@ -112,35 +112,9 @@ namespace RhinoCityJSON
             }
         }
 
-        public void joinSmart()
+        public void joinSmart(IGH_DataAccess DA)
         {
-            List<bool> joinedidx = new List<bool>();
-
-            for (int i = 0; i < brepList_.Count; i++)
-            {
-                joinedidx.Add(false);
-            }
-
-            for (int i = 0; i < brepList_.Count; i++)
-            {
-                Brep brep = brepList_[i];
-
-                if (joinedidx[i] == true)
-                {
-                    continue;
-                }
-
-                // compute normal direction
-
-                // find surfaces with same normal direction
-
-                // join
-
-
-                joinedidx[i] = true;
-            }
-
-
+            
         }
 
 
@@ -1082,7 +1056,8 @@ namespace RhinoCityJSON
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item); // todo Merge
-            pManager.AddTextParameter("Info", "I", "Semantic information output", GH_ParamAccess.item);
+            pManager.AddTextParameter("Surface Info", "Si", "Semantic information output related to the surfaces", GH_ParamAccess.item);
+            pManager.AddTextParameter("Object Info", "Bi", "Semantic information output related to the objects", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -1092,6 +1067,8 @@ namespace RhinoCityJSON
         /// to store data in output parameters.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            int rootPathidx = 0;
+
             List<String> pathList = new List<string>();
 
             var settingsList = new List<Grasshopper.Kernel.Types.GH_ObjectWrapper>();
@@ -1192,6 +1169,8 @@ namespace RhinoCityJSON
             double originZ = worldOrigin.Z;
 
             List<Rhino.Geometry.Brep> breps = new List<Rhino.Geometry.Brep>();
+            var dataTree = new Grasshopper.DataTree<string>();
+
             List<string> collectedSem = new List<string>();
 
             foreach (var path in pathList)
@@ -1278,10 +1257,23 @@ namespace RhinoCityJSON
                             continue;
                         }
 
+                        string buildingType = cObject.type;
+                        var parent = cObject.parents;
                         foreach (var boundaryGroup in cObject.geometry)
                         {
                             string loD = (string)boundaryGroup.lod;
-                            CJObject lodBuilding = new CJObject(objectGroup.Name + "-" + loD);
+                            CJObject lodBuilding = new CJObject(objectGroup.Name);
+                            lodBuilding.setGeometryType(buildingType);
+
+                            if (parent != null)
+                            {
+                                foreach (string item in parent)
+                                {
+                                    lodBuilding.setParendName(item);
+                                    break;
+                                }
+                                
+                            }
 
                             if (setLoD && !loDList.Contains((string)boundaryGroup.lod))
                             {
@@ -1359,28 +1351,37 @@ namespace RhinoCityJSON
                                 }
                             }
 
-                            lodBuilding.joinSmart();
+                            //lodBuilding.joinSimple();
 
-                            foreach (var brep in lodBuilding.getBrepList())
-                            {
-                                breps.Add(brep);
-                            }
-
+                            var brepList = lodBuilding.getBrepList();
                             var allSemantic = lodBuilding.getCSurfaceNames();
+                            var name = lodBuilding.getName();
+                            var bType = lodBuilding.getGeometryType();
+                            var parentName = lodBuilding.getParendName();
 
                             if (allSemantic.Count == 0)
                             {
-                                foreach (var brep in lodBuilding.getBrepList())
+                                for (int i = 0; i < brepList.Count; i++)
                                 {
-                                    collectedSem.Add("None");
+                                    allSemantic.Add("None");
                                 }
                             }
 
-                            for (int i = 0; i < allSemantic.Count; i++)
+                            for (int i = 0; i < brepList.Count; i++)
                             {
-                                collectedSem.Add(allSemantic[i]);
+                                breps.Add(brepList[i]);
+
+                                var nPath = new Grasshopper.Kernel.Data.GH_Path(i + rootPathidx);
+
+                                dataTree.Add(name, nPath);
+                                dataTree.Add(parentName, nPath);
+                                dataTree.Add(bType, nPath);
+                                dataTree.Add(loD, nPath);
+                                dataTree.Add(allSemantic[i], nPath);
+
                             }
 
+                            rootPathidx += brepList.Count;
                         }
                     }
                 }
@@ -1389,7 +1390,8 @@ namespace RhinoCityJSON
             if (breps.Count > 0)
             {
                 DA.SetDataList(0, breps);
-                DA.SetDataList(1, collectedSem);
+                DA.SetDataTree(1, dataTree);
+                DA.SetData(2, null);
             }
         }
 
