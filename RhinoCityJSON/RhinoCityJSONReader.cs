@@ -1284,10 +1284,12 @@ namespace RhinoCityJSON
                             {
 
                                 CJTempate shapeTemplate = templateGeoList[(int)boundaryGroup.template];
-                                loD = shapeTemplate.getLod();
+                                lodBuilding.setLod(shapeTemplate.getLod());
 
                                 List<Brep> shapeList = shapeTemplate.getBrepList();
                                 var anchorPoint = vertList[(int)boundaryGroup.boundaries[0]];
+
+                                var localBrepList = new List<Brep>();
 
                                 foreach (Brep shape in shapeList)
                                 {
@@ -1299,8 +1301,11 @@ namespace RhinoCityJSON
 
                                     transShape.Translate(x, y, z);
 
-                                    breps.Add(transShape);
+                                    localBrepList.Add(transShape);
                                 }
+
+                                lodBuilding.setBrepList(localBrepList);
+
                             }
 
                             // this is all the geometry in one shape with info
@@ -1358,6 +1363,7 @@ namespace RhinoCityJSON
                             var name = lodBuilding.getName();
                             var bType = lodBuilding.getGeometryType();
                             var parentName = lodBuilding.getParendName();
+                            var endLoD = lodBuilding.getLod();
 
                             if (allSemantic.Count == 0)
                             {
@@ -1376,7 +1382,7 @@ namespace RhinoCityJSON
                                 dataTree.Add(name, nPath);
                                 dataTree.Add(parentName, nPath);
                                 dataTree.Add(bType, nPath);
-                                dataTree.Add(loD, nPath);
+                                dataTree.Add(endLoD, nPath);
                                 dataTree.Add(allSemantic[i], nPath);
 
                             }
