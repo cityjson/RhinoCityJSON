@@ -1261,8 +1261,8 @@ namespace RhinoCityJSON
                         var parent = cObject.parents;
                         foreach (var boundaryGroup in cObject.geometry)
                         {
-                            string loD = (string)boundaryGroup.lod;
                             CJObject lodBuilding = new CJObject(objectGroup.Name);
+                            lodBuilding.setLod((string)boundaryGroup.lod);
                             lodBuilding.setGeometryType(buildingType);
 
                             if (parent != null)
