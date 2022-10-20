@@ -1252,7 +1252,14 @@ namespace RhinoCityJSON
                 {
                     foreach (var cObject in objectGroup)
                     {
-                        if (cObject.geometry == null) // parents
+                        if (cObject.children != null) // parents
+                        {
+                        }
+                        else if(cObject.children == null && cObject.parents == null)
+                        {
+                        }
+
+                        if (cObject.geometry == null)
                         {
                             continue;
                         }
@@ -1397,7 +1404,7 @@ namespace RhinoCityJSON
             {
                 DA.SetDataList(0, breps);
                 DA.SetDataTree(1, dataTree);
-                DA.SetData(2, null);
+                DA.SetDataList(2, null);
             }
         }
 
@@ -1427,5 +1434,241 @@ namespace RhinoCityJSON
         {
             get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a2754e7"); }
         }
+    }
+
+    public class Bakery : GH_Component
+    {
+        public Bakery()
+          : base("RCJBakery", "Bakery",
+              "Bakes the RCJ data to Rhino",
+              "RhinoCityJSON", "Processing")
+        {
+        }
+
+        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        {
+            pManager.AddBrepParameter("Geometry", "G", "Geometry Input", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Surface Info", "Si", "Semantic information output related to the surfaces", GH_ParamAccess.tree);
+            pManager.AddTextParameter("Object Info", "Bi", "Semantic information output related to the objects", GH_ParamAccess.tree);
+            pManager.AddBooleanParameter("Activate", "A", "Activate bakery", GH_ParamAccess.item, false);
+            pManager[2].Optional = true; // object info is optional
+
+        }
+
+        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        {
+            pManager.AddTextParameter("test output", "t", "", GH_ParamAccess.list);
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            var siTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
+            var brepList = new List<Brep>();
+
+            DA.GetDataList(0, brepList);
+            DA.GetDataTree(1, out siTree);
+
+            var lodList = new List<string>();
+            var lodTypeDictionary = new Dictionary<string, List<string>>();
+
+            var branchCollection = siTree.Branches;
+
+            var brepPartitioning = new Dictionary<string, Dictionary<string, List<Brep>>>();
+
+            for (int i = 0; i < branchCollection.Count; i++)
+            {
+
+                // get LoD
+                string lod = branchCollection[i][3].ToString();
+
+                if (!lodList.Contains(lod))
+                {
+                    lodList.Add(lod);
+                }
+
+                // get type
+                string bType = branchCollection[i][2].ToString();
+
+                if (!lodTypeDictionary.ContainsKey(lod))
+                {
+                    lodTypeDictionary.Add(lod, new List<string>());
+                    lodTypeDictionary[lod].Add(bType);
+
+                    brepPartitioning.Add(lod, new Dictionary<string, List<Brep>>());
+                    brepPartitioning[lod].Add(bType, new List<Brep>());
+                }
+                
+                if (!lodTypeDictionary[lod].Contains(bType))
+                {
+                    lodTypeDictionary[lod].Add(bType);
+
+                    var brepDList = new List<Brep>();
+                    brepDList.Add(brepList[i]);
+                    brepPartitioning[lod].Add(bType, brepDList);
+                }
+
+                else
+                {
+                    brepPartitioning[lod][bType].Add(brepList[i]);
+                }
+
+               
+
+            }
+
+            var activeDoc = Rhino.RhinoDoc.ActiveDoc;
+
+            // create a new unique master layer name
+            Rhino.DocObjects.Layer parentlayer = new Rhino.DocObjects.Layer();
+            parentlayer.Name = "RCJ output";
+            parentlayer.Color = System.Drawing.Color.Red;
+            parentlayer.Index = 100;
+
+            int count = 0;
+            if (activeDoc.Layers.FindName("RCJ output") != null)
+            { 
+                while (true)
+                {
+                    if (activeDoc.Layers.FindName("RCJ output - " + count.ToString()) == null)
+                    {
+                        parentlayer.Name = "RCJ output - " + count.ToString();
+                        parentlayer.Index = parentlayer.Index + count;
+                        break;
+                    }
+                 count++;
+                }
+            }
+
+            activeDoc.Layers.Add(parentlayer);
+            var parentID = activeDoc.Layers.FindName(parentlayer.Name).Id;
+
+            // create LoD layers
+            var lodId = new Dictionary<string, System.Guid>();
+
+            for (int i = 0; i < lodList.Count; i++)
+            {
+                Rhino.DocObjects.Layer lodLayer = new Rhino.DocObjects.Layer();
+                lodLayer.Name = "LoD " + lodList[i] + count; // temporarily make name unique 
+                lodLayer.Color = System.Drawing.Color.DarkRed;
+                lodLayer.Index = 200 + i;
+                lodLayer.ParentLayerId = parentID;
+
+                activeDoc.Layers.Add(lodLayer);
+                var idx = activeDoc.Layers.FindName("LoD " + lodList[i] + count).Id;
+                lodId.Add(lodList[i], idx);
+                activeDoc.Layers.FindId(idx).Name = "LoD " + lodList[i]; // correct the name
+            }
+
+            int c = 0;
+            foreach (var lodTypeLink in lodTypeDictionary)
+            {
+                var targeLId = lodId[lodTypeLink.Key];
+                var cleanedTypeList = new List<string>();
+
+                foreach (var bType in lodTypeLink.Value)
+                {
+                    if (
+                        bType == "BridgePart" ||
+                        bType == "BridgeInstallation" ||
+                        bType == "BridgeConstructiveElement" ||
+                        bType == "BrideRoom" ||
+                        bType == "BridgeFurniture"
+                        )
+                    {
+                        if (!cleanedTypeList.Contains("Bridge"))
+                        {
+                            cleanedTypeList.Add("Bridge");
+                        }
+                    }
+                    else if (
+                        bType == "BuildingPart" ||
+                        bType == "BuildingInstallation" ||
+                        bType == "BuildingConstructiveElement" ||
+                        bType == "BuildingFurniture" ||
+                        bType == "BuildingStorey" ||
+                        bType == "BuildingRoom" ||
+                        bType == "BuildingUnit"
+                        )
+                    {
+                        if (!cleanedTypeList.Contains("Building"))
+                        {
+                            cleanedTypeList.Add("Building");
+                        }
+                    }
+                    else if (
+                        bType == "TunnelPart" ||
+                        bType == "TunnelInstallation" ||
+                        bType == "TunnelConstructiveElement" ||
+                        bType == "TunnelHollowSpace" ||
+                        bType == "TunnelFurniture"
+                        )
+                    {
+                        if (!cleanedTypeList.Contains("Tunnel"))
+                        {
+                            cleanedTypeList.Add("Tunnel");
+                        }
+                    }
+                    else
+                    {
+                        if (!cleanedTypeList.Contains(bType))
+                        {
+                            cleanedTypeList.Add(bType);
+                        }
+
+                    }
+                
+                }
+                foreach (var bType in cleanedTypeList)
+                {
+
+                    Rhino.DocObjects.Layer typeLayer = new Rhino.DocObjects.Layer();
+                    typeLayer.Name = bType + count;
+                    typeLayer.Color = System.Drawing.Color.DarkRed;
+                    typeLayer.Index = 300 + c;
+                    typeLayer.ParentLayerId = targeLId;
+
+                    activeDoc.Layers.Add(typeLayer);
+                    var id = activeDoc.Layers.FindName(bType + count).Id;
+                    var idx = activeDoc.Layers.FindId(id).Index;
+                    activeDoc.Layers.FindId(id).Name = bType;
+
+
+                    // bake geo to layer
+                    foreach (var brepgeo in brepPartitioning[lodTypeLink.Key][bType])
+                    {
+                        Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
+                        Rhino.RhinoApp.WriteLine(idx.ToString());
+                        objectAttributes.LayerIndex = idx;
+
+                        activeDoc.Objects.AddBrep(brepgeo, objectAttributes);
+                    }
+
+
+
+
+                    c++;
+                }
+            }
+
+        }
+
+        protected override System.Drawing.Bitmap Icon
+        {
+            get
+            {
+                return RhinoCityJSON.Properties.Resources.lodicon;
+            }
+        }
+
+        /// <summary>
+        /// Each component must have a unique Guid to identify it. 
+        /// It is vital this Guid doesn't change otherwise old ghx files 
+        /// that use the old ID will partially fail during loading.
+        /// </summary>
+        public override Guid ComponentGuid
+        {
+            get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a274e18"); }
+        }
+
     }
 }
