@@ -455,6 +455,49 @@ namespace RhinoCityJSON
     }
 
 
+    class BakerySupport
+    {
+        static public string getParentName(string Childname)
+        {
+            if (
+                Childname == "BridgePart" ||
+                Childname == "BridgeInstallation" ||
+                Childname == "BridgeConstructiveElement" ||
+                Childname == "BrideRoom" ||
+                Childname == "BridgeFurniture"
+                )
+            {
+                return "bridge";
+            }
+            else if (
+                Childname == "BuildingPart" ||
+                Childname == "BuildingInstallation" ||
+                Childname == "BuildingConstructiveElement" ||
+                Childname == "BuildingFurniture" ||
+                Childname == "BuildingStorey" ||
+                Childname == "BuildingRoom" ||
+                Childname == "BuildingUnit"
+                )
+            {
+                return "Building";
+            }
+            else if (
+                Childname == "TunnelPart" ||
+                Childname == "TunnelInstallation" ||
+                Childname == "TunnelConstructiveElement" ||
+                Childname == "TunnelHollowSpace" ||
+                Childname == "TunnelFurniture"
+                )
+            {
+                return "Tunnel";
+            }
+            else
+            {
+                return Childname;
+            }
+        }
+    }
+
     public class LoDReader : GH_Component
     {
         public LoDReader()
@@ -1473,11 +1516,9 @@ namespace RhinoCityJSON
 
             var branchCollection = siTree.Branches;
 
-            var brepPartitioning = new Dictionary<string, Dictionary<string, List<Brep>>>();
 
             for (int i = 0; i < branchCollection.Count; i++)
             {
-
                 // get LoD
                 string lod = branchCollection[i][3].ToString();
 
@@ -1493,27 +1534,11 @@ namespace RhinoCityJSON
                 {
                     lodTypeDictionary.Add(lod, new List<string>());
                     lodTypeDictionary[lod].Add(bType);
-
-                    brepPartitioning.Add(lod, new Dictionary<string, List<Brep>>());
-                    brepPartitioning[lod].Add(bType, new List<Brep>());
-                }
-                
-                if (!lodTypeDictionary[lod].Contains(bType))
+                } 
+                else if (!lodTypeDictionary[lod].Contains(bType))
                 {
                     lodTypeDictionary[lod].Add(bType);
-
-                    var brepDList = new List<Brep>();
-                    brepDList.Add(brepList[i]);
-                    brepPartitioning[lod].Add(bType, brepDList);
                 }
-
-                else
-                {
-                    brepPartitioning[lod][bType].Add(brepList[i]);
-                }
-
-               
-
             }
 
             var activeDoc = Rhino.RhinoDoc.ActiveDoc;
@@ -1524,6 +1549,7 @@ namespace RhinoCityJSON
             parentlayer.Color = System.Drawing.Color.Red;
             parentlayer.Index = 100;
 
+            // if the layer already exists find a new name
             int count = 0;
             if (activeDoc.Layers.FindName("RCJ output") != null)
             { 
@@ -1544,6 +1570,22 @@ namespace RhinoCityJSON
 
             // create LoD layers
             var lodId = new Dictionary<string, System.Guid>();
+            var typId = new Dictionary<string, Dictionary<string, int>>();
+            var typColor = new Dictionary<string, System.Drawing.Color>
+            {
+                { "Bridge", System.Drawing.Color.Gray },
+                { "Building", System.Drawing.Color.LightBlue },
+                { "CityFurniture", System.Drawing.Color.Red },
+                { "LandUse", System.Drawing.Color.FloralWhite },
+                { "OtherConstruction", System.Drawing.Color.White },
+                { "PlantCover", System.Drawing.Color.Green },
+                { "SolitaryVegetationObject", System.Drawing.Color.Green },
+                { "TINRelief", System.Drawing.Color.LightYellow},
+                { "TransportationSquare", System.Drawing.Color.Gray},
+                { "Road", System.Drawing.Color.Gray},
+                { "Tunnel", System.Drawing.Color.Gray},
+                { "WaterBody", System.Drawing.Color.MediumBlue},
+            };
 
             for (int i = 0; i < lodList.Count; i++)
             {
@@ -1557,6 +1599,8 @@ namespace RhinoCityJSON
                 var idx = activeDoc.Layers.FindName("LoD " + lodList[i] + count).Id;
                 lodId.Add(lodList[i], idx);
                 activeDoc.Layers.FindId(idx).Name = "LoD " + lodList[i]; // correct the name
+
+                typId.Add(lodList[i], new Dictionary<string, int>());
             }
 
             int c = 0;
@@ -1567,63 +1611,31 @@ namespace RhinoCityJSON
 
                 foreach (var bType in lodTypeLink.Value)
                 {
-                    if (
-                        bType == "BridgePart" ||
-                        bType == "BridgeInstallation" ||
-                        bType == "BridgeConstructiveElement" ||
-                        bType == "BrideRoom" ||
-                        bType == "BridgeFurniture"
-                        )
-                    {
-                        if (!cleanedTypeList.Contains("Bridge"))
-                        {
-                            cleanedTypeList.Add("Bridge");
-                        }
-                    }
-                    else if (
-                        bType == "BuildingPart" ||
-                        bType == "BuildingInstallation" ||
-                        bType == "BuildingConstructiveElement" ||
-                        bType == "BuildingFurniture" ||
-                        bType == "BuildingStorey" ||
-                        bType == "BuildingRoom" ||
-                        bType == "BuildingUnit"
-                        )
-                    {
-                        if (!cleanedTypeList.Contains("Building"))
-                        {
-                            cleanedTypeList.Add("Building");
-                        }
-                    }
-                    else if (
-                        bType == "TunnelPart" ||
-                        bType == "TunnelInstallation" ||
-                        bType == "TunnelConstructiveElement" ||
-                        bType == "TunnelHollowSpace" ||
-                        bType == "TunnelFurniture"
-                        )
-                    {
-                        if (!cleanedTypeList.Contains("Tunnel"))
-                        {
-                            cleanedTypeList.Add("Tunnel");
-                        }
-                    }
-                    else
-                    {
-                        if (!cleanedTypeList.Contains(bType))
-                        {
-                            cleanedTypeList.Add(bType);
-                        }
+                    var filteredName = BakerySupport.getParentName(bType);
 
-                    }
-                
+                    if (!cleanedTypeList.Contains(filteredName))
+                    {
+                        cleanedTypeList.Add(filteredName);
+                    }                
                 }
                 foreach (var bType in cleanedTypeList)
                 {
 
                     Rhino.DocObjects.Layer typeLayer = new Rhino.DocObjects.Layer();
                     typeLayer.Name = bType + count;
-                    typeLayer.Color = System.Drawing.Color.DarkRed;
+
+                    System.Drawing.Color lColor = System.Drawing.Color.DarkRed;
+                    try
+                    {
+                        lColor = typColor[bType];
+                    }
+                    catch (Exception)
+                    {
+
+                        continue;
+                    }
+
+                    typeLayer.Color = lColor;
                     typeLayer.Index = 300 + c;
                     typeLayer.ParentLayerId = targeLId;
 
@@ -1632,22 +1644,22 @@ namespace RhinoCityJSON
                     var idx = activeDoc.Layers.FindId(id).Index;
                     activeDoc.Layers.FindId(id).Name = bType;
 
-
-                    // bake geo to layer
-                    foreach (var brepgeo in brepPartitioning[lodTypeLink.Key][bType])
-                    {
-                        Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
-                        Rhino.RhinoApp.WriteLine(idx.ToString());
-                        objectAttributes.LayerIndex = idx;
-
-                        activeDoc.Objects.AddBrep(brepgeo, objectAttributes);
-                    }
-
-
-
-
+                    typId[lodTypeLink.Key].Add(bType, idx);
                     c++;
                 }
+            }
+
+            // bake geo
+            for (int i = 0; i < branchCollection.Count; i++)
+            {
+                var targetBrep = brepList[i];
+                string lod = branchCollection[i][3].ToString();
+                string bType = BakerySupport.getParentName(branchCollection[i][2].ToString());
+
+                Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
+                objectAttributes.LayerIndex = typId[lod][bType];
+
+                activeDoc.Objects.AddBrep(targetBrep, objectAttributes);
             }
 
         }
