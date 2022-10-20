@@ -467,7 +467,7 @@ namespace RhinoCityJSON
                 Childname == "BridgeFurniture"
                 )
             {
-                return "bridge";
+                return "Bridge";
             }
             else if (
                 Childname == "BuildingPart" ||
@@ -1585,21 +1585,21 @@ namespace RhinoCityJSON
                 { "Road", System.Drawing.Color.Gray},
                 { "Tunnel", System.Drawing.Color.Gray},
                 { "WaterBody", System.Drawing.Color.MediumBlue},
+                { "+GenericCityObject", System.Drawing.Color.White},
+                { "Railway", System.Drawing.Color.DarkGray},
             };
 
             for (int i = 0; i < lodList.Count; i++)
             {
                 Rhino.DocObjects.Layer lodLayer = new Rhino.DocObjects.Layer();
-                lodLayer.Name = "LoD " + lodList[i] + count; // temporarily make name unique 
+                lodLayer.Name = "LoD " + lodList[i];
                 lodLayer.Color = System.Drawing.Color.DarkRed;
                 lodLayer.Index = 200 + i;
                 lodLayer.ParentLayerId = parentID;
 
-                activeDoc.Layers.Add(lodLayer);
-                var idx = activeDoc.Layers.FindName("LoD " + lodList[i] + count).Id;
+                var id = activeDoc.Layers.Add(lodLayer);
+                var idx = activeDoc.Layers.FindIndex(id).Id;
                 lodId.Add(lodList[i], idx);
-                activeDoc.Layers.FindId(idx).Name = "LoD " + lodList[i]; // correct the name
-
                 typId.Add(lodList[i], new Dictionary<string, int>());
             }
 
@@ -1622,44 +1622,55 @@ namespace RhinoCityJSON
                 {
 
                     Rhino.DocObjects.Layer typeLayer = new Rhino.DocObjects.Layer();
-                    typeLayer.Name = bType + count;
+                    typeLayer.Name = bType;
 
                     System.Drawing.Color lColor = System.Drawing.Color.DarkRed;
                     try
                     {
                         lColor = typColor[bType];
                     }
-                    catch (Exception)
+                    catch 
                     {
-
                         continue;
                     }
 
                     typeLayer.Color = lColor;
-                    typeLayer.Index = 300 + c;
                     typeLayer.ParentLayerId = targeLId;
 
-                    activeDoc.Layers.Add(typeLayer);
-                    var id = activeDoc.Layers.FindName(bType + count).Id;
-                    var idx = activeDoc.Layers.FindId(id).Index;
-                    activeDoc.Layers.FindId(id).Name = bType;
-
+                    var idx = activeDoc.Layers.Add(typeLayer);
                     typId[lodTypeLink.Key].Add(bType, idx);
-                    c++;
+
                 }
             }
 
             // bake geo
+            var groupName = branchCollection[0][0].ToString();
+            activeDoc.Groups.Add(groupName);
+            var groupId = activeDoc.Groups.Add(groupName);
+            activeDoc.Groups.FindIndex(groupId).Name = groupName;
+
             for (int i = 0; i < branchCollection.Count; i++)
             {
+                if (groupName != branchCollection[i][0].ToString())
+                {
+                    groupName = branchCollection[i][0].ToString();
+                    groupId = activeDoc.Groups.Add(groupName);
+                }
+
                 var targetBrep = brepList[i];
                 string lod = branchCollection[i][3].ToString();
                 string bType = BakerySupport.getParentName(branchCollection[i][2].ToString());
 
                 Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
+                objectAttributes.Name = branchCollection[i][1].ToString() + " - " + i;
+                objectAttributes.SetUserString("Surface Type", branchCollection[i][4].ToString());
+                objectAttributes.SetUserString("Object Type", branchCollection[i][2].ToString());
+                objectAttributes.SetUserString("Object LoD", branchCollection[i][3].ToString());
+                objectAttributes.SetUserString("Object Parent Name", branchCollection[i][1].ToString());
+                objectAttributes.SetUserString("Object Name", branchCollection[i][0].ToString());
                 objectAttributes.LayerIndex = typId[lod][bType];
 
-                activeDoc.Objects.AddBrep(targetBrep, objectAttributes);
+                activeDoc.Groups.AddToGroup(groupId, activeDoc.Objects.AddBrep(targetBrep, objectAttributes));
             }
 
         }
