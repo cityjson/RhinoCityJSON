@@ -1494,7 +1494,9 @@ namespace RhinoCityJSON
             pManager.AddGenericParameter("Surface Info", "Si", "Semantic information output related to the surfaces", GH_ParamAccess.tree);
             pManager.AddTextParameter("Object Info", "Bi", "Semantic information output related to the objects", GH_ParamAccess.tree);
             pManager.AddBooleanParameter("Activate", "A", "Activate bakery", GH_ParamAccess.item, false);
-            pManager[2].Optional = true; // object info is optional
+            pManager[0].Optional = true;
+            pManager[1].Optional = true;
+            pManager[2].Optional = true;
 
         }
 
@@ -1505,16 +1507,54 @@ namespace RhinoCityJSON
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            bool boolOn = false;
+
             var siTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
             var brepList = new List<Brep>();
 
             DA.GetDataList(0, brepList);
             DA.GetDataTree(1, out siTree);
+            DA.GetData(3, ref boolOn);
+
+            if (!boolOn)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Node is offline");
+                return;
+            }
+
+            if (brepList.Count == 0)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No geo input supplied");
+                return;
+            }
+
+            if (brepList[0] == null)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No geo input supplied");
+                return;
+            }
+
+            if (siTree.DataCount == 0)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No Surface information input supplied");
+                return;
+            }
 
             var lodList = new List<string>();
             var lodTypeDictionary = new Dictionary<string, List<string>>();
 
             var branchCollection = siTree.Branches;
+
+            if (branchCollection.Count == 0)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No Surface information input supplied");
+                return;
+            }
+            if (brepList.Count != branchCollection.Count)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Geo and Surface information input do not comply");
+                return;
+            }
 
 
             for (int i = 0; i < branchCollection.Count; i++)
@@ -1649,10 +1689,21 @@ namespace RhinoCityJSON
             var groupId = activeDoc.Groups.Add(groupName);
             activeDoc.Groups.FindIndex(groupId).Name = groupName;
 
+            var potetialGroupList = new List<System.Guid>();
+
             for (int i = 0; i < branchCollection.Count; i++)
             {
                 if (groupName != branchCollection[i][0].ToString())
                 {
+                    if (potetialGroupList.Count > 1)
+                    {
+                        foreach (var groupItem in potetialGroupList)
+                        {
+                            activeDoc.Groups.AddToGroup(groupId, groupItem);
+                        }
+                    }
+                    potetialGroupList.Clear();
+
                     groupName = branchCollection[i][0].ToString();
                     groupId = activeDoc.Groups.Add(groupName);
                 }
@@ -1662,7 +1713,7 @@ namespace RhinoCityJSON
                 string bType = BakerySupport.getParentName(branchCollection[i][2].ToString());
 
                 Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
-                objectAttributes.Name = branchCollection[i][1].ToString() + " - " + i;
+                objectAttributes.Name = branchCollection[i][0].ToString() + " - " + i;
                 objectAttributes.SetUserString("Surface Type", branchCollection[i][4].ToString());
                 objectAttributes.SetUserString("Object Type", branchCollection[i][2].ToString());
                 objectAttributes.SetUserString("Object LoD", branchCollection[i][3].ToString());
@@ -1670,7 +1721,7 @@ namespace RhinoCityJSON
                 objectAttributes.SetUserString("Object Name", branchCollection[i][0].ToString());
                 objectAttributes.LayerIndex = typId[lod][bType];
 
-                activeDoc.Groups.AddToGroup(groupId, activeDoc.Objects.AddBrep(targetBrep, objectAttributes));
+                potetialGroupList.Add(activeDoc.Objects.AddBrep(targetBrep, objectAttributes));
             }
 
         }
