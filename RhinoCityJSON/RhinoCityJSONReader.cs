@@ -65,7 +65,7 @@ namespace RhinoCityJSON
         {
             foreach (var surfaceName in surfaceNames)
             {
-                cleanedSurfaceNames_.Add(surfaceName.Substring(1, surfaceName.Length -2));
+                cleanedSurfaceNames_.Add(surfaceName.Substring(1, surfaceName.Length - 2));
             }
         }
         public List<Rhino.Geometry.Brep> getBrepList() { return brepList_; }
@@ -91,7 +91,7 @@ namespace RhinoCityJSON
             }
             if (ind == 1)
             {
-                foreach(var solididx in semanticData.values)
+                foreach (var solididx in semanticData.values)
                 {
                     foreach (int typeIdx in solididx)
                     {
@@ -114,7 +114,7 @@ namespace RhinoCityJSON
 
         public void joinSmart(IGH_DataAccess DA)
         {
-            
+
         }
 
 
@@ -132,7 +132,7 @@ namespace RhinoCityJSON
         };
     }
 
-    class ReaderSupport 
+    class ReaderSupport
     {
         static public List<int> getSematicValues(dynamic boundaryGroup)
         {
@@ -212,7 +212,7 @@ namespace RhinoCityJSON
                 {
                     brepList.Add(nSurface.ToBrep());
                     return Tuple.Create(brepList, false);
-                }             
+                }
             }
 
 
@@ -407,7 +407,7 @@ namespace RhinoCityJSON
 
                     CJTempate newTemplate = new CJTempate(templateGeoList.Count);
                     newTemplate.setBrepList(templateGeo);
-                    newTemplate.setLod((string) template.lod);
+                    newTemplate.setLod((string)template.lod);
                     newTemplate.setError(hasError);
 
                     templateGeoList.Add(newTemplate);
@@ -520,7 +520,7 @@ namespace RhinoCityJSON
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             List<string> pathList = new List<string>();
-            if (!DA.GetDataList(0,  pathList)) return;
+            if (!DA.GetDataList(0, pathList)) return;
 
             // validate the data and warn the user if invalid data is supplied.
             if (pathList.Count == 0)
@@ -689,7 +689,7 @@ namespace RhinoCityJSON
                 }
 
             }
-            
+
             var settingsTuple = Tuple.Create(translate, p, setP, north, loDList);
             DA.SetData(0, new Grasshopper.Kernel.Types.GH_ObjectWrapper(settingsTuple));
         }
@@ -803,7 +803,7 @@ namespace RhinoCityJSON
                 }
                 loDList = settings.Item5;
             }
-              // check lod validity
+            // check lod validity
             bool setLoD = false;
 
             foreach (string lod in loDList)
@@ -1298,7 +1298,7 @@ namespace RhinoCityJSON
                         if (cObject.children != null) // parents
                         {
                         }
-                        else if(cObject.children == null && cObject.parents == null)
+                        else if (cObject.children == null && cObject.parents == null)
                         {
                         }
 
@@ -1322,7 +1322,7 @@ namespace RhinoCityJSON
                                     lodBuilding.setParendName(item);
                                     break;
                                 }
-                                
+
                             }
 
                             if (setLoD && !loDList.Contains((string)boundaryGroup.lod))
@@ -1534,7 +1534,7 @@ namespace RhinoCityJSON
                 {
                     lodTypeDictionary.Add(lod, new List<string>());
                     lodTypeDictionary[lod].Add(bType);
-                } 
+                }
                 else if (!lodTypeDictionary[lod].Contains(bType))
                 {
                     lodTypeDictionary[lod].Add(bType);
@@ -1552,7 +1552,7 @@ namespace RhinoCityJSON
             // if the layer already exists find a new name
             int count = 0;
             if (activeDoc.Layers.FindName("RCJ output") != null)
-            { 
+            {
                 while (true)
                 {
                     if (activeDoc.Layers.FindName("RCJ output - " + count.ToString()) == null)
@@ -1561,7 +1561,7 @@ namespace RhinoCityJSON
                         parentlayer.Index = parentlayer.Index + count;
                         break;
                     }
-                 count++;
+                    count++;
                 }
             }
 
@@ -1616,7 +1616,7 @@ namespace RhinoCityJSON
                     if (!cleanedTypeList.Contains(filteredName))
                     {
                         cleanedTypeList.Add(filteredName);
-                    }                
+                    }
                 }
                 foreach (var bType in cleanedTypeList)
                 {
