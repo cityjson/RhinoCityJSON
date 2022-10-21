@@ -1730,7 +1730,7 @@ namespace RhinoCityJSON
         {
             get
             {
-                return RhinoCityJSON.Properties.Resources.lodicon;
+                return RhinoCityJSON.Properties.Resources.bakeryicon;
             }
         }
 
