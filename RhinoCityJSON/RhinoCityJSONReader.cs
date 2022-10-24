@@ -1141,7 +1141,7 @@ namespace RhinoCityJSON
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item); // todo Merge
+            pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
             pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.item);
             pManager.AddTextParameter("Surface Info Vales", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
             pManager.AddTextParameter("Object Info Keys", "Bik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.item);
@@ -1538,13 +1538,12 @@ namespace RhinoCityJSON
 
             if (hasNonNull)
             {
-                bKeyList.Insert(0, "Name");
                 for (int i = 0; i < attList.Count; i++)
                 {
                     var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
-                    bValueTree.Add(oNameList[i], nPath);
-
                     dynamic bAtt = attList[i];
+
+                    bValueTree.Add(oNameList[i], nPath);
                     foreach (var bKey in bKeyList)
                     {
                         if (bAtt[bKey] != null)
@@ -1558,11 +1557,12 @@ namespace RhinoCityJSON
 
                     }
                 }
+                bKeyList.Insert(0, "Name");
             }
             else
             {
                 bKeyList.Insert(0, "None");
-                bValueTree.Add("none");
+                bValueTree.Add("None");
             }
 
             if (breps.Count > 0)
@@ -1603,7 +1603,146 @@ namespace RhinoCityJSON
         }
     }
 
-    public class Bakery : GH_Component
+
+    public class BuildingToSurfaceInfo : GH_Component
+    {
+        public BuildingToSurfaceInfo()
+          : base("Information divider", "IDivide",
+              "Divides the building information to surface information format",
+              "RhinoCityJSON", "Processing")
+        {
+        }
+
+        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        {
+            pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Surface Info Vales", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.tree);
+            pManager.AddTextParameter("Object Info Keys", "Bik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Object Info Values", "BiV", "Values of the semantic information output related to the objects", GH_ParamAccess.tree);
+        }
+
+        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        {
+            pManager.AddTextParameter("Merged Surface Info Keys", "mSiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
+            pManager.AddTextParameter("Merged Surface Info Vales", "mSiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            var sKeys = new List<string>();
+            var siTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
+            var bKeys = new List<string>();
+            var biTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
+
+            DA.GetDataList(0, sKeys);
+            DA.GetDataTree(1, out siTree);
+            DA.GetDataList(2, bKeys);
+            DA.GetDataTree(3, out biTree);
+
+            // construct a new key list
+            var keyList = new List<string>();
+            var ignoreIdxList = new List<int>();
+
+
+
+            for (int i = 0; i < sKeys.Count; i++)
+            {
+                keyList.Add(sKeys[i]);
+            }
+
+            for (int i = 0; i < bKeys.Count; i++)
+            {
+                if (!keyList.Contains(bKeys[i]) && bKeys[i] != "None")
+                {
+                    keyList.Add(bKeys[i]);
+                }
+                else
+                {
+                    ignoreIdxList.Add(i);
+                }
+            }
+
+            // costruct a new value List
+            var valueCollection = new Grasshopper.DataTree<string>();
+
+            var sBranchCollection = siTree.Branches;
+            var bBranchCollection = biTree.Branches;
+
+
+            // Find all names and surface data
+            for (int k = 0; k < sKeys.Count; k++)
+            {
+                for (int i = 0; i < sBranchCollection.Count; i++)
+                {
+                    var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+
+                    for (int j = 0; j < sKeys.Count; j++)
+                    {
+                        if (keyList[k] == sKeys[j])
+                        {
+                            valueCollection.Add(sBranchCollection[i][j].ToString(), nPath);
+                        }
+                    }
+                }
+            }
+
+            // cast building data to surface data
+            int currentBuildingIdx = 0;
+            string currentBuildingName = "";
+            int offset = sKeys.Count;
+
+            for (int i = currentBuildingIdx; i < bBranchCollection.Count; i++)
+            {
+                var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+
+                if (currentBuildingName != bBranchCollection[i][0].ToString())
+                {
+                    currentBuildingIdx = i;
+                    currentBuildingName = bBranchCollection[i][0].ToString();
+                }
+
+                for (int k = 1; k < bKeys.Count; k++)
+                {
+                    if (!ignoreIdxList.Contains(k))
+                    {
+                        valueCollection.Add(bBranchCollection[i][k].ToString(), nPath);
+                    }
+
+
+                }
+            }
+
+               
+
+            // costruct a new value List
+
+
+            DA.SetDataList(0, keyList);
+            DA.SetDataTree(1, valueCollection);
+
+        }
+
+        protected override System.Drawing.Bitmap Icon
+        {
+            get
+            {
+                return RhinoCityJSON.Properties.Resources.bakeryicon;
+            }
+        }
+
+        /// <summary>
+        /// Each component must have a unique Guid to identify it. 
+        /// It is vital this Guid doesn't change otherwise old ghx files 
+        /// that use the old ID will partially fail during loading.
+        /// </summary>
+        public override Guid ComponentGuid
+        {
+            get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a274e40"); }
+        }
+
+    }
+
+public class Bakery : GH_Component
     {
         public Bakery()
           : base("RCJBakery", "Bakery",
