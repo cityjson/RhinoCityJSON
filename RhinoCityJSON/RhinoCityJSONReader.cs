@@ -418,7 +418,6 @@ namespace RhinoCityJSON
             var emptyList = new List<CJTempate>();
 
             return emptyList;
-
         }
 
 
@@ -449,7 +448,6 @@ namespace RhinoCityJSON
                     c++;
                 }
             }
-
             return strippedString;
         }
     }
@@ -497,6 +495,52 @@ namespace RhinoCityJSON
             }
         }
     }
+
+
+    public class KeySelector : GH_Component
+    {
+        public KeySelector()
+          : base("KeySelector", "KSelect",
+              "Creates option selector based on input list. The options will only be unique (NOT FUNCTIONAL)",
+              "RhinoCityJSON", "Processing")
+        {
+        }
+
+        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        {
+            pManager.AddTextParameter("Keys", "K", "The values from which a selection can be made", GH_ParamAccess.list, "");
+        }
+
+        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        {
+            pManager.AddTextParameter("Selection", "S", "Selected option(s)", GH_ParamAccess.item);
+            pManager.AddTextParameter("Selected indices", "Si", "Indece of the selected option(s)", GH_ParamAccess.item);
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            // TODO make
+        }
+
+        protected override System.Drawing.Bitmap Icon
+        {
+            get
+            {
+                return RhinoCityJSON.Properties.Resources.keyselectoricon;
+            }
+        }
+
+        /// <summary>
+        /// Each component must have a unique Guid to identify it. 
+        /// It is vital this Guid doesn't change otherwise old ghx files 
+        /// that use the old ID will partially fail during loading.
+        /// </summary>
+        public override Guid ComponentGuid
+        {
+            get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a274e22"); }
+        }
+    }
+
 
     public class LoDReader : GH_Component
     {
@@ -597,7 +641,6 @@ namespace RhinoCityJSON
         {
             get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a274e16"); }
         }
-
     }
 
 
@@ -1099,17 +1142,24 @@ namespace RhinoCityJSON
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item); // todo Merge
-            pManager.AddTextParameter("Surface Info", "Si", "Semantic information output related to the surfaces", GH_ParamAccess.item);
-            pManager.AddTextParameter("Object Info", "Bi", "Semantic information output related to the objects", GH_ParamAccess.item);
+            pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.item);
+            pManager.AddTextParameter("Surface Info Vales", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
+            pManager.AddTextParameter("Object Info Keys", "Bik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.item);
+            pManager.AddTextParameter("Object Info Values", "BiV", "Values of the semantic information output related to the objects", GH_ParamAccess.item);
+            
         }
 
         /// <summary>
+        /// This is the method that actually does the work.
         /// This is the method that actually does the work.
         /// </summary>
         /// <param name="DA">The DA object can be used to retrieve data from input parameters and 
         /// to store data in output parameters.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            var attList = new List<dynamic>();
+            var oNameList = new List<string>();
+
             int rootPathidx = 0;
 
             List<String> pathList = new List<string>();
@@ -1309,6 +1359,13 @@ namespace RhinoCityJSON
 
                         string buildingType = cObject.type;
                         var parent = cObject.parents;
+                        var attributes = cObject.attributes;
+
+                        if (attributes != null)
+                        {
+                            attList.Add(cObject.attributes);
+                        }
+
                         foreach (var boundaryGroup in cObject.geometry)
                         {
                             CJObject lodBuilding = new CJObject(objectGroup.Name);
@@ -1437,17 +1494,84 @@ namespace RhinoCityJSON
 
                             }
 
+                            oNameList.Add(name);
+
                             rootPathidx += brepList.Count;
                         }
                     }
                 }
             }
 
+            // make s keylist
+            var sKeyList = new List<string>();
+            sKeyList.Add("Name");
+            sKeyList.Add("Parent Name");
+            sKeyList.Add("Object Type");
+            sKeyList.Add("LoD");
+            sKeyList.Add("SurfaceType");
+
+            // make b keylist
+            var bKeyList = new List<string>();
+            bool hasNonNull = false;
+
+            foreach (dynamic attributeCollection in attList)
+            {
+               foreach(dynamic attributePair in attributeCollection)
+                {
+                    if (attributePair != null)
+                    {
+                        hasNonNull = true;
+                    }
+
+                    string key = attributePair.Name;
+                    if (!bKeyList.Contains(key))
+                    {
+                        bKeyList.Add(key);
+                    }
+
+                }
+            }
+            bKeyList.Sort();
+
+            // make b value tree
+            var bValueTree = new Grasshopper.DataTree<string>();
+
+            if (hasNonNull)
+            {
+                bKeyList.Insert(0, "Name");
+                for (int i = 0; i < attList.Count; i++)
+                {
+                    var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+                    bValueTree.Add(oNameList[i], nPath);
+
+                    dynamic bAtt = attList[i];
+                    foreach (var bKey in bKeyList)
+                    {
+                        if (bAtt[bKey] != null)
+                        {
+                            bValueTree.Add(bAtt[bKey].ToString(), nPath);
+                        }
+                        else
+                        {
+                            bValueTree.Add("None", nPath);
+                        }
+
+                    }
+                }
+            }
+            else
+            {
+                bKeyList.Insert(0, "None");
+                bValueTree.Add("none");
+            }
+
             if (breps.Count > 0)
             {
                 DA.SetDataList(0, breps);
-                DA.SetDataTree(1, dataTree);
-                DA.SetDataList(2, null);
+                DA.SetDataList(1, sKeyList);
+                DA.SetDataTree(2, dataTree);
+                DA.SetDataList(3, bKeyList);
+                DA.SetDataTree(4, bValueTree);
             }
         }
 
