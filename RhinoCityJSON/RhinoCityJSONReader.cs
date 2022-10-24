@@ -1727,8 +1727,6 @@ namespace RhinoCityJSON
                     {
                         valueCollection.Add(bBranchCollection[currentBuildingIdx][k].ToString(), nPath);
                     }
-
-
                 }
             }
 
@@ -1746,7 +1744,7 @@ namespace RhinoCityJSON
         {
             get
             {
-                return RhinoCityJSON.Properties.Resources.bakeryicon;
+                return RhinoCityJSON.Properties.Resources.divideicon;
             }
         }
 
@@ -1774,8 +1772,8 @@ public class Bakery : GH_Component
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddBrepParameter("Geometry", "G", "Geometry Input", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Surface Info", "Si", "Semantic information output related to the surfaces", GH_ParamAccess.tree);
-            pManager.AddTextParameter("Object Info", "Bi", "Semantic information output related to the objects", GH_ParamAccess.tree);
+            pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Surface Info", "SiV", "Semantic information output related to the surfaces", GH_ParamAccess.tree);
             pManager.AddBooleanParameter("Activate", "A", "Activate bakery", GH_ParamAccess.item, false);
             pManager[0].Optional = true;
             pManager[1].Optional = true;
@@ -1791,12 +1789,10 @@ public class Bakery : GH_Component
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             bool boolOn = false;
-
+            var keyList = new List<string>();
             var siTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
             var brepList = new List<Brep>();
 
-            DA.GetDataList(0, brepList);
-            DA.GetDataTree(1, out siTree);
             DA.GetData(3, ref boolOn);
 
             if (!boolOn)
@@ -1804,6 +1800,10 @@ public class Bakery : GH_Component
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Node is offline");
                 return;
             }
+
+            DA.GetDataList(0, brepList);
+            DA.GetDataList(1, keyList);
+            DA.GetDataTree(2, out siTree);
 
             if (brepList.Count == 0)
             {
@@ -1839,11 +1839,50 @@ public class Bakery : GH_Component
                 return;
             }
 
+            // get LoD and typelist
+            int lodIdx = -1;
+            int typeIdx = -1;
+            int nameIdx = -1;
+            for (int i = 0; i < keyList.Count; i++)
+            {
+                if (keyList[i] == "LoD")
+                {
+                    lodIdx = i;
+                }
+
+                if (keyList[i] == "Object Type")
+                {
+                    typeIdx = i;
+                }
+
+                if (keyList[i] == "Name")
+                {
+                    nameIdx = i;
+                }
+            }
+
+            if (lodIdx == -1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No LoD data is supplied");
+                return;
+            }
+
+            if (typeIdx == -1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No Object type data is supplied");
+                return;
+            }
+
+            if (nameIdx == -1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No Object name data is supplied");
+                return;
+            }
 
             for (int i = 0; i < branchCollection.Count; i++)
             {
                 // get LoD
-                string lod = branchCollection[i][3].ToString();
+                string lod = branchCollection[i][lodIdx].ToString();
 
                 if (!lodList.Contains(lod))
                 {
@@ -1851,7 +1890,7 @@ public class Bakery : GH_Component
                 }
 
                 // get type
-                string bType = branchCollection[i][2].ToString();
+                string bType = branchCollection[i][typeIdx].ToString();
 
                 if (!lodTypeDictionary.ContainsKey(lod))
                 {
@@ -1976,7 +2015,7 @@ public class Bakery : GH_Component
 
             for (int i = 0; i < branchCollection.Count; i++)
             {
-                if (groupName != branchCollection[i][0].ToString())
+                if (groupName != branchCollection[i][nameIdx].ToString())
                 {
                     if (potetialGroupList.Count > 1)
                     {
@@ -1987,21 +2026,33 @@ public class Bakery : GH_Component
                     }
                     potetialGroupList.Clear();
 
-                    groupName = branchCollection[i][0].ToString();
+                    groupName = branchCollection[i][nameIdx].ToString();
                     groupId = activeDoc.Groups.Add(groupName);
                 }
 
                 var targetBrep = brepList[i];
-                string lod = branchCollection[i][3].ToString();
-                string bType = BakerySupport.getParentName(branchCollection[i][2].ToString());
+                string lod = branchCollection[i][lodIdx].ToString();
+                string bType = BakerySupport.getParentName(branchCollection[i][typeIdx].ToString());
 
                 Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
-                objectAttributes.Name = branchCollection[i][0].ToString() + " - " + i;
-                objectAttributes.SetUserString("Surface Type", branchCollection[i][4].ToString());
-                objectAttributes.SetUserString("Object Type", branchCollection[i][2].ToString());
-                objectAttributes.SetUserString("Object LoD", branchCollection[i][3].ToString());
-                objectAttributes.SetUserString("Object Parent Name", branchCollection[i][1].ToString());
-                objectAttributes.SetUserString("Object Name", branchCollection[i][0].ToString());
+                objectAttributes.Name = branchCollection[i][nameIdx].ToString() + " - " + i;
+
+                for (int j = 0; j < branchCollection[i].Count; j++)
+                {
+                    if (keyList[j] == "SurfaceType")
+                    {
+                        objectAttributes.SetUserString("Surface Type", branchCollection[i][j].ToString());
+                    }
+                    else if (keyList[j] == "Object Type")
+                    {
+                        objectAttributes.SetUserString("Object Type", branchCollection[i][j].ToString());
+                    }
+                    else
+                    {
+                        objectAttributes.SetUserString("Object " + keyList[j], branchCollection[i][j].ToString());
+                    }
+                    
+                }
                 objectAttributes.LayerIndex = typId[lod][bType];
 
                 potetialGroupList.Add(activeDoc.Objects.AddBrep(targetBrep, objectAttributes));
