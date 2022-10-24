@@ -1347,9 +1347,11 @@ namespace RhinoCityJSON
                     {
                         if (cObject.children != null) // parents
                         {
+
                         }
                         else if (cObject.children == null && cObject.parents == null)
                         {
+
                         }
 
                         if (cObject.geometry == null)
@@ -1361,9 +1363,26 @@ namespace RhinoCityJSON
                         var parent = cObject.parents;
                         var attributes = cObject.attributes;
 
+                        // check if attributes have to be stored
                         if (attributes != null)
                         {
-                            attList.Add(cObject.attributes);
+                            if (!setLoD)
+                            {
+                                attList.Add(cObject.attributes);
+                            }
+                            else
+                            {
+                                foreach (var boundaryGroup in cObject.geometry)
+                                {
+                                    if (loDList.Contains((string)boundaryGroup.lod))
+                                    {
+                                        attList.Add(cObject.attributes);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            
                         }
 
                         foreach (var boundaryGroup in cObject.geometry)
