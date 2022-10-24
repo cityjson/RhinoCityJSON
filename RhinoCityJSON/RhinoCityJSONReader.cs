@@ -1347,11 +1347,7 @@ namespace RhinoCityJSON
                     {
                         if (cObject.children != null) // parents
                         {
-
-                        }
-                        else if (cObject.children == null && cObject.parents == null)
-                        {
-
+                            // TODO make a parent semantic data list from which can be inherited
                         }
 
                         if (cObject.geometry == null)
@@ -1707,24 +1703,29 @@ namespace RhinoCityJSON
 
             // cast building data to surface data
             int currentBuildingIdx = 0;
-            string currentBuildingName = "";
-            int offset = sKeys.Count;
+            string currentBuildingName = sBranchCollection[0][0].ToString();
 
-            for (int i = currentBuildingIdx; i < bBranchCollection.Count; i++)
+            for (int i = 0; i < sBranchCollection.Count; i++)
             {
-                var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
-
-                if (currentBuildingName != bBranchCollection[i][0].ToString())
+                if (currentBuildingName != sBranchCollection[i][0].ToString())
                 {
-                    currentBuildingIdx = i;
-                    currentBuildingName = bBranchCollection[i][0].ToString();
+                    for (int j = 0; j < bBranchCollection.Count; j++)
+                    {
+                        if (sBranchCollection[i][0].ToString() == bBranchCollection[j][0].ToString())
+                        {
+                            currentBuildingIdx = j;
+                        }
+                    }
+                    currentBuildingName = sBranchCollection[currentBuildingIdx][0].ToString();
                 }
+
+                var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
 
                 for (int k = 1; k < bKeys.Count; k++)
                 {
                     if (!ignoreIdxList.Contains(k))
                     {
-                        valueCollection.Add(bBranchCollection[i][k].ToString(), nPath);
+                        valueCollection.Add(bBranchCollection[currentBuildingIdx][k].ToString(), nPath);
                     }
 
 
