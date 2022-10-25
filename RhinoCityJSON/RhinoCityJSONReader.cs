@@ -116,8 +116,6 @@ namespace RhinoCityJSON
         {
 
         }
-
-
     }
 
     static class ErrorCollection // TODO put all the errors centrally 
@@ -1159,6 +1157,7 @@ namespace RhinoCityJSON
         {
             var attList = new List<dynamic>();
             var oNameList = new List<string>();
+            var parentAttributes = new Dictionary<string, dynamic>();
 
             int rootPathidx = 0;
 
@@ -1345,19 +1344,26 @@ namespace RhinoCityJSON
                 {
                     foreach (var cObject in objectGroup)
                     {
+                        string buildingType = cObject.type;
+                        var parent = cObject.parents;
+                        var attributes = cObject.attributes;
+                        bool isParent = false;
+
                         if (cObject.children != null) // parents
                         {
-                            // TODO make a parent semantic data list from which can be inherited
+                            if (attributes != null)
+                            {
+                                foreach (string child in cObject.children)
+                                {
+                                    parentAttributes.Add(child, attributes);
+                                }
+                            }
                         }
 
                         if (cObject.geometry == null)
                         {
                             continue;
                         }
-
-                        string buildingType = cObject.type;
-                        var parent = cObject.parents;
-                        var attributes = cObject.attributes;
 
                         // check if attributes have to be stored
                         if (attributes != null)
@@ -1379,8 +1385,6 @@ namespace RhinoCityJSON
                                     }
                                 }
                             }
-
-                            
                         }
 
                         foreach (var boundaryGroup in cObject.geometry)
@@ -1396,7 +1400,6 @@ namespace RhinoCityJSON
                                     lodBuilding.setParendName(item);
                                     break;
                                 }
-
                             }
 
                             if (setLoD && !loDList.Contains((string)boundaryGroup.lod))
@@ -1427,9 +1430,7 @@ namespace RhinoCityJSON
 
                                     localBrepList.Add(transShape);
                                 }
-
                                 lodBuilding.setBrepList(localBrepList);
-
                             }
 
                             // this is all the geometry in one shape with info
@@ -1510,9 +1511,7 @@ namespace RhinoCityJSON
                                 dataTree.Add(allSemantic[i], nPath);
 
                             }
-
                             oNameList.Add(name);
-
                             rootPathidx += brepList.Count;
                         }
                     }
@@ -1531,6 +1530,7 @@ namespace RhinoCityJSON
             var bKeyList = new List<string>();
             bool hasNonNull = false;
 
+            // check objects for keys
             foreach (dynamic attributeCollection in attList)
             {
                foreach(dynamic attributePair in attributeCollection)
@@ -1545,8 +1545,26 @@ namespace RhinoCityJSON
                     {
                         bKeyList.Add(key);
                     }
-
                 }
+            }
+
+            // check parents for keys
+            foreach (var attributeCollection in parentAttributes.Values)
+            {
+                foreach (dynamic attributePair in attributeCollection)
+                {
+                    if (attributePair != null)
+                    {
+                        hasNonNull = true;
+                    }
+
+                    string key = attributePair.Name;
+                    if (!bKeyList.Contains(key))
+                    {
+                        bKeyList.Add(key);
+                    }
+                }
+
             }
             bKeyList.Sort();
 
@@ -1560,6 +1578,15 @@ namespace RhinoCityJSON
                     var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
                     dynamic bAtt = attList[i];
 
+                    bool hasParent = false;
+                    dynamic pAtt = null;
+
+                    if (parentAttributes.ContainsKey(oNameList[i]))
+                    {
+                        pAtt = parentAttributes[oNameList[i]];
+                        hasParent = true;
+                    }
+
                     bValueTree.Add(oNameList[i], nPath);
                     foreach (var bKey in bKeyList)
                     {
@@ -1569,9 +1596,22 @@ namespace RhinoCityJSON
                         }
                         else
                         {
-                            bValueTree.Add("None", nPath);
+                            if (hasParent)
+                            {
+                                if (pAtt[bKey] != null)
+                                {
+                                    bValueTree.Add(pAtt[bKey].ToString(), nPath);
+                                }
+                                else
+                                {
+                                    bValueTree.Add("None", nPath);
+                                }
+                            }
+                            else
+                            {
+                                bValueTree.Add("None", nPath);
+                            }
                         }
-
                     }
                 }
                 bKeyList.Insert(0, "Name");
@@ -1660,8 +1700,6 @@ namespace RhinoCityJSON
             var keyList = new List<string>();
             var ignoreIdxList = new List<int>();
 
-
-
             for (int i = 0; i < sKeys.Count; i++)
             {
                 keyList.Add(sKeys[i]);
@@ -1684,7 +1722,6 @@ namespace RhinoCityJSON
 
             var sBranchCollection = siTree.Branches;
             var bBranchCollection = biTree.Branches;
-
 
             // Find all names and surface data
             for (int k = 0; k < sKeys.Count; k++)
@@ -1732,14 +1769,8 @@ namespace RhinoCityJSON
                 }
             }
 
-               
-
-            // costruct a new value List
-
-
             DA.SetDataList(0, keyList);
             DA.SetDataTree(1, valueCollection);
-
         }
 
         protected override System.Drawing.Bitmap Icon
@@ -1759,7 +1790,6 @@ namespace RhinoCityJSON
         {
             get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a274e40"); }
         }
-
     }
 
 public class Bakery : GH_Component
@@ -1780,7 +1810,6 @@ public class Bakery : GH_Component
             pManager[0].Optional = true;
             pManager[1].Optional = true;
             pManager[2].Optional = true;
-
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -2003,7 +2032,6 @@ public class Bakery : GH_Component
 
                     var idx = activeDoc.Layers.Add(typeLayer);
                     typId[lodTypeLink.Key].Add(bType, idx);
-
                 }
             }
 
@@ -2052,14 +2080,12 @@ public class Bakery : GH_Component
                     else
                     {
                         objectAttributes.SetUserString("Object " + keyList[j], branchCollection[i][j].ToString());
-                    }
-                    
+                    }        
                 }
                 objectAttributes.LayerIndex = typId[lod][bType];
 
                 potetialGroupList.Add(activeDoc.Objects.AddBrep(targetBrep, objectAttributes));
             }
-
         }
 
         protected override System.Drawing.Bitmap Icon
@@ -2079,6 +2105,5 @@ public class Bakery : GH_Component
         {
             get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a274e18"); }
         }
-
     }
 }
