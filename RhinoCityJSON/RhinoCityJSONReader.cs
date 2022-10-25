@@ -1364,7 +1364,10 @@ namespace RhinoCityJSON
                         {
                             if (!setLoD)
                             {
-                                attList.Add(cObject.attributes);
+                                foreach (var boundaryGroup in cObject.geometry)
+                                {
+                                    attList.Add(cObject.attributes);
+                                }
                             }
                             else
                             {
@@ -1373,7 +1376,6 @@ namespace RhinoCityJSON
                                     if (loDList.Contains((string)boundaryGroup.lod))
                                     {
                                         attList.Add(cObject.attributes);
-                                        break;
                                     }
                                 }
                             }
