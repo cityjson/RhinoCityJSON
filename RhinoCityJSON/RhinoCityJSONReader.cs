@@ -2036,8 +2036,8 @@ public class Bakery : GH_Component
             }
 
             // bake geo
-            var groupName = branchCollection[0][0].ToString();
-            activeDoc.Groups.Add(groupName);
+            var groupName = branchCollection[0][nameIdx].ToString() + branchCollection[0][lodIdx].ToString();
+            activeDoc.Groups.Add("LoD: " + branchCollection[0][lodIdx].ToString() + " - " + branchCollection[0][nameIdx].ToString());
             var groupId = activeDoc.Groups.Add(groupName);
             activeDoc.Groups.FindIndex(groupId).Name = groupName;
 
@@ -2045,7 +2045,7 @@ public class Bakery : GH_Component
 
             for (int i = 0; i < branchCollection.Count; i++)
             {
-                if (groupName != branchCollection[i][nameIdx].ToString())
+                if (groupName != branchCollection[i][nameIdx].ToString() + branchCollection[i][lodIdx].ToString())
                 {
                     if (potetialGroupList.Count > 1)
                     {
@@ -2056,8 +2056,8 @@ public class Bakery : GH_Component
                     }
                     potetialGroupList.Clear();
 
-                    groupName = branchCollection[i][nameIdx].ToString();
-                    groupId = activeDoc.Groups.Add(groupName);
+                    groupName = branchCollection[i][nameIdx].ToString() + branchCollection[i][lodIdx].ToString();
+                    groupId = activeDoc.Groups.Add("LoD: " + branchCollection[i][lodIdx].ToString() + " - " + branchCollection[i][nameIdx].ToString());
                 }
 
                 var targetBrep = brepList[i];
