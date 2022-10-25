@@ -1600,7 +1600,7 @@ namespace RhinoCityJSON
                             {
                                 if (pAtt[bKey] != null)
                                 {
-                                    bValueTree.Add(pAtt[bKey].ToString(), nPath);
+                                    bValueTree.Add(pAtt[bKey].ToString() + "*", nPath);
                                 }
                                 else
                                 {
