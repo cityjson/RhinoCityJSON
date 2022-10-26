@@ -38,8 +38,8 @@ namespace RhinoCityJSON
         private string geometryType_ = "None";
         private bool hasError_ = false;
 
-        private List<string> surfaceNames_ = new List<string>();
-        private List<string> cleanedSurfaceNames_ = new List<string>();
+        private List<Dictionary<string, string>> surfaceSemantics_ = new List<Dictionary<string, string>>();
+        private List<Dictionary<string, string>> cleanedSurfaceSemantics_ = new List<Dictionary<string, string>>();
         private List<Rhino.Geometry.Brep> brepList_ = new List<Rhino.Geometry.Brep>();
 
         public CJObject(string name)
@@ -57,17 +57,16 @@ namespace RhinoCityJSON
         public void setGeometryType(string geometryType) { geometryType_ = geometryType; }
         public bool getError() { return hasError_; }
         public void setError(bool hasError) { hasError_ = hasError; }
-        public List<string> getSurfaceNames() { return surfaceNames_; }
-        public void setSurfaceNames(List<string> surfaceTypes) { surfaceNames_ = surfaceTypes; }
-        public List<string> getCSurfaceNames() { return cleanedSurfaceNames_; }
-        public void setCSurfaceNames(List<string> surfaceTypes) { cleanedSurfaceNames_ = surfaceTypes; }
-        public void addCsurfaceNames(List<string> surfaceNames)
+        public List<Dictionary<string, string>> getSurfaceSemantics() { return surfaceSemantics_; }
+        public List<Dictionary<string, string>> getCSurfaceSemantics() { return cleanedSurfaceSemantics_; }
+        public void addCsurfaceSemantic(List<Dictionary<string, string>> surfaceSemantics)
         {
-            foreach (var surfaceName in surfaceNames)
+            foreach (Dictionary<string, string> surfaceSemantic in surfaceSemantics)
             {
-                cleanedSurfaceNames_.Add(surfaceName.Substring(1, surfaceName.Length - 2));
+                cleanedSurfaceSemantics_.Add(surfaceSemantic);
             }
         }
+
         public List<Rhino.Geometry.Brep> getBrepList() { return brepList_; }
         public void setBrepList(List<Rhino.Geometry.Brep> brepList) { brepList_ = brepList; }
         public int getBrepCount() { return brepList_.Count; }
@@ -75,18 +74,24 @@ namespace RhinoCityJSON
         public void matchSemantics(dynamic semanticData, int ind = 0)
         {
             List<string> typeList = new List<string>();
+            var surfaceSemantics = new List<Dictionary<string, string>>();
 
             foreach (Newtonsoft.Json.Linq.JObject type in semanticData.surfaces)
             {
-                //typeList.Add(ReaderSupport.forcefullKeyStringStrip(type.ToString(Formatting.None)));
-                typeList.Add(type["type"].ToString(Formatting.None));
+                var localDict = new Dictionary<string, string>();
+                foreach (var t in type)
+                {
+                    localDict.Add(t.Key, t.Value.ToString());
+                }
+
+                surfaceSemantics.Add(localDict);
             }
 
             if (ind == 0)
             {
                 foreach (int typeIdx in semanticData.values)
                 {
-                    surfaceNames_.Add(typeList[typeIdx]);
+                    surfaceSemantics_.Add(surfaceSemantics[typeIdx]);        
                 }
             }
             if (ind == 1)
@@ -95,7 +100,7 @@ namespace RhinoCityJSON
                 {
                     foreach (int typeIdx in solididx)
                     {
-                        surfaceNames_.Add(typeList[typeIdx]);
+                        surfaceSemantics_.Add(surfaceSemantics[typeIdx]);
                     }
                 }
             }
@@ -265,8 +270,9 @@ namespace RhinoCityJSON
             }
 
             int idx = localCJObject.getBrepCount();
-            List<string> surfacenames = localCJObject.getSurfaceNames();
+            var surfaceSemantics = localCJObject.getSurfaceSemantics();
             List<string> filteredSurfaceNames = new List<string>();
+            var filteredSurfaceSemantics = new List<Dictionary<string, string>>();
 
             List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
             bool hasError = false;
@@ -288,9 +294,9 @@ namespace RhinoCityJSON
                         continue;
                     }
 
-                    if (surfacenames.Count > 0)
+                    if (surfaceSemantics.Count > 0)
                     {
-                        filteredSurfaceNames.Add(surfacenames[count]);
+                        filteredSurfaceSemantics.Add(surfaceSemantics[count]);
                     }
                 }
 
@@ -299,7 +305,7 @@ namespace RhinoCityJSON
 
             if (advanced)
             {
-                localCJObject.addCsurfaceNames(filteredSurfaceNames);
+                localCJObject.addCsurfaceSemantic(filteredSurfaceSemantics);
             }
 
 
@@ -1347,7 +1353,6 @@ namespace RhinoCityJSON
                         string buildingType = cObject.type;
                         var parent = cObject.parents;
                         var attributes = cObject.attributes;
-                        bool isParent = false;
 
                         if (cObject.children != null) // parents
                         {
@@ -1484,19 +1489,11 @@ namespace RhinoCityJSON
                             //lodBuilding.joinSimple();
 
                             var brepList = lodBuilding.getBrepList();
-                            var allSemantic = lodBuilding.getCSurfaceNames();
+                            var allSemantic = lodBuilding.getCSurfaceSemantics();
                             var name = lodBuilding.getName();
                             var bType = lodBuilding.getGeometryType();
                             var parentName = lodBuilding.getParendName();
                             var endLoD = lodBuilding.getLod();
-
-                            if (allSemantic.Count == 0)
-                            {
-                                for (int i = 0; i < brepList.Count; i++)
-                                {
-                                    allSemantic.Add("None");
-                                }
-                            }
 
                             for (int i = 0; i < brepList.Count; i++)
                             {
@@ -1508,7 +1505,17 @@ namespace RhinoCityJSON
                                 dataTree.Add(parentName, nPath);
                                 dataTree.Add(bType, nPath);
                                 dataTree.Add(endLoD, nPath);
-                                dataTree.Add(allSemantic[i], nPath);
+
+                                if (allSemantic.Count != 0)
+                                {
+                                    foreach (var item in allSemantic[i])
+                                    {
+                                        dataTree.Add(item.Value, nPath);
+                                    }
+                                }
+                                else{
+                                    dataTree.Add("none");
+                                }
 
                             }
                             oNameList.Add(name);
@@ -1517,8 +1524,7 @@ namespace RhinoCityJSON
                     }
                 }
             }
-
-            // make s keylist
+            // make s keylist TODO resolve
             var sKeyList = new List<string>();
             sKeyList.Add("Name");
             sKeyList.Add("Parent Name");
@@ -1996,7 +2002,6 @@ public class Bakery : GH_Component
                 typId.Add(lodList[i], new Dictionary<string, int>());
             }
 
-            int c = 0;
             foreach (var lodTypeLink in lodTypeDictionary)
             {
                 var targeLId = lodId[lodTypeLink.Key];
