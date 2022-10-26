@@ -38,6 +38,7 @@ namespace RhinoCityJSON
         private string geometryType_ = "None";
         private bool hasError_ = false;
 
+        private List<string> internalizedSurfTypes_ = new List<string>();
         private List<Dictionary<string, string>> surfaceSemantics_ = new List<Dictionary<string, string>>();
         private List<Dictionary<string, string>> cleanedSurfaceSemantics_ = new List<Dictionary<string, string>>();
         private List<Rhino.Geometry.Brep> brepList_ = new List<Rhino.Geometry.Brep>();
@@ -57,6 +58,7 @@ namespace RhinoCityJSON
         public void setGeometryType(string geometryType) { geometryType_ = geometryType; }
         public bool getError() { return hasError_; }
         public void setError(bool hasError) { hasError_ = hasError; }
+        public List<string> getPresentTypes() { return internalizedSurfTypes_; }
         public List<Dictionary<string, string>> getSurfaceSemantics() { return surfaceSemantics_; }
         public List<Dictionary<string, string>> getCSurfaceSemantics() { return cleanedSurfaceSemantics_; }
         public void addCsurfaceSemantic(List<Dictionary<string, string>> surfaceSemantics)
@@ -82,8 +84,11 @@ namespace RhinoCityJSON
                 foreach (var t in type)
                 {
                     localDict.Add(t.Key, t.Value.ToString());
+                    if (!internalizedSurfTypes_.Contains(t.Key))
+                    {
+                        internalizedSurfTypes_.Add(t.Key);
+                    }                  
                 }
-
                 surfaceSemantics.Add(localDict);
             }
 
@@ -1165,6 +1170,10 @@ namespace RhinoCityJSON
             var oNameList = new List<string>();
             var parentAttributes = new Dictionary<string, dynamic>();
 
+            var surfaceSemanticTypes = new List<string>();
+            var surfaceSemanticPairedList = new List<Dictionary<string, string>>();
+            var variableSurfaceSemanticPairedList = new List<Dictionary<string, string>>();
+
             int rootPathidx = 0;
 
             List<String> pathList = new List<string>();
@@ -1495,28 +1504,44 @@ namespace RhinoCityJSON
                             var parentName = lodBuilding.getParendName();
                             var endLoD = lodBuilding.getLod();
 
+                            // get keys
+                            foreach (string typeKey in lodBuilding.getPresentTypes())
+                            {
+                                if (!surfaceSemanticTypes.Contains(typeKey))
+                                {
+                                    surfaceSemanticTypes.Add(typeKey);
+                                }                   
+                            }
+
                             for (int i = 0; i < brepList.Count; i++)
                             {
                                 breps.Add(brepList[i]);
 
-                                var nPath = new Grasshopper.Kernel.Data.GH_Path(i + rootPathidx);
+                               
 
-                                dataTree.Add(name, nPath);
-                                dataTree.Add(parentName, nPath);
-                                dataTree.Add(bType, nPath);
-                                dataTree.Add(endLoD, nPath);
+                                var semData = new Dictionary<string, string>();
+
+                                semData.Add("Object Name", name);
+                                semData.Add("Object Parent Name", parentName);
+                                semData.Add("Object Type", bType);
+                                semData.Add("Object LoD", endLoD);
+
+                                surfaceSemanticPairedList.Add(semData);
 
                                 if (allSemantic.Count != 0)
                                 {
+                                    variableSurfaceSemanticPairedList.Add(allSemantic[i]);
+
                                     foreach (var item in allSemantic[i])
                                     {
-                                        dataTree.Add(item.Value, nPath);
+                                        //dataTree.Add(item.Value, nPath);
                                     }
                                 }
                                 else{
-                                    dataTree.Add("none");
+                                    var tempDict = new Dictionary<string, string>();
+                                    tempDict.Add("None", "None");
+                                    variableSurfaceSemanticPairedList.Add(tempDict);
                                 }
-
                             }
                             oNameList.Add(name);
                             rootPathidx += brepList.Count;
@@ -1524,16 +1549,56 @@ namespace RhinoCityJSON
                     }
                 }
             }
-            // make s keylist TODO resolve
+
+            // make s keylist
             var sKeyList = new List<string>();
-            sKeyList.Add("Name");
-            sKeyList.Add("Parent Name");
+            sKeyList.Add("Object Name");
+            sKeyList.Add("Object Parent Name");
             sKeyList.Add("Object Type");
-            sKeyList.Add("LoD");
-            sKeyList.Add("SurfaceType");
+            sKeyList.Add("Object LoD");
+
+
+            for (int i = 0; i < surfaceSemanticPairedList.Count; i++)
+            {
+                var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+                foreach (string keyString in sKeyList)
+                {
+                    if (surfaceSemanticPairedList[i].ContainsKey(keyString))
+                    {
+                        dataTree.Add(surfaceSemanticPairedList[i][keyString], nPath);
+                    }
+                    else
+                    {
+                        dataTree.Add("None", nPath);
+                    }
+                }
+            }
+
+            // add variable keys
+            foreach (var variableKey in surfaceSemanticTypes)
+            {
+                sKeyList.Add("Surface " + variableKey);
+            }
+
+            for (int i = 0; i < variableSurfaceSemanticPairedList.Count; i++)
+            {
+                var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+                foreach (string variableKey in surfaceSemanticTypes)
+                {
+                    if (variableSurfaceSemanticPairedList[i].ContainsKey(variableKey))
+                    {
+                        dataTree.Add(variableSurfaceSemanticPairedList[i][variableKey], nPath);
+                    }
+                    else
+                    {
+                        dataTree.Add("None", nPath);
+                    }
+                }
+            }
 
             // make b keylist
             var bKeyList = new List<string>();
+            var correctedBkey = new List<string>();
             bool hasNonNull = false;
 
             // check objects for keys
@@ -1628,12 +1693,17 @@ namespace RhinoCityJSON
                 bValueTree.Add("None");
             }
 
+            foreach (string bKey in bKeyList)
+            {
+                correctedBkey.Add("Object " + bKey);
+            }
+
             if (breps.Count > 0)
             {
                 DA.SetDataList(0, breps);
                 DA.SetDataList(1, sKeyList);
                 DA.SetDataTree(2, dataTree);
-                DA.SetDataList(3, bKeyList);
+                DA.SetDataList(3, correctedBkey);
                 DA.SetDataTree(4, bValueTree);
             }
         }
@@ -1882,7 +1952,7 @@ public class Bakery : GH_Component
             int nameIdx = -1;
             for (int i = 0; i < keyList.Count; i++)
             {
-                if (keyList[i] == "LoD")
+                if (keyList[i] == "Object LoD")
                 {
                     lodIdx = i;
                 }
@@ -1892,7 +1962,7 @@ public class Bakery : GH_Component
                     typeIdx = i;
                 }
 
-                if (keyList[i] == "Name")
+                if (keyList[i] == "Object Name")
                 {
                     nameIdx = i;
                 }
@@ -2074,18 +2144,7 @@ public class Bakery : GH_Component
 
                 for (int j = 0; j < branchCollection[i].Count; j++)
                 {
-                    if (keyList[j] == "SurfaceType")
-                    {
-                        objectAttributes.SetUserString("Surface Type", branchCollection[i][j].ToString());
-                    }
-                    else if (keyList[j] == "Object Type")
-                    {
-                        objectAttributes.SetUserString("Object Type", branchCollection[i][j].ToString());
-                    }
-                    else
-                    {
-                        objectAttributes.SetUserString("Object " + keyList[j], branchCollection[i][j].ToString());
-                    }        
+                    objectAttributes.SetUserString(keyList[j], branchCollection[i][j].ToString());   
                 }
                 objectAttributes.LayerIndex = typId[lod][bType];
 
