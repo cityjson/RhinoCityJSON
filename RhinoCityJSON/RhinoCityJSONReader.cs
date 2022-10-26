@@ -506,51 +506,6 @@ namespace RhinoCityJSON
     }
 
 
-    public class KeySelector : GH_Component
-    {
-        public KeySelector()
-          : base("KeySelector", "KSelect",
-              "Creates option selector based on input list. The options will only be unique (NOT FUNCTIONAL)",
-              "RhinoCityJSON", "Processing")
-        {
-        }
-
-        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
-        {
-            pManager.AddTextParameter("Keys", "K", "The values from which a selection can be made", GH_ParamAccess.list, "");
-        }
-
-        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
-        {
-            pManager.AddTextParameter("Selection", "S", "Selected option(s)", GH_ParamAccess.item);
-            pManager.AddTextParameter("Selected indices", "Si", "Indece of the selected option(s)", GH_ParamAccess.item);
-        }
-
-        protected override void SolveInstance(IGH_DataAccess DA)
-        {
-            // TODO make
-        }
-
-        protected override System.Drawing.Bitmap Icon
-        {
-            get
-            {
-                return RhinoCityJSON.Properties.Resources.keyselectoricon;
-            }
-        }
-
-        /// <summary>
-        /// Each component must have a unique Guid to identify it. 
-        /// It is vital this Guid doesn't change otherwise old ghx files 
-        /// that use the old ID will partially fail during loading.
-        /// </summary>
-        public override Guid ComponentGuid
-        {
-            get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a274e22"); }
-        }
-    }
-
-
     public class LoDReader : GH_Component
     {
         public LoDReader()
@@ -1153,8 +1108,8 @@ namespace RhinoCityJSON
             pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
             pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.item);
             pManager.AddTextParameter("Surface Info Vales", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
-            pManager.AddTextParameter("Object Info Keys", "Bik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.item);
-            pManager.AddTextParameter("Object Info Values", "BiV", "Values of the semantic information output related to the objects", GH_ParamAccess.item);
+            pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.item);
+            pManager.AddTextParameter("Object Info Values", "OiV", "Values of the semantic information output related to the objects", GH_ParamAccess.item);
             
         }
 
@@ -1770,8 +1725,8 @@ namespace RhinoCityJSON
         {
             pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
             pManager.AddGenericParameter("Surface Info Vales", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.tree);
-            pManager.AddTextParameter("Object Info Keys", "Bik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Object Info Values", "BiV", "Values of the semantic information output related to the objects", GH_ParamAccess.tree);
+            pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Object Info Values", "OiV", "Values of the semantic information output related to the objects", GH_ParamAccess.tree);
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -1910,7 +1865,6 @@ public class Bakery : GH_Component
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddTextParameter("test output", "t", "", GH_ParamAccess.list);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
