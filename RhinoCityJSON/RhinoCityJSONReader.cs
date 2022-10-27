@@ -1,6 +1,8 @@
 ﻿using Grasshopper.Kernel;
 using Rhino.Geometry;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
@@ -1797,7 +1799,7 @@ namespace RhinoCityJSON
             int currentBuildingIdx = 0;
             string currentBuildingName = sBranchCollection[0][0].ToString();
 
-            for (int i = 0; i < sBranchCollection.Count; i++)
+            Parallel.For(0, sBranchCollection.Count, i =>
             {
                 var currentBranch = sBranchCollection[i];
                 string branchBuildingName = currentBranch[0].ToString();
@@ -1823,7 +1825,7 @@ namespace RhinoCityJSON
                         valueCollection.Add(bBranchCollection[currentBuildingIdx][k].ToString(), nPath);
                     }
                 }
-            }
+            });
 
             DA.SetDataList(0, keyList);
             DA.SetDataTree(1, valueCollection);
