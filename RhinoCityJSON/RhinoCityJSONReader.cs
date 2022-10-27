@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 
 namespace RhinoCityJSON
-{
+{ 
     class CJTempate
     {
         private int idx_ = 0;
@@ -1749,7 +1749,7 @@ namespace RhinoCityJSON
 
             // construct a new key list
             var keyList = new List<string>();
-            var ignoreIdxList = new List<int>();
+            var ignoreBool = new List<bool>();
 
             for (int i = 0; i < sKeys.Count; i++)
             {
@@ -1761,10 +1761,11 @@ namespace RhinoCityJSON
                 if (!keyList.Contains(bKeys[i]) && bKeys[i] != "None")
                 {
                     keyList.Add(bKeys[i]);
+                    ignoreBool.Add(false);
                 }
                 else
                 {
-                    ignoreIdxList.Add(i);
+                    ignoreBool.Add(true);
                 }
             }
 
@@ -1797,11 +1798,12 @@ namespace RhinoCityJSON
 
             for (int i = 0; i < sBranchCollection.Count; i++)
             {
-                if (currentBuildingName != sBranchCollection[i][0].ToString())
+                var currentBranch = sBranchCollection[i];
+                if (currentBuildingName != currentBranch[0].ToString())
                 {
-                    for (int j = 0; j < bBranchCollection.Count; j++)
+                    for (int j = currentBuildingIdx; j < bBranchCollection.Count; j++)
                     {
-                        if (sBranchCollection[i][0].ToString() == bBranchCollection[j][0].ToString())
+                        if (currentBranch[0].ToString() == bBranchCollection[j][0].ToString())
                         {
                             currentBuildingIdx = j;
                         }
@@ -1813,7 +1815,7 @@ namespace RhinoCityJSON
 
                 for (int k = 1; k < bKeys.Count; k++)
                 {
-                    if (!ignoreIdxList.Contains(k))
+                    if (!ignoreBool[k])
                     {
                         valueCollection.Add(bBranchCollection[currentBuildingIdx][k].ToString(), nPath);
                     }
