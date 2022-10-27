@@ -10,7 +10,7 @@ The plugin consists out of multiple Grasshopper components exposing data in a fo
 Currently only supports CityJSON 1.1 and 1.2.
 
 ## How to install
-### Via food for rhino
+### Via Food4Rhino
 When the Grasshopper components have been tested sufficiently they will be shared via Food4Rhino. 
 This will be the easiest way to install the plugin. However newer features/updates will be released via that outlet only when deemed completely stable and finished.
 This means that updates will be less regular, less versions will be available and experimental features will not be available.
@@ -18,7 +18,8 @@ This means that updates will be less regular, less versions will be available an
 ### Build/Compile locally
 If a certain version is desired that is not available via Food4Rhino or if it is desired to edit the code it is possible to compile the code yourself. 
 If working with Visual Studio loading the RhinoCityJSON.sln should automatically resolve most of the issues. 
-However, the build output path has to be set to function correctly. It is recommended to set this to the Grasshopper component directory path. 
+However, the build output path has to be set to function correctly. 
+It is recommended to set this to the Grasshopper component directory path, or a subfolder of the Grasshopper component directry path. 
 This path can be easily found by opening Grasshopper, going to File->Special Folders->Component Folder.
 
 ## The GH components
