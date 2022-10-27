@@ -1753,6 +1753,7 @@ namespace RhinoCityJSON
             // construct a new key list
             var keyList = new List<string>();
             var ignoreBool = new List<bool>();
+            int nameIdx = 0;
 
             for (int i = 0; i < sKeys.Count; i++)
             {
@@ -1761,6 +1762,11 @@ namespace RhinoCityJSON
 
             for (int i = 0; i < bKeys.Count; i++)
             {
+                if (bKeys[i] == "Object Name")
+                {
+                    nameIdx = i;
+                }
+
                 if (!keyList.Contains(bKeys[i]) && bKeys[i] != "None")
                 {
                     keyList.Add(bKeys[i]);
@@ -1795,34 +1801,36 @@ namespace RhinoCityJSON
                 }
             }
 
-            // cast building data to surface data
-            int currentBuildingIdx = 0;
-            string currentBuildingName = sBranchCollection[0][0].ToString();
+            // make building dict
+            Dictionary<string, List<string>> bBranchDict = new Dictionary<string, List<string>>();
+
+            foreach (var bBranch in bBranchCollection)
+            {
+                List<string> templist = new List<string>();
+
+                for (int i = 0; i < bBranch.Count; i++)
+                {
+                    if (i == nameIdx)
+                    {
+                        continue;
+                    }
+                    
+                    templist.Add(bBranch[i].ToString());
+                }
+                bBranchDict.Add(bBranch[nameIdx].ToString(), templist);
+            }
 
             Parallel.For(0, sBranchCollection.Count, i =>
             {
                 var currentBranch = sBranchCollection[i];
                 string branchBuildingName = currentBranch[0].ToString();
-
-                if (currentBuildingName != branchBuildingName)
-                {
-                    for (int j = currentBuildingIdx; j < bBranchCollection.Count; j++)
-                    {
-                        if (branchBuildingName == bBranchCollection[j][0].ToString())
-                        {
-                            currentBuildingIdx = j;
-                        }
-                    }
-                    currentBuildingName = branchBuildingName;
-                }
-
                 var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
 
                 for (int k = 1; k < bKeys.Count; k++)
                 {
                     if (!ignoreBool[k])
                     {
-                        valueCollection.Add(bBranchCollection[currentBuildingIdx][k].ToString(), nPath);
+                        valueCollection.Add(bBranchDict[branchBuildingName][k-1], nPath);
                     }
                 }
             });
