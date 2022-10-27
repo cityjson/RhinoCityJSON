@@ -1317,12 +1317,13 @@ namespace RhinoCityJSON
                         string buildingType = cObject.type;
                         var parent = cObject.parents;
                         var attributes = cObject.attributes;
+                        var children = cObject.children;
 
-                        if (cObject.children != null) // parents
+                        if (children != null) // parents
                         {
                             if (attributes != null)
                             {
-                                foreach (string child in cObject.children)
+                                foreach (string child in children)
                                 {
                                     parentAttributes.Add(child, attributes);
                                 }
@@ -1341,7 +1342,7 @@ namespace RhinoCityJSON
                             {
                                 foreach (var boundaryGroup in cObject.geometry)
                                 {
-                                    attList.Add(cObject.attributes);
+                                    attList.Add(attributes);
                                 }
                             }
                             else
@@ -1350,7 +1351,7 @@ namespace RhinoCityJSON
                                 {
                                     if (loDList.Contains((string)boundaryGroup.lod))
                                     {
-                                        attList.Add(cObject.attributes);
+                                        attList.Add(attributes);
                                     }
                                 }
                             }
@@ -1379,7 +1380,10 @@ namespace RhinoCityJSON
                         foreach (var boundaryGroup in cObject.geometry)
                         {
                             CJObject lodBuilding = new CJObject(objectGroup.Name);
-                            lodBuilding.setLod((string)boundaryGroup.lod);
+
+                            string groupLoD = boundaryGroup.lod;
+
+                            lodBuilding.setLod(groupLoD);
                             lodBuilding.setGeometryType(buildingType);
 
                             if (parent != null)
@@ -1391,7 +1395,7 @@ namespace RhinoCityJSON
                                 }
                             }
 
-                            if (setLoD && !loDList.Contains((string)boundaryGroup.lod))
+                            if (setLoD && !loDList.Contains(groupLoD))
                             {
                                 continue;
                             }
@@ -1421,7 +1425,6 @@ namespace RhinoCityJSON
                                 }
                                 lodBuilding.setBrepList(localBrepList);
                             }
-
                             // this is all the geometry in one shape with info
                             else if (boundaryGroup.type == "Solid")
                             {
@@ -1492,8 +1495,6 @@ namespace RhinoCityJSON
                             {
                                 breps.Add(brepList[i]);
 
-                               
-
                                 var semData = new Dictionary<string, string>();
 
                                 semData.Add("Object Name", name);
@@ -1506,11 +1507,6 @@ namespace RhinoCityJSON
                                 if (allSemantic.Count != 0)
                                 {
                                     variableSurfaceSemanticPairedList.Add(allSemantic[i]);
-
-                                    foreach (var item in allSemantic[i])
-                                    {
-                                        //dataTree.Add(item.Value, nPath);
-                                    }
                                 }
                                 else{
                                     var tempDict = new Dictionary<string, string>();
@@ -1536,11 +1532,13 @@ namespace RhinoCityJSON
             for (int i = 0; i < surfaceSemanticPairedList.Count; i++)
             {
                 var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+                var currentPair = surfaceSemanticPairedList[i];
+
                 foreach (string keyString in sKeyList)
                 {
-                    if (surfaceSemanticPairedList[i].ContainsKey(keyString))
+                    if (currentPair.ContainsKey(keyString))
                     {
-                        dataTree.Add(surfaceSemanticPairedList[i][keyString], nPath);
+                        dataTree.Add(currentPair[keyString], nPath);
                     }
                     else
                     {
@@ -1558,11 +1556,13 @@ namespace RhinoCityJSON
             for (int i = 0; i < variableSurfaceSemanticPairedList.Count; i++)
             {
                 var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+                var currentPair = variableSurfaceSemanticPairedList[i];
+
                 foreach (string variableKey in surfaceSemanticTypes)
                 {
-                    if (variableSurfaceSemanticPairedList[i].ContainsKey(variableKey))
+                    if (currentPair.ContainsKey(variableKey))
                     {
-                        dataTree.Add(variableSurfaceSemanticPairedList[i][variableKey], nPath);
+                        dataTree.Add(currentPair[variableKey], nPath);
                     }
                     else
                     {
@@ -1626,14 +1626,15 @@ namespace RhinoCityJSON
 
                     bool hasParent = false;
                     dynamic pAtt = null;
+                    var currentName = oNameList[i];
 
-                    if (parentAttributes.ContainsKey(oNameList[i]))
+                    if (parentAttributes.ContainsKey(currentName))
                     {
-                        pAtt = parentAttributes[oNameList[i]];
+                        pAtt = parentAttributes[currentName];
                         hasParent = true;
                     }
 
-                    bValueTree.Add(oNameList[i], nPath);
+                    bValueTree.Add(currentName, nPath);
                     foreach (var bKey in bKeyList)
                     {
                         if (bAtt[bKey] != null)

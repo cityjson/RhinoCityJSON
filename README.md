@@ -99,7 +99,6 @@ Output:
 * Merged Surface Info Values. The values of semantic info from both the input's surface and object values that corresponds 1:1 with the geometry output of the Reader component.
 
 ## Known issues/bugs
-* The IDivide component is very slow, especially when working with larger files.
 * Complex surfaces are not always correctly constructed.
 * A considerable amount of solids are not loaded into Grasshopper/Rhino as solids.
 * Filtering based on building information is currently challenging to do with the native grasshopper components.
