@@ -1799,16 +1799,18 @@ namespace RhinoCityJSON
             for (int i = 0; i < sBranchCollection.Count; i++)
             {
                 var currentBranch = sBranchCollection[i];
-                if (currentBuildingName != currentBranch[0].ToString())
+                string branchBuildingName = currentBranch[0].ToString();
+
+                if (currentBuildingName != branchBuildingName)
                 {
                     for (int j = currentBuildingIdx; j < bBranchCollection.Count; j++)
                     {
-                        if (currentBranch[0].ToString() == bBranchCollection[j][0].ToString())
+                        if (branchBuildingName == bBranchCollection[j][0].ToString())
                         {
                             currentBuildingIdx = j;
                         }
                     }
-                    currentBuildingName = sBranchCollection[currentBuildingIdx][0].ToString();
+                    currentBuildingName = branchBuildingName;
                 }
 
                 var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
