@@ -490,6 +490,46 @@ namespace RhinoCityJSON
                 return Childname;
             }
         }
+
+        static public Dictionary<string, System.Drawing.Color> getTypeColor()
+        {
+            return new Dictionary<string, System.Drawing.Color>
+            {
+                { "Bridge", System.Drawing.Color.Gray },
+                { "Building", System.Drawing.Color.LightBlue },
+                { "CityFurniture", System.Drawing.Color.Red },
+                { "LandUse", System.Drawing.Color.FloralWhite },
+                { "OtherConstruction", System.Drawing.Color.White },
+                { "PlantCover", System.Drawing.Color.Green },
+                { "SolitaryVegetationObject", System.Drawing.Color.Green },
+                { "TINRelief", System.Drawing.Color.LightYellow},
+                { "TransportationSquare", System.Drawing.Color.Gray},
+                { "Road", System.Drawing.Color.Gray},
+                { "Tunnel", System.Drawing.Color.Gray},
+                { "WaterBody", System.Drawing.Color.MediumBlue},
+                { "+GenericCityObject", System.Drawing.Color.White},
+                { "Railway", System.Drawing.Color.DarkGray},
+            };
+        }
+
+        static public int getPopLength(string lod)
+        {
+            if (lod == "0" || lod == "1" || lod == "2" || lod == "3")
+            {
+                return 6;
+            }
+            else if (lod == "0.0" || lod == "0.1" || lod == "0.2" || lod == "0.3" ||
+                     lod == "1.0" || lod == "1.1" || lod == "1.2" || lod == "1.3" ||
+                     lod == "2.0" || lod == "2.1" || lod == "2.2" || lod == "2.3" ||
+                     lod == "3.0" || lod == "3.1" || lod == "3.2" || lod == "3.3")
+            {
+                return 8;
+            }
+            else
+            {
+                return 0;
+            }
+        }
     }
 
 
@@ -1970,23 +2010,7 @@ public class Bakery : GH_Component
             // create LoD layers
             var lodId = new Dictionary<string, System.Guid>();
             var typId = new Dictionary<string, Dictionary<string, int>>();
-            var typColor = new Dictionary<string, System.Drawing.Color>
-            {
-                { "Bridge", System.Drawing.Color.Gray },
-                { "Building", System.Drawing.Color.LightBlue },
-                { "CityFurniture", System.Drawing.Color.Red },
-                { "LandUse", System.Drawing.Color.FloralWhite },
-                { "OtherConstruction", System.Drawing.Color.White },
-                { "PlantCover", System.Drawing.Color.Green },
-                { "SolitaryVegetationObject", System.Drawing.Color.Green },
-                { "TINRelief", System.Drawing.Color.LightYellow},
-                { "TransportationSquare", System.Drawing.Color.Gray},
-                { "Road", System.Drawing.Color.Gray},
-                { "Tunnel", System.Drawing.Color.Gray},
-                { "WaterBody", System.Drawing.Color.MediumBlue},
-                { "+GenericCityObject", System.Drawing.Color.White},
-                { "Railway", System.Drawing.Color.DarkGray},
-            };
+            var typColor = BakerySupport.getTypeColor();
 
             for (int i = 0; i < lodList.Count; i++)
             {
@@ -2074,7 +2098,13 @@ public class Bakery : GH_Component
 
                 for (int j = 0; j < branchCollection[i].Count; j++)
                 {
-                    objectAttributes.SetUserString(keyList[j], branchCollection[i][j].ToString());   
+                    string fullName = branchCollection[i][j].ToString();
+                    if (j==0)
+                    {
+                        fullName = fullName.Substring(0, fullName.Length - BakerySupport.getPopLength(branchCollection[i][lodIdx].ToString())); // TODO make this smart
+                    }
+                    
+                    objectAttributes.SetUserString(keyList[j], fullName);   
                 }
                 objectAttributes.LayerIndex = typId[lod][bType];
 
