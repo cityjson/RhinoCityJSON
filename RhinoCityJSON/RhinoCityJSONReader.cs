@@ -1332,6 +1332,26 @@ namespace RhinoCityJSON
                                 }
                             }
                         }
+                        else
+                        {
+                            if (!setLoD)
+                            {
+                                foreach (var boundaryGroup in cObject.geometry)
+                                {
+                                    semanticBuildingInfo.Add(oName + "_LoD_" + (string)boundaryGroup.lod, new Newtonsoft.Json.Linq.JObject());
+                                }
+                            }
+                            else
+                            {
+                                foreach (var boundaryGroup in cObject.geometry)
+                                {
+                                    if (loDList.Contains((string)boundaryGroup.lod))
+                                    {
+                                        semanticBuildingInfo.Add(oName + "_LoD_" + (string)boundaryGroup.lod, new Newtonsoft.Json.Linq.JObject());
+                                    }
+                                }
+                            }
+                        }
 
                         foreach (var boundaryGroup in cObject.geometry)
                         {
