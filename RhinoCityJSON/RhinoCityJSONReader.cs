@@ -1232,6 +1232,7 @@ namespace RhinoCityJSON
             // set DataCollection
             var surfaceSemanticTypes = new List<string>();
             var geoSurfaceInfo = new Dictionary<string, List<Brep>>();
+            var simpleNameDict = new Dictionary<string, string>();
             var semanticSurfaceInfo = new Dictionary<string, List<Dictionary<string, string>>>();
             var semanticBuildingInfo = new Dictionary<string, dynamic>();
             var semanticParentInfo = new Dictionary<string, dynamic>();
@@ -1341,7 +1342,10 @@ namespace RhinoCityJSON
                             {
                                 foreach (string child in children)
                                 {
-                                    semanticParentInfo.Add(child, attributes);
+                                    foreach (var boundaryGroup in cObject.geometry)
+                                    {
+                                        semanticParentInfo.Add(child, attributes);
+                                    }                                    
                                 }
                             }
                         }
@@ -1531,8 +1535,11 @@ namespace RhinoCityJSON
                                 surfaceSemanticPairedList.Add(semData);
                             }
 
-                            semanticSurfaceInfo.Add(name + "_LoD_" + endLoD, surfaceSemanticPairedList);
-                            geoSurfaceInfo.Add(name + "_LoD_" + endLoD, brepList);
+                            var complexName = name + "_LoD_" + endLoD;
+                            simpleNameDict.Add(complexName, name);
+
+                            semanticSurfaceInfo.Add(complexName, surfaceSemanticPairedList);
+                            geoSurfaceInfo.Add(complexName, brepList);
                         }
                     }
                 }
@@ -1598,10 +1605,11 @@ namespace RhinoCityJSON
                     dynamic parentAtt = null;
                     dynamic buildingAdd = buildingAttPair.Value;
                     var currentName = buildingAttPair.Key;
+                    var simpleName = simpleNameDict[currentName];
 
-                    if (semanticParentInfo.ContainsKey(currentName))
+                    if (semanticParentInfo.ContainsKey(simpleName))
                     {
-                        parentAtt = semanticParentInfo[currentName];
+                        parentAtt = semanticParentInfo[simpleName];
                         hasParent = true;
                     }
 
@@ -1616,9 +1624,9 @@ namespace RhinoCityJSON
                         {
                             if (hasParent)
                             {
-                                if (buildingAdd[bKey] != null)
+                                if (parentAtt[bKey] != null)
                                 {
-                                    bValueTree.Add(buildingAdd[bKey].ToString() + "*", nPath);
+                                    bValueTree.Add(parentAtt[bKey].ToString() + "*", nPath);
                                 }
                                 else
                                 {
