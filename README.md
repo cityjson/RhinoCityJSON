@@ -11,8 +11,9 @@ Currently only supports CityJSON 1.1 and 1.2.
 
 ## How to install
 ### Via Food4Rhino
-When the Grasshopper components have been tested sufficiently they will be shared via Food4Rhino. 
-This will be the easiest way to install the plugin. However newer features/updates will be released via that outlet only when deemed completely stable and finished.
+URL: https://www.food4rhino.com/en/app/rhino-cityjson
+
+This is the easiest way to install the plugin. However newer features/updates will be released via that outlet only when deemed completely stable and finished.
 This means that updates will be less regular, less versions will be available and experimental features will not be available.
 
 ### Build/Compile locally
