@@ -448,7 +448,7 @@ namespace RhinoCityJSON
             string tName = "";
             foreach (char c in name)
             {
-                if (c != '{' && c != '}')
+                if (c != '{' && c != '}' && c != '?' && c != '@' && c != '/' && c != '\\' )
                 {
                     tName += c;
                 }
