@@ -45,11 +45,7 @@ namespace RhinoCityJSON
         private List<Dictionary<string, string>> cleanedSurfaceSemantics_ = new List<Dictionary<string, string>>();
         private List<Rhino.Geometry.Brep> brepList_ = new List<Rhino.Geometry.Brep>();
 
-        public CJObject(string name)
-        {
-            name_ = name;
-        }
-
+        public CJObject(string name){ name_ = name; }
         public string getName() { return name_; }
         public void setName(string name) { name_ = name; }
         public string getLod() { return lod_; }
@@ -445,6 +441,19 @@ namespace RhinoCityJSON
                     }
                 }
             }
+        }
+
+        static public string stripString(string name)
+        {
+            string tName = "";
+            foreach (char c in name)
+            {
+                if (c != '{' && c != '}')
+                {
+                    tName += c;
+                }
+            }
+            return tName;
         }
     }
 
@@ -1328,7 +1337,7 @@ namespace RhinoCityJSON
                 // create surfaces
                 foreach (var objectGroup in Jcity.CityObjects)
                 {
-                    var oName = objectGroup.Name;
+                    var oName = ReaderSupport.stripString(objectGroup.Name);
                     foreach (var cObject in objectGroup)
                     {
                         string buildingType = cObject.type;
