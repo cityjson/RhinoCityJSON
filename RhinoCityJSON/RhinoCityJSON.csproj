@@ -110,7 +110,9 @@
   -->
   <PropertyGroup>
     <PostBuildEvent>Copy "$(TargetPath)" "$(TargetDir)$(ProjectName).gha"
-Erase "$(TargetPath)"</PostBuildEvent>
+Copy "$(TargetPath)" "$(SolutionDir)Grasshopper Component\$(ProjectName).gha"
+Erase "$(TargetPath)"
+</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <FallbackCulture>en-US</FallbackCulture>
