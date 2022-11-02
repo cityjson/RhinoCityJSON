@@ -521,6 +521,15 @@ namespace RhinoCityJSON
             };
         }
 
+        static public Dictionary<string, System.Drawing.Color> getSurfColor()
+        {
+            return new Dictionary<string, System.Drawing.Color>{
+                { "GroundSurface", System.Drawing.Color.Gray },
+                { "WallSurface", System.Drawing.Color.LightBlue },
+                { "RoofSurface", System.Drawing.Color.Red }
+            };
+        }
+
         static public int getPopLength(string lod)
         {
             if (lod == "0" || lod == "1" || lod == "2" || lod == "3")
@@ -1535,7 +1544,7 @@ namespace RhinoCityJSON
                                 {
                                     foreach (KeyValuePair<string, string> item in allSemantic[i])
                                     {
-                                        semData.Add("Surface " + item.Key, item.Value);
+                                        semData.Add("Surface " + char.ToUpper(item.Key[0]) + item.Key.Substring(1), item.Value);
                                     }
                                 }
                                 else{
@@ -1564,9 +1573,9 @@ namespace RhinoCityJSON
             };
 
             // add variable keys
-            foreach (var variableKey in surfaceSemanticTypes)
+            foreach (string variableKey in surfaceSemanticTypes)
             {
-                sKeyList.Add("Surface " + variableKey);
+                sKeyList.Add("Surface " + char.ToUpper(variableKey[0]) + variableKey.Substring(1));
             }
 
             int counter = 0;
@@ -1919,6 +1928,7 @@ public class Bakery : GH_Component
 
             var lodList = new List<string>();
             var lodTypeDictionary = new Dictionary<string, List<string>>();
+            var lodSurfTypeDictionary = new Dictionary<string, List<string>>();
 
             var branchCollection = siTree.Branches;
 
@@ -1937,22 +1947,26 @@ public class Bakery : GH_Component
             int lodIdx = -1;
             int typeIdx = -1;
             int nameIdx = -1;
+            int surfTypeIdx = -1;
             for (int i = 0; i < keyList.Count; i++)
             {
                 if (keyList[i] == "Object LoD")
                 {
                     lodIdx = i;
                 }
-
-                if (keyList[i] == "Object Type")
+                else if (keyList[i] == "Object Type")
                 {
                     typeIdx = i;
                 }
-
-                if (keyList[i] == "Object Name")
+                else if (keyList[i] == "Object Name")
                 {
                     nameIdx = i;
                 }
+                else if (keyList[i] == "Surface Type")
+                {
+                    surfTypeIdx = i;
+                }
+
             }
 
             if (lodIdx == -1)
@@ -1973,6 +1987,11 @@ public class Bakery : GH_Component
                 return;
             }
 
+            if (surfTypeIdx == -1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No Surface type data is supplied");
+            }
+
             for (int i = 0; i < branchCollection.Count; i++)
             {
                 // get LoD
@@ -1983,13 +2002,14 @@ public class Bakery : GH_Component
                     lodList.Add(lod);
                 }
 
-                // get type
+                // get building types present in input
                 string bType = branchCollection[i][typeIdx].ToString();
 
                 if (!lodTypeDictionary.ContainsKey(lod))
                 {
                     lodTypeDictionary.Add(lod, new List<string>());
                     lodTypeDictionary[lod].Add(bType);
+
                 }
                 else if (!lodTypeDictionary[lod].Contains(bType))
                 {
@@ -1997,6 +2017,28 @@ public class Bakery : GH_Component
                 }
             }
 
+            if (surfTypeIdx != -1)
+            {
+                for (int i = 0; i < branchCollection.Count; i++)
+                {
+                    string lod = branchCollection[i][lodIdx].ToString();
+
+                    // get surface types present in input
+                    string sType = branchCollection[i][surfTypeIdx].ToString();
+
+                    if (!lodSurfTypeDictionary.ContainsKey(lod))
+                    {
+                        lodSurfTypeDictionary.Add(lod, new List<string>());
+                        lodSurfTypeDictionary[lod].Add(sType);
+
+                    }
+                    else if (!lodSurfTypeDictionary[lod].Contains(sType))
+                    {
+                        lodSurfTypeDictionary[lod].Add(sType);
+                    }
+                }
+            }
+            
             var activeDoc = Rhino.RhinoDoc.ActiveDoc;
 
             // create a new unique master layer name
@@ -2027,7 +2069,9 @@ public class Bakery : GH_Component
             // create LoD layers
             var lodId = new Dictionary<string, System.Guid>();
             var typId = new Dictionary<string, Dictionary<string, int>>();
+            var surId = new Dictionary<string, Dictionary<string, int>>();
             var typColor = BakerySupport.getTypeColor();
+            var surfColor = BakerySupport.getSurfColor();
 
             for (int i = 0; i < lodList.Count; i++)
             {
@@ -2041,6 +2085,7 @@ public class Bakery : GH_Component
                 var idx = activeDoc.Layers.FindIndex(id).Id;
                 lodId.Add(lodList[i], idx);
                 typId.Add(lodList[i], new Dictionary<string, int>());
+                surId.Add(lodList[i], new Dictionary<string, int>());
             }
 
             foreach (var lodTypeLink in lodTypeDictionary)
@@ -2057,9 +2102,9 @@ public class Bakery : GH_Component
                         cleanedTypeList.Add(filteredName);
                     }
                 }
+
                 foreach (var bType in cleanedTypeList)
                 {
-
                     Rhino.DocObjects.Layer typeLayer = new Rhino.DocObjects.Layer();
                     typeLayer.Name = bType;
 
@@ -2078,6 +2123,47 @@ public class Bakery : GH_Component
 
                     var idx = activeDoc.Layers.Add(typeLayer);
                     typId[lodTypeLink.Key].Add(bType, idx);
+                }
+            }
+
+            if (surfTypeIdx != -1)
+            {
+                foreach (var lodTypeLink in lodSurfTypeDictionary)
+                {
+                    var targeLId = activeDoc.Layers.FindIndex(typId[lodTypeLink.Key]["Building"]).Id;
+                    var cleanedSurfTypeList = new List<string>();
+
+                    foreach (var bType in lodTypeLink.Value)
+                    {
+                        var filteredName = BakerySupport.getParentName(bType);
+
+                        if (!cleanedSurfTypeList.Contains(filteredName))
+                        {
+                            cleanedSurfTypeList.Add(filteredName);
+                        }
+                    }
+
+                    foreach (var sType in cleanedSurfTypeList)
+                    {
+                        Rhino.DocObjects.Layer surfTypeLayer = new Rhino.DocObjects.Layer();
+                        surfTypeLayer.Name = sType;
+
+                        System.Drawing.Color lColor = System.Drawing.Color.DarkRed;
+                        try
+                        {
+                            lColor = surfColor[sType];
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+
+                        surfTypeLayer.Color = lColor;
+                        surfTypeLayer.ParentLayerId = targeLId;
+
+                        var idx = activeDoc.Layers.Add(surfTypeLayer);
+                        surId[lodTypeLink.Key].Add(sType, idx);
+                    }
                 }
             }
 
@@ -2110,6 +2196,12 @@ public class Bakery : GH_Component
                 string lod = branchCollection[i][lodIdx].ToString();
                 string bType = BakerySupport.getParentName(branchCollection[i][typeIdx].ToString());
 
+                string sType = "None";
+                if (surfTypeIdx != -1)
+                {
+                    sType = branchCollection[i][surfTypeIdx].ToString();
+                }
+
                 Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
                 objectAttributes.Name = branchCollection[i][nameIdx].ToString() + " - " + i;
 
@@ -2123,10 +2215,32 @@ public class Bakery : GH_Component
                     
                     objectAttributes.SetUserString(keyList[j], fullName);   
                 }
-                objectAttributes.LayerIndex = typId[lod][bType];
+
+                if (bType != "Building")
+                {
+                    objectAttributes.LayerIndex = typId[lod][bType];
+                }
+                else if (sType == "None" || surfTypeIdx == -1 )
+                {
+                    objectAttributes.LayerIndex = typId[lod][bType];
+                }
+                else
+                {
+                    objectAttributes.LayerIndex = surId[lod][sType];
+                }
 
                 potetialGroupList.Add(activeDoc.Objects.AddBrep(targetBrep, objectAttributes));
             }
+
+            // bake final group
+            if (potetialGroupList.Count > 1)
+            {
+                foreach (var groupItem in potetialGroupList)
+                {
+                    activeDoc.Groups.AddToGroup(groupId, groupItem);
+                }
+            }
+            potetialGroupList.Clear();
         }
 
         protected override System.Drawing.Bitmap Icon
