@@ -1258,6 +1258,29 @@ namespace RhinoCityJSON
             // set data output list
             var dataTree = new Grasshopper.DataTree<string>();
 
+
+            // get scale from current session
+            double scaler = 1;
+            string UnitString = Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem.ToString();
+
+            if (UnitString == "Meters")
+            {
+                scaler = 1;
+            }
+            else if (UnitString == "Centimeters")
+            {
+                scaler = 100;
+            }
+            else if (UnitString == "Millimeters")
+            {
+                scaler = 1000;
+            }
+            else
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Rhino document scale is not supported, defaulted to unit 1");
+            }
+
+
             // coordinates of the first input
             double globalX = 0.0;
             double globalY = 0.0;
@@ -1265,9 +1288,9 @@ namespace RhinoCityJSON
 
             bool isFirst = true;
 
-            double originX = worldOrigin.X;
-            double originY = worldOrigin.Y;
-            double originZ = worldOrigin.Z;
+            double originX = worldOrigin.X * scaler;
+            double originY = worldOrigin.Y * scaler;
+            double originZ = worldOrigin.Z * scaler;
 
             foreach (var path in pathList)
             {
@@ -1280,9 +1303,9 @@ namespace RhinoCityJSON
                 }
 
                 // get scalers
-                double scaleX = Jcity.transform.scale[0];
-                double scaleY = Jcity.transform.scale[1];
-                double scaleZ = Jcity.transform.scale[2];
+                double scaleX = Jcity.transform.scale[0] * scaler;
+                double scaleY = Jcity.transform.scale[1] * scaler;
+                double scaleZ = Jcity.transform.scale[2] * scaler;
 
                 // translation vectors
                 double localX = 0.0;
