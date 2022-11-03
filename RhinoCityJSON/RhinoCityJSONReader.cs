@@ -1373,48 +1373,6 @@ namespace RhinoCityJSON
                             continue;
                         }
 
-                        // check if attributes have to be stored
-                        if (attributes != null)
-                        {
-                            if (!setLoD)
-                            {
-                                foreach (var boundaryGroup in cObject.geometry)
-                                {
-                                    semanticBuildingInfo.Add(oName + "_LoD_" + (string)boundaryGroup.lod, attributes);
-                                }
-                            }
-                            else
-                            {
-                                foreach (var boundaryGroup in cObject.geometry)
-                                {
-                                    if (loDList.Contains((string)boundaryGroup.lod))
-                                    {
-                                        semanticBuildingInfo.Add(oName + "_LoD_" + (string)boundaryGroup.lod, attributes);
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (!setLoD)
-                            {
-                                foreach (var boundaryGroup in cObject.geometry)
-                                {
-                                    semanticBuildingInfo.Add(oName + "_LoD_" + (string)boundaryGroup.lod, new Newtonsoft.Json.Linq.JObject());
-                                }
-                            }
-                            else
-                            {
-                                foreach (var boundaryGroup in cObject.geometry)
-                                {
-                                    if (loDList.Contains((string)boundaryGroup.lod))
-                                    {
-                                        semanticBuildingInfo.Add(oName + "_LoD_" + (string)boundaryGroup.lod, new Newtonsoft.Json.Linq.JObject());
-                                    }
-                                }
-                            }
-                        }
-
                         foreach (var boundaryGroup in cObject.geometry)
                         {
                             CJObject lodBuilding = new CJObject(oName);
@@ -1442,7 +1400,13 @@ namespace RhinoCityJSON
                             {
 
                                 CJTempate shapeTemplate = templateGeoList[(int)boundaryGroup.template];
+                                groupLoD = shapeTemplate.getLod();
                                 lodBuilding.setLod(shapeTemplate.getLod());
+
+                                if (boundaryGroup.semantics != null)
+                                {
+                                    lodBuilding.matchSemantics(boundaryGroup.semantics, 1);
+                                }
 
                                 List<Brep> shapeList = shapeTemplate.getBrepList();
                                 var anchorPoint = vertList[(int)boundaryGroup.boundaries[0]];
@@ -1508,6 +1472,40 @@ namespace RhinoCityJSON
                                 if (lodBuilding.getError())
                                 {
                                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all surfaces have been correctly created");
+                                }
+                            }
+
+                            // check if attributes have to be stored
+                            if (attributes != null)
+                            {
+                                if (!setLoD)
+                                {
+                                    semanticBuildingInfo.Add(oName + "_LoD_" + groupLoD, attributes);
+                                }
+                                else
+                                {
+
+                                    if (loDList.Contains((string)boundaryGroup.lod))
+                                    {
+                                        semanticBuildingInfo.Add(oName + "_LoD_" + groupLoD, attributes);
+                                    }
+
+                                }
+                            }
+                            else
+                            {
+                                if (!setLoD)
+                                {
+                                    semanticBuildingInfo.Add(oName + "_LoD_" + groupLoD, new Newtonsoft.Json.Linq.JObject());
+                                }
+                                else
+                                {
+
+                                    if (loDList.Contains((string)boundaryGroup.lod))
+                                    {
+                                        semanticBuildingInfo.Add(oName + "_LoD_" + groupLoD, new Newtonsoft.Json.Linq.JObject());
+
+                                    }
                                 }
                             }
 
@@ -1612,7 +1610,6 @@ namespace RhinoCityJSON
 
             // make b value tree
             var bValueTree = new Grasshopper.DataTree<string>();
-
             if (bKeyList.Count != 0)
             {
                 int pathCount = 0;
