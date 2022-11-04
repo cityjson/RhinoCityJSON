@@ -38,6 +38,7 @@ namespace RhinoCityJSON
         private string lod_ = "None";
         private string parentName_ = "None";
         private string geometryType_ = "None";
+        private double scaler_ = 1;
         private bool hasError_ = false;
 
         private List<string> internalizedSurfTypes_ = new List<string>();
@@ -54,6 +55,8 @@ namespace RhinoCityJSON
         public void setParendName(string parentName) { parentName_ = parentName; }
         public string getGeometryType() { return geometryType_; }
         public void setGeometryType(string geometryType) { geometryType_ = geometryType; }
+        public double getScalar() { return scaler_; }
+        public void setScaler(double scaler) { scaler_ = scaler; }
         public bool getError() { return hasError_; }
         public void setError(bool hasError) { hasError_ = hasError; }
         public List<string> getPresentTypes() { return internalizedSurfTypes_; }
@@ -172,7 +175,7 @@ namespace RhinoCityJSON
             return true;
         }
 
-        static public Tuple<List<Rhino.Geometry.Brep>, bool> getBrepSurface(dynamic surface, List<Rhino.Geometry.Point3d> vertList)
+        static public Tuple<List<Rhino.Geometry.Brep>, bool> getBrepSurface(dynamic surface, List<Rhino.Geometry.Point3d> vertList, double scalar = 1)
         {
             bool isTriangle = false;
 
@@ -248,7 +251,7 @@ namespace RhinoCityJSON
 
             if (surfaceCurves.Count > 0)
             {
-                Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.1); //TODO monior value
+                Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.1 * scalar); //TODO scale
                 surfaceCurves.Clear();
                 try
                 {
@@ -266,6 +269,7 @@ namespace RhinoCityJSON
         static public CJObject getBrepShape(dynamic solid, List<Rhino.Geometry.Point3d> vertList, CJObject cjobject = null, bool advanced = false)
         {
             CJObject localCJObject = new CJObject("");
+            double scaler = cjobject.getScalar();
 
             if (cjobject != null)
             {
@@ -283,7 +287,7 @@ namespace RhinoCityJSON
 
             foreach (var surface in solid)
             {
-                var readersurf = ReaderSupport.getBrepSurface(surface, vertList);
+                var readersurf = ReaderSupport.getBrepSurface(surface, vertList, scaler);
                 if (readersurf.Item2)
                 {
                     hasError = true;
@@ -326,7 +330,7 @@ namespace RhinoCityJSON
         }
 
 
-        static public List<CJTempate> getTemplateGeo(dynamic Jcity, bool setLoD, List<string> loDList)
+        static public List<CJTempate> getTemplateGeo(dynamic Jcity, bool setLoD, List<string> loDList, double scaler = 1)
         {
             List<Rhino.Geometry.Point3d> vertListTemplate = new List<Rhino.Geometry.Point3d>();
             var templateGeoList = new List<CJTempate>();
@@ -338,9 +342,9 @@ namespace RhinoCityJSON
 
                 foreach (var jsonvert in Jcity["geometry-templates"]["vertices-templates"])
                 {
-                    double x = jsonvert[0];
-                    double y = jsonvert[1];
-                    double z = jsonvert[2];
+                    double x = jsonvert[0] * scaler;
+                    double y = jsonvert[1] * scaler;
+                    double z = jsonvert[2] * scaler;
 
                     Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(x, y, z);
                     vertListTemplate.Add(vert);
@@ -358,7 +362,9 @@ namespace RhinoCityJSON
                     {
                         foreach (var solid in template.boundaries)
                         {
-                            CJObject readershape = ReaderSupport.getBrepShape(solid, vertListTemplate);
+                            CJObject readershape = new CJObject("");
+                            readershape.setScaler(scaler);
+                            readershape = ReaderSupport.getBrepShape(solid, vertListTemplate, readershape);
 
                             if (readershape.getError())
                             {
@@ -379,7 +385,9 @@ namespace RhinoCityJSON
                         {
                             foreach (var solid in composit)
                             {
-                                CJObject readershape = ReaderSupport.getBrepShape(solid, vertListTemplate);
+                                CJObject readershape = new CJObject("");
+                                readershape.setScaler(scaler);
+                                readershape = ReaderSupport.getBrepShape(solid, vertListTemplate, readershape);
 
                                 if (readershape.getError())
                                 {
@@ -397,7 +405,9 @@ namespace RhinoCityJSON
                     }
                     else
                     {
-                        CJObject readershape = ReaderSupport.getBrepShape(template.boundaries, vertListTemplate);
+                        CJObject readershape = new CJObject("");
+                        readershape.setScaler(scaler);
+                        readershape = ReaderSupport.getBrepShape(template.boundaries, vertListTemplate, readershape);
 
                         if (readershape.getError())
                         {
@@ -1355,7 +1365,7 @@ namespace RhinoCityJSON
                 }
 
                 // create template vertlist and templates
-                List<CJTempate> templateGeoList = ReaderSupport.getTemplateGeo(Jcity, setLoD, loDList);
+                List<CJTempate> templateGeoList = ReaderSupport.getTemplateGeo(Jcity, setLoD, loDList, scaler);
 
                 foreach (CJTempate template in templateGeoList)
                 {
@@ -1399,11 +1409,11 @@ namespace RhinoCityJSON
                         foreach (var boundaryGroup in cObject.geometry)
                         {
                             CJObject lodBuilding = new CJObject(oName);
-
                             string groupLoD = boundaryGroup.lod;
 
                             lodBuilding.setLod(groupLoD);
                             lodBuilding.setGeometryType(buildingType);
+                            lodBuilding.setScaler(scaler);
 
                             if (parent != null)
                             {
