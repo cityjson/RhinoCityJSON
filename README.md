@@ -85,11 +85,29 @@ Input:
 The semantic data will be stored per surface at: Properties->Object-Attribute User Text. Additionally the LoD and major object types will be used to create a hiarchy of layers.
 Semantic values with a * are inherited from the parent object.
 
-### Information Divider
-The Object Info Keys and Object Info Values can not be directly used by the bakery component. 
-The Information Divider enables this data to be used.
+### Filter
+The filter component filters the semantic data based on a key/value pair. 
+The output of this component can be fed directly in the Information manager to filter the geometry
 
 Input:
+* Information Keys. The keys of semantic info, this can be either Surface Info Keys or Object Info Keys.
+* Info Values. The values of semantic info, this can be either Surface Info Values or Object Info Values.
+* Filter Info Key. The key that is used to filter on
+* Filter Info Value(s). The values that are tested against
+* Equals/ Not Equals. A boolean, if true the component will return the objects or surfaces where the values match, if false the component will return the objects or surfaces where the values do not math.
+
+Output:
+* Filtered Info Values. The Values of the objects/surfaces that match the requested query.
+
+Note that this component does not filter the geometry, the Information Manager does this.
+
+### Information Manager
+The Object Info Keys and Object Info Values can not be directly used by the bakery component. 
+The Manager Divider enables this data to be used.
+The Information Manager also resolves the collecting of geometry based on the Filter component output
+
+Input:
+* Geometry. A list of single surface Breps.
 * Surface Info Keys. The keys of semantic info that corresponds 1:1 with the geometry output of the Reader component.
 * Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry output of the Reader component.
 * Object Info Keys. The keys of sematic info that corresponds with the object (names).
