@@ -1,6 +1,7 @@
 ﻿using Grasshopper.Kernel;
 using Rhino.Geometry;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -1764,7 +1765,7 @@ namespace RhinoCityJSON
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            //pManager.AddBrepParameter("Geometry", "G", "Geometry input", GH_ParamAccess.item);
+            pManager.AddBrepParameter("Geometry", "G", "Geometry input", GH_ParamAccess.list);
             pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
             pManager.AddGenericParameter("Surface Info Vales", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.tree);
             pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.list);
@@ -1773,7 +1774,7 @@ namespace RhinoCityJSON
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            //pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
+            pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.list);
             pManager.AddTextParameter("Merged Surface Info Keys", "mSiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
             pManager.AddTextParameter("Merged Surface Info Vales", "mSiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
         }
@@ -1784,11 +1785,13 @@ namespace RhinoCityJSON
             var siTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
             var bKeys = new List<string>();
             var biTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
+            var geoList = new List<Brep>();
 
-            DA.GetDataList(0, sKeys);
-            DA.GetDataTree(1, out siTree);
-            DA.GetDataList(2, bKeys);
-            DA.GetDataTree(3, out biTree);
+            DA.GetDataList(0, geoList);
+            DA.GetDataList(1, sKeys);
+            DA.GetDataTree(2, out siTree);
+            DA.GetDataList(3, bKeys);
+            DA.GetDataTree(4, out biTree);
 
             // construct a new key list
             var keyList = new List<string>();
@@ -1812,7 +1815,7 @@ namespace RhinoCityJSON
                     keyList.Add(bKeys[i]);
                     ignoreBool.Add(false);
                 }
-                else
+                else // dub keys have to be removed
                 {
                     ignoreBool.Add(true);
                 }
@@ -1823,23 +1826,6 @@ namespace RhinoCityJSON
 
             var sBranchCollection = siTree.Branches;
             var bBranchCollection = biTree.Branches;
-
-            // Find all names and surface data
-            for (int k = 0; k < sKeys.Count; k++)
-            {
-                for (int i = 0; i < sBranchCollection.Count; i++)
-                {
-                    var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
-
-                    for (int j = 0; j < sKeys.Count; j++)
-                    {
-                        if (keyList[k] == sKeys[j])
-                        {
-                            valueCollection.Add(sBranchCollection[i][j].ToString(), nPath);
-                        }
-                    }
-                }
-            }
 
             // make building dict
             Dictionary<string, List<string>> bBranchDict = new Dictionary<string, List<string>>();
@@ -1860,23 +1846,58 @@ namespace RhinoCityJSON
                 bBranchDict.Add(bBranch[nameIdx].ToString(), templist);
             }
 
+            // Find all names and surface data
+            for (int k = 0; k < sKeys.Count; k++)
+            {
+                for (int i = 0; i < sBranchCollection.Count; i++)
+                {
+                    if (bBranchDict.ContainsKey(sBranchCollection[i][nameIdx].ToString()))
+                    {
+                        var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+
+                        for (int j = 0; j < sKeys.Count; j++)
+                        {
+                            if (keyList[k] == sKeys[j])
+                            {
+                                valueCollection.Add(sBranchCollection[i][j].ToString(), nPath);
+                            }
+                        }
+                    }
+                }
+            }
+
+            var geoIdx = new System.Collections.Concurrent.ConcurrentBag<int>();
             Parallel.For(0, sBranchCollection.Count, i =>
             {
                 var currentBranch = sBranchCollection[i];
                 string branchBuildingName = currentBranch[nameIdx].ToString();
                 var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
 
-                for (int k = 1; k < bKeys.Count; k++)
+                if (bBranchDict.ContainsKey(branchBuildingName))
                 {
-                    if (!ignoreBool[k])
+                    geoIdx.Add(i);
+                    for (int k = 1; k < bKeys.Count; k++)
                     {
-                        valueCollection.Add(bBranchDict[branchBuildingName][k-1], nPath);
+                        if (!ignoreBool[k])
+                        {
+                            valueCollection.Add(bBranchDict[branchBuildingName][k - 1], nPath);
+                        }
                     }
                 }
             });
 
-            DA.SetDataList(0, keyList);
-            DA.SetDataTree(1, valueCollection);
+            var geoIdxList = geoIdx.ToList<int>();
+            geoIdxList.Sort();
+            var newGeoList = new List<Brep>();
+
+            for (int i = 0; i < geoIdxList.Count; i++)
+            {
+                newGeoList.Add(geoList[geoIdxList[i]]);
+            }
+
+            DA.SetDataList(0, newGeoList);
+            DA.SetDataList(1, keyList);
+            DA.SetDataTree(2, valueCollection);
         }
 
         protected override System.Drawing.Bitmap Icon
