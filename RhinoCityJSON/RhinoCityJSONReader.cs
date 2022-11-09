@@ -1869,13 +1869,14 @@ namespace RhinoCityJSON
             var geoIdx = new System.Collections.Concurrent.ConcurrentBag<int>();
             Parallel.For(0, sBranchCollection.Count, i =>
             {
-                var currentBranch = sBranchCollection[i];
-                string branchBuildingName = currentBranch[nameIdx].ToString();
-                var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+            var currentBranch = sBranchCollection[i];
+            string branchBuildingName = currentBranch[nameIdx].ToString();
+            var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
 
                 if (bBranchDict.ContainsKey(branchBuildingName))
                 {
-                    geoIdx.Add(i);
+                    var stringPath = siTree.get_Path(i).ToString();
+                    geoIdx.Add(int.Parse(stringPath.Substring(1, stringPath.Length - 2)));
                     for (int k = 1; k < bKeys.Count; k++)
                     {
                         if (!ignoreBool[k])
@@ -1883,7 +1884,7 @@ namespace RhinoCityJSON
                             valueCollection.Add(bBranchDict[branchBuildingName][k - 1], nPath);
                         }
                     }
-                }
+                }   
             });
 
             var geoIdxList = geoIdx.ToList<int>();
