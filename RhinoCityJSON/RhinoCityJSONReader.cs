@@ -1163,7 +1163,7 @@ namespace RhinoCityJSON
         {
             pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
             pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.item);
-            pManager.AddTextParameter("Surface Info Vales", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
+            pManager.AddTextParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
             pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.item);
             pManager.AddTextParameter("Object Info Values", "OiV", "Values of the semantic information output related to the objects", GH_ParamAccess.item);
             
@@ -1767,7 +1767,7 @@ namespace RhinoCityJSON
         {
             pManager.AddBrepParameter("Geometry", "G", "Geometry input", GH_ParamAccess.list);
             pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Surface Info Vales", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.tree);
+            pManager.AddGenericParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.tree);
             pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.list);
             pManager.AddGenericParameter("Object Info Values", "OiV", "Values of the semantic information output related to the objects", GH_ParamAccess.tree);
         }
@@ -1776,7 +1776,7 @@ namespace RhinoCityJSON
         {
             pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.list);
             pManager.AddTextParameter("Merged Surface Info Keys", "mSiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
-            pManager.AddTextParameter("Merged Surface Info Vales", "mSiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
+            pManager.AddTextParameter("Merged Surface Info Values", "mSiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -2320,7 +2320,7 @@ namespace RhinoCityJSON
     {
         public Filter()
           : base("Filter", "Filter",
-              "Filters the geometry based on the input semanic data and casts the building information to the surface information format to prepare for the bakery",
+              "Filters information based on a key/value pair",
               "RhinoCityJSON", "Processing")
         {
         }
@@ -2328,8 +2328,8 @@ namespace RhinoCityJSON
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddTextParameter("Info Keys", "iK", "Keys of the information output", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Info Vales", "iV", "Values of the information output", GH_ParamAccess.tree);
-            pManager.AddTextParameter("Filter Info Keys", "Fik", "Keys of the Semantic information which is used to filter on", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Info Values", "iV", "Values of the information output", GH_ParamAccess.tree);
+            pManager.AddTextParameter("Filter Info Key", "Fik", "Keys of the Semantic information which is used to filter on", GH_ParamAccess.list);
             pManager.AddTextParameter("Filter Info Value(s)", "FiV", "Value(s) of the semantic information  which is used to filter on", GH_ParamAccess.list);
             pManager.AddBooleanParameter("Equals/ Not Equals", "==", "Booleans that dictates if the value should be equal, or not equal to filter input value", GH_ParamAccess.item, true);
 
@@ -2340,7 +2340,7 @@ namespace RhinoCityJSON
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddTextParameter("Merged Surface Info Vales", "mSiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
+            pManager.AddTextParameter("Filtered Info Values", "FiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -2401,6 +2401,16 @@ namespace RhinoCityJSON
                 return;
             }
 
+            var tempList = new List<string>();
+            foreach (string valueString in keyStrings)
+            {
+                tempList.Add(valueString + "*");
+            }
+
+            foreach (string valueString in tempList)
+            {
+                keyStrings.Add(valueString);
+            }
 
             // find the complying branches
             var dataTree = new Grasshopper.DataTree<string>();

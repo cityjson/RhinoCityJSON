@@ -16,11 +16,15 @@ URL: https://www.food4rhino.com/en/app/rhino-cityjson
 This is the easiest way to install the plugin. However newer features/updates will be released via that outlet only when deemed completely stable and finished.
 This means that updates will be less regular, less versions will be available and experimental features will not be available.
 
+### Via GitHub
+More regularly updated GHA components are available from this github page. 
+These can be found in the "Grasshopper component" folder. Note that, although these components are more up to date, they also are possibly experimental, unfinished and unstable.
+
 ### Build/Compile locally
-If a certain version is desired that is not available via Food4Rhino or if it is desired to edit the code it is possible to compile the code yourself. 
+If it is desired to edit the code it is possible to compile the code yourself. 
 If working with Visual Studio loading the RhinoCityJSON.sln should automatically resolve most of the issues. 
 However, the build output path has to be set to function correctly. 
-It is recommended to set this to the Grasshopper component directory path, or a subfolder of the Grasshopper component directry path. 
+It is recommended to set this to the Grasshopper component directory path, or a subfolder of the Grasshopper component directory path. 
 This path can be easily found by opening Grasshopper, going to File->Special Folders->Component Folder.
 
 ## The GH components
@@ -82,7 +86,7 @@ Input:
 * Surface Info Values. The Values related to the Geometry. (This Tree should be the same length as the geometry List).
 * Activate. A boolean dictating if the component is active or not (Recommended to use a button to activate and not a boolean toggle).
 
-The semantic data will be stored per surface at: Properties->Object-Attribute User Text. Additionally the LoD and major object types will be used to create a hiarchy of layers.
+The semantic data will be stored per surface at: Properties->Object-Attribute User Text. Additionally the LoD and major object types will be used to create a hierarchy of layers.
 Semantic values with a * are inherited from the parent object.
 
 ### Filter
@@ -93,7 +97,7 @@ Input:
 * Information Keys. The keys of semantic info, this can be either Surface Info Keys or Object Info Keys.
 * Info Values. The values of semantic info, this can be either Surface Info Values or Object Info Values.
 * Filter Info Key. The key that is used to filter on
-* Filter Info Value(s). The values that are tested against
+* Filter Info Value(s). The values that are tested against (no * is needed to access inherited values)
 * Equals/ Not Equals. A boolean, if true the component will return the objects or surfaces where the values match, if false the component will return the objects or surfaces where the values do not math.
 
 Output:
@@ -120,4 +124,4 @@ Output:
 ## Known issues/bugs
 * Complex surfaces are not always correctly constructed.
 * A considerable amount of solids are not loaded into Grasshopper/Rhino as solids.
-* Filtering based on building information is currently challenging to do with the native grasshopper components.
+* 3D BAG does not include all the data the Normal bag has included
