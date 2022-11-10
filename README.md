@@ -5,7 +5,7 @@ A Rhino/Grasshopper plugin allowing the CityJSON format (https://www.cityjson.or
 The primary focus of the plugin was to function on the 3D BAG data (https://3dbag.nl/en/viewer). However, the plugin functions as well with other CityJSON files.
 The plugin consists out of multiple Grasshopper components exposing data in a format that is directly usable in grasshopper, and allows all this data to be baked into Rhino.
 
-![Example of the semantic data that can be imported to Rhino](https://raw.githubusercontent.com/jaspervdv/RhinoCityJSON/master/Images/Overview_1.jpg)
+![Example of the semantic data that can be imported to Rhino](https://raw.githubusercontent.com/cityjson/RhinoCityJSON/master/Images/Overview_1.jpg)
 
 Currently only supports CityJSON 1.1 and 1.2.
 
