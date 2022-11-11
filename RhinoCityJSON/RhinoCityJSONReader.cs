@@ -252,7 +252,7 @@ namespace RhinoCityJSON
 
             if (surfaceCurves.Count > 0)
             {
-                Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.1 * scalar); //TODO scale
+                Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.1 * scalar); 
                 surfaceCurves.Clear();
                 try
                 {
@@ -565,8 +565,8 @@ namespace RhinoCityJSON
     public class LoDReader : GH_Component
     {
         public LoDReader()
-          : base("LoDReader", "LReader",
-              "Fetches the Lod levels stored in a CityJSON file",
+          : base("Document Reader", "DReader",
+              "Fetches the Metadata, Textures and Materials from a CityJSON file, Autoresolves when multiple inputs",
               "RhinoCityJSON", "Reading")
         {
         }
@@ -574,11 +574,15 @@ namespace RhinoCityJSON
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.list, "");
+            pManager.AddBooleanParameter("Activate", "A", "Activate reader", GH_ParamAccess.item, false);
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddTextParameter("LoD", "L", "LoD levels", GH_ParamAccess.item);
+            pManager.AddTextParameter("Metadata Keys", "MdK", "Keys of the Metadata stored in the files", GH_ParamAccess.item);
+            pManager.AddTextParameter("Metadata Values", "MdV", "Values of the Metadata stored in the files", GH_ParamAccess.item);
+            pManager.AddTextParameter("Material", "M", "Color output representing the material list stord in the files", GH_ParamAccess.tree);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -611,12 +615,21 @@ namespace RhinoCityJSON
             foreach (var path in pathList)
             {
                 // Check if valid CityJSON format
-                var Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
+                dynamic Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
                 if (!ReaderSupport.CheckValidity(Jcity))
                 {
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
                     return;
                 }
+                // fetch metadata
+                foreach(var meta in Jcity.metadata)
+                {
+                    Rhino.RhinoApp.WriteLine(meta.ToString());
+                }
+
+                // fetch materials
+
+                // get LoD
                 foreach (var objectGroup in Jcity.CityObjects)
                 {
                     foreach (var cObject in objectGroup)
@@ -776,7 +789,6 @@ namespace RhinoCityJSON
         }
 
     }
-
 
 
     public class SimpleRhinoCityJSONReader : GH_Component
@@ -1166,7 +1178,7 @@ namespace RhinoCityJSON
             pManager.AddTextParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
             pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.item);
             pManager.AddTextParameter("Object Info Values", "OiV", "Values of the semantic information output related to the objects", GH_ParamAccess.item);
-            
+            //pManager.AddGenericParameter("Document Info", "Di", "Information related to the document (metadata, materials and textures", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -1268,7 +1280,6 @@ namespace RhinoCityJSON
 
             // set data output list
             var dataTree = new Grasshopper.DataTree<string>();
-
 
             // get scale from current session
             double scaler = 1;
@@ -1934,6 +1945,7 @@ namespace RhinoCityJSON
             pManager.AddBrepParameter("Geometry", "G", "Geometry Input", GH_ParamAccess.list);
             pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
             pManager.AddGenericParameter("Surface Info", "SiV", "Semantic information output related to the surfaces", GH_ParamAccess.tree);
+            //pManager.AddGenericParameter("Document Info", "Di", "Information related to the document (metadata, materials and textures", GH_ParamAccess.list);
             pManager.AddBooleanParameter("Activate", "A", "Activate bakery", GH_ParamAccess.item, false);
             pManager[0].Optional = true;
             pManager[1].Optional = true;
@@ -2264,7 +2276,7 @@ namespace RhinoCityJSON
                     string fullName = branchCollection[i][j].ToString();
                     if (j == 0)
                     {
-                        fullName = fullName.Substring(0, fullName.Length - BakerySupport.getPopLength(branchCollection[i][lodIdx].ToString())); // TODO make this smart
+                        fullName = fullName.Substring(0, fullName.Length - BakerySupport.getPopLength(branchCollection[i][lodIdx].ToString())); 
                     }
 
                     objectAttributes.SetUserString(keyList[j], fullName);
