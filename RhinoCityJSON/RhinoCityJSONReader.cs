@@ -466,6 +466,28 @@ namespace RhinoCityJSON
             }
             return tName;
         }
+
+        static public double getDocScaler()
+        {
+            string UnitString = Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem.ToString();
+
+            if (UnitString == "Meters")
+            {
+               return 1;
+            }
+            else if (UnitString == "Centimeters")
+            {
+                return 100;
+            }
+            else if (UnitString == "Millimeters")
+            {
+                return 1000;
+            }
+            else
+            {
+                return -1;
+            }
+        }
     }
 
 
@@ -903,6 +925,15 @@ namespace RhinoCityJSON
 
             Dictionary<string, List<Brep>> lodNestedBreps = new Dictionary<string, List<Brep>>();
 
+            // get scale from current session
+            double scaler = ReaderSupport.getDocScaler();
+
+            if (scaler == -1)
+            {
+                scaler = 1;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Rhino document scale is not supported, defaulted to unit 1");
+            }
+
             // coordinates of the first input
             double globalX = 0.0;
             double globalY = 0.0;
@@ -910,9 +941,9 @@ namespace RhinoCityJSON
 
             bool isFirst = true;
 
-            double originX = worldOrigin.X;
-            double originY = worldOrigin.Y;
-            double originZ = worldOrigin.Z;
+            double originX = worldOrigin.X * scaler;
+            double originY = worldOrigin.Y * scaler;
+            double originZ = worldOrigin.Z * scaler;
 
             foreach (var path in pathList)
             {
@@ -925,9 +956,9 @@ namespace RhinoCityJSON
                 }
 
                 // get scalers
-                double scaleX = Jcity.transform.scale[0];
-                double scaleY = Jcity.transform.scale[1];
-                double scaleZ = Jcity.transform.scale[2];
+                double scaleX = Jcity.transform.scale[0] * scaler;
+                double scaleY = Jcity.transform.scale[1] * scaler;
+                double scaleZ = Jcity.transform.scale[2] * scaler;
 
                 // translation vectors
                 double localX = 0.0;
@@ -977,7 +1008,7 @@ namespace RhinoCityJSON
                 }
 
                 // create template vertlist and templates
-                List<CJTempate> templateGeoList = ReaderSupport.getTemplateGeo(Jcity, setLoD, loDList);
+                List<CJTempate> templateGeoList = ReaderSupport.getTemplateGeo(Jcity, setLoD, loDList, scaler);
 
                 foreach (CJTempate template in templateGeoList)
                 {
@@ -1002,6 +1033,7 @@ namespace RhinoCityJSON
                         {
                             string loD = (string)boundaryGroup.lod;
                             CJObject lodBuilding = new CJObject(objectGroup.Name + "-" + loD);
+                            lodBuilding.setScaler(scaler);
 
                             if (setLoD && !loDList.Contains((string)boundaryGroup.lod))
                             {
@@ -1282,26 +1314,13 @@ namespace RhinoCityJSON
             var dataTree = new Grasshopper.DataTree<string>();
 
             // get scale from current session
-            double scaler = 1;
-            string UnitString = Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem.ToString();
+            double scaler = ReaderSupport.getDocScaler();
 
-            if (UnitString == "Meters")
+            if (scaler == -1)
             {
                 scaler = 1;
-            }
-            else if (UnitString == "Centimeters")
-            {
-                scaler = 100;
-            }
-            else if (UnitString == "Millimeters")
-            {
-                scaler = 1000;
-            }
-            else
-            {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Rhino document scale is not supported, defaulted to unit 1");
             }
-
 
             // coordinates of the first input
             double globalX = 0.0;
