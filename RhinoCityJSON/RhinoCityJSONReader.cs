@@ -1044,12 +1044,12 @@ namespace RhinoCityJSON
 
                             if (boundaryGroup.template != null)
                             {
-
                                 CJTempate shapeTemplate = templateGeoList[(int)boundaryGroup.template];
                                 loD = shapeTemplate.getLod();
 
                                 List<Brep> shapeList = shapeTemplate.getBrepList();
                                 var anchorPoint = vertList[(int)boundaryGroup.boundaries[0]];
+                                var localBrepList = new List<Brep>();
 
                                 foreach (Brep shape in shapeList)
                                 {
@@ -1061,8 +1061,9 @@ namespace RhinoCityJSON
 
                                     transShape.Translate(x, y, z);
 
-                                    breps.Add(transShape);
+                                    localBrepList.Add(transShape);
                                 }
+                                lodBuilding.setBrepList(localBrepList);
                             }
 
                             // this is all the geometry in one shape with info
