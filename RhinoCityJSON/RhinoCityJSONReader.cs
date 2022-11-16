@@ -1016,9 +1016,9 @@ namespace RhinoCityJSON
                 // get location
                 if (translate)
                 {
-                    localX = Jcity.transform.translate[0];
-                    localY = Jcity.transform.translate[1];
-                    localZ = Jcity.transform.translate[2];
+                    localX = Jcity.transform.translate[0] * scaler;
+                    localY = Jcity.transform.translate[1] * scaler;
+                    localZ = Jcity.transform.translate[2] * scaler;
                 }
                 else if (isFirst && !translate)
                 {
@@ -1029,9 +1029,9 @@ namespace RhinoCityJSON
                 }
                 else if (!isFirst && !translate)
                 {
-                    localX = Jcity.transform.translate[0] - globalX;
-                    localY = Jcity.transform.translate[1] - globalY;
-                    localZ = Jcity.transform.translate[2] - globalZ;
+                    localX = Jcity.transform.translate[0] * scaler - globalX * scaler;
+                    localY = Jcity.transform.translate[1] * scaler - globalY * scaler;
+                    localZ = Jcity.transform.translate[2] * scaler - globalZ * scaler;
                 }
 
                 // ceate vertlist
@@ -1406,9 +1406,9 @@ namespace RhinoCityJSON
                 // get location
                 if (translate)
                 {
-                    localX = Jcity.transform.translate[0];
-                    localY = Jcity.transform.translate[1];
-                    localZ = Jcity.transform.translate[2];
+                    localX = Jcity.transform.translate[0] * scaler;
+                    localY = Jcity.transform.translate[1] * scaler;
+                    localZ = Jcity.transform.translate[2] * scaler;
                 }
                 else if (isFirst && !translate)
                 {
@@ -1419,9 +1419,9 @@ namespace RhinoCityJSON
                 }
                 else if (!isFirst && !translate)
                 {
-                    localX = Jcity.transform.translate[0] - globalX;
-                    localY = Jcity.transform.translate[1] - globalY;
-                    localZ = Jcity.transform.translate[2] - globalZ;
+                    localX = Jcity.transform.translate[0] * scaler - globalX * scaler;
+                    localY = Jcity.transform.translate[1] * scaler - globalY * scaler;
+                    localZ = Jcity.transform.translate[2] * scaler - globalZ * scaler;
                 }
 
                 // ceate vertlist
