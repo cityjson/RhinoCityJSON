@@ -130,8 +130,8 @@
   <data name="keyselectoricon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\keyselectoricon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="lodicon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\lodicon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="metaicon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\metaicon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="readericon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\readericon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>

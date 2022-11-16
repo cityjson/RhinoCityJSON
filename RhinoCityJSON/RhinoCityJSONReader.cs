@@ -602,7 +602,7 @@ namespace RhinoCityJSON
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddTextParameter("Metadata Keys", "MdK", "Keys of the Metadata stored in the files", GH_ParamAccess.item);
-            pManager.AddTextParameter("Metadata Values", "MdV", "Values of the Metadata stored in the files", GH_ParamAccess.item);
+            pManager.AddTextParameter("Metadata Values", "MdV", "Values of the Metadata stored in the files", GH_ParamAccess.tree);
             pManager.AddTextParameter("LoD", "L", "LoD levels", GH_ParamAccess.item);
             //pManager.AddTextParameter("Material", "M", "Color output representing the material list stord in the files", GH_ParamAccess.tree);
         }
@@ -614,12 +614,12 @@ namespace RhinoCityJSON
             if (!DA.GetDataList(0, pathList)) return;
             DA.GetData(1, ref boolOn);
 
+
             if (!boolOn)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Node is offline");
                 return;
             }
-
             // validate the data and warn the user if invalid data is supplied.
             if (pathList.Count == 0)
             {
@@ -641,10 +641,14 @@ namespace RhinoCityJSON
             }
 
             List<string> lodLevels = new List<string>();
-            Dictionary<string, string> metadata = new Dictionary<string, string>();
+            var nestedMetaData = new List<Dictionary<string, string>>();
+
+            // fetch materials
+            Dictionary<string, List<string>> materialsDict = new Dictionary<string, List<string>>();
 
             foreach (var path in pathList)
             {
+                Dictionary<string, string> metadata = new Dictionary<string, string>();
                 // Check if valid CityJSON format
                 dynamic Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
                 if (!ReaderSupport.CheckValidity(Jcity))
@@ -654,39 +658,55 @@ namespace RhinoCityJSON
                 }
 
                 // fetch metadata
-                foreach (Newtonsoft.Json.Linq.JProperty metaGroup in Jcity.metadata)
+                if (Jcity.metadata != null)
                 {
-                    var metaValue = metaGroup.Value;
-                    var metaName = metaGroup.Name;
+                    foreach (Newtonsoft.Json.Linq.JProperty metaGroup in Jcity.metadata)
+                    {
+                        var metaValue = metaGroup.Value;
+                        var metaName = metaGroup.Name;
 
-                    if (metaValue.Count() == 0)
-                    {
-                        metadata.Add(metaName.ToString(), metaValue.ToString());
-                    }
-                    else
-                    {
-                        if (metaName.ToString() == "geographicalExtent" && metaValue.Count() == 6)
+                        if (metaValue.Count() == 0)
                         {
-                            // create two string points
-                            string minPoint = "{" + metaValue[0].ToString() + ", " + metaValue[1].ToString() + ", " + metaValue[2].ToString() + "}";
-                            metadata.Add("geographicalExtent minPoint", minPoint);
-
-                            string maxPoint = "{" + metaValue[3].ToString() + ", " + metaValue[4].ToString() + ", " + metaValue[5].ToString() + "}";
-                            metadata.Add("geographicalExtent maxPoint", maxPoint);
-
+                            metadata.Add(metaName.ToString(), metaValue.ToString());
                         }
                         else
                         {
-                            foreach (Newtonsoft.Json.Linq.JProperty nestedMetaValue in metaValue)
+                            if (metaName.ToString() == "geographicalExtent" && metaValue.Count() == 6)
                             {
-                                metadata.Add(metaName.ToString() + " " + nestedMetaValue.Name.ToString(), nestedMetaValue.Value.ToString());
+                                // create two string points
+                                string minPoint = "{" + metaValue[0].ToString() + ", " + metaValue[1].ToString() + ", " + metaValue[2].ToString() + "}";
+                                metadata.Add("geographicalExtent minPoint", minPoint);
+
+                                string maxPoint = "{" + metaValue[3].ToString() + ", " + metaValue[4].ToString() + ", " + metaValue[5].ToString() + "}";
+                                metadata.Add("geographicalExtent maxPoint", maxPoint);
+
+                            }
+                            else
+                            {
+                                foreach (Newtonsoft.Json.Linq.JProperty nestedMetaValue in metaValue)
+                                {
+                                    metadata.Add(metaName.ToString() + " " + nestedMetaValue.Name.ToString(), nestedMetaValue.Value.ToString());
+                                }
                             }
                         }
+
                     }
-                    
+                    nestedMetaData.Add(metadata);
                 }
-                    
-                // fetch materials
+                else
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No metadata found!");
+                }
+
+                var appearance = Jcity.appearance;
+                if (appearance != null)
+                {
+                    var materials = appearance.materials;
+                    if (materials != null)
+                    {
+                        
+                    }
+                }
 
                 // get LoD
                 foreach (var objectGroup in Jcity.CityObjects)
@@ -712,18 +732,43 @@ namespace RhinoCityJSON
                 }
             }
 
+            // make tree from meta data
+            var dataTree = new Grasshopper.DataTree<string>();
+
             var metaValues = new List<string>();
             var metaKeys = new List<string>();
 
-            foreach (var item in metadata)
+            foreach (var metadata in nestedMetaData)
             {
-                metaKeys.Add(item.Key);
-                metaValues.Add(item.Value);
+                foreach (var item in metadata)
+                {
+                    if (!metaKeys.Contains(item.Key))
+                    {
+                        metaKeys.Add(item.Key);
+                    }
+                }
             }
+
+            int counter = 0;
+            foreach (var metadata in nestedMetaData)
+            {
+                var nPath = new Grasshopper.Kernel.Data.GH_Path(counter);
+
+                foreach (var metaKey in metaKeys)
+                {
+                    if (metadata.ContainsKey(metaKey))
+                    {
+                        dataTree.Add(metadata[metaKey], nPath);
+                    }
+                }
+                counter++;
+            }
+
+
 
             lodLevels.Sort();
             DA.SetDataList(0, metaKeys);
-            DA.SetDataList(1, metaValues);
+            DA.SetDataTree(1, dataTree);
             DA.SetDataList(2, lodLevels);
         }
 
@@ -731,7 +776,7 @@ namespace RhinoCityJSON
         {
             get
             {
-                return RhinoCityJSON.Properties.Resources.lodicon;
+                return RhinoCityJSON.Properties.Resources.metaicon;
             }
         }
 
