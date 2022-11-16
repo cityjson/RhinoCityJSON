@@ -989,9 +989,9 @@ namespace RhinoCityJSON
 
             bool isFirst = true;
 
-            double originX = worldOrigin.X * scaler;
-            double originY = worldOrigin.Y * scaler;
-            double originZ = worldOrigin.Z * scaler;
+            double originX = worldOrigin.X;
+            double originY = worldOrigin.Y;
+            double originZ = worldOrigin.Z;
 
             foreach (var path in pathList)
             {
@@ -1379,9 +1379,9 @@ namespace RhinoCityJSON
 
             bool isFirst = true;
 
-            double originX = worldOrigin.X * scaler;
-            double originY = worldOrigin.Y * scaler;
-            double originZ = worldOrigin.Z * scaler;
+            double originX = worldOrigin.X;
+            double originY = worldOrigin.Y;
+            double originZ = worldOrigin.Z;
 
             foreach (var path in pathList)
             {
