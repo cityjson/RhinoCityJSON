@@ -601,16 +601,24 @@ namespace RhinoCityJSON
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddTextParameter("LoD", "L", "LoD levels", GH_ParamAccess.item);
             pManager.AddTextParameter("Metadata Keys", "MdK", "Keys of the Metadata stored in the files", GH_ParamAccess.item);
             pManager.AddTextParameter("Metadata Values", "MdV", "Values of the Metadata stored in the files", GH_ParamAccess.item);
-            pManager.AddTextParameter("Material", "M", "Color output representing the material list stord in the files", GH_ParamAccess.tree);
+            pManager.AddTextParameter("LoD", "L", "LoD levels", GH_ParamAccess.item);
+            //pManager.AddTextParameter("Material", "M", "Color output representing the material list stord in the files", GH_ParamAccess.tree);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            bool boolOn = false;
             List<string> pathList = new List<string>();
             if (!DA.GetDataList(0, pathList)) return;
+            DA.GetData(1, ref boolOn);
+
+            if (!boolOn)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Node is offline");
+                return;
+            }
 
             // validate the data and warn the user if invalid data is supplied.
             if (pathList.Count == 0)
@@ -633,6 +641,7 @@ namespace RhinoCityJSON
             }
 
             List<string> lodLevels = new List<string>();
+            Dictionary<string, string> metadata = new Dictionary<string, string>();
 
             foreach (var path in pathList)
             {
@@ -643,12 +652,40 @@ namespace RhinoCityJSON
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
                     return;
                 }
-                // fetch metadata
-                foreach(var meta in Jcity.metadata)
-                {
-                    Rhino.RhinoApp.WriteLine(meta.ToString());
-                }
 
+                // fetch metadata
+                foreach (Newtonsoft.Json.Linq.JProperty metaGroup in Jcity.metadata)
+                {
+                    var metaValue = metaGroup.Value;
+                    var metaName = metaGroup.Name;
+
+                    if (metaValue.Count() == 0)
+                    {
+                        metadata.Add(metaName.ToString(), metaValue.ToString());
+                    }
+                    else
+                    {
+                        if (metaName.ToString() == "geographicalExtent" && metaValue.Count() == 6)
+                        {
+                            // create two string points
+                            string minPoint = "{" + metaValue[0].ToString() + ", " + metaValue[1].ToString() + ", " + metaValue[2].ToString() + "}";
+                            metadata.Add("geographicalExtent minPoint", minPoint);
+
+                            string maxPoint = "{" + metaValue[3].ToString() + ", " + metaValue[4].ToString() + ", " + metaValue[5].ToString() + "}";
+                            metadata.Add("geographicalExtent maxPoint", maxPoint);
+
+                        }
+                        else
+                        {
+                            foreach (Newtonsoft.Json.Linq.JProperty nestedMetaValue in metaValue)
+                            {
+                                metadata.Add(metaName.ToString() + " " + nestedMetaValue.Name.ToString(), nestedMetaValue.Value.ToString());
+                            }
+                        }
+                    }
+                    
+                }
+                    
                 // fetch materials
 
                 // get LoD
@@ -674,9 +711,20 @@ namespace RhinoCityJSON
                     }
                 }
             }
-            lodLevels.Sort();
-            DA.SetDataList(0, lodLevels);
 
+            var metaValues = new List<string>();
+            var metaKeys = new List<string>();
+
+            foreach (var item in metadata)
+            {
+                metaKeys.Add(item.Key);
+                metaValues.Add(item.Value);
+            }
+
+            lodLevels.Sort();
+            DA.SetDataList(0, metaKeys);
+            DA.SetDataList(1, metaValues);
+            DA.SetDataList(2, lodLevels);
         }
 
         protected override System.Drawing.Bitmap Icon
@@ -1173,6 +1221,7 @@ namespace RhinoCityJSON
             get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a2754e8"); }
         }
     }
+
 
     public class RhinoCityJSONReader : GH_Component
     {
