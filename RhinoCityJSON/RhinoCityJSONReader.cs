@@ -142,6 +142,7 @@ namespace RhinoCityJSON
         };
     }
 
+
     class ReaderSupport
     {
         static public List<int> getSematicValues(dynamic boundaryGroup)
@@ -1879,6 +1880,115 @@ namespace RhinoCityJSON
     }
 
 
+    public class RhinoGeoReader : GH_Component
+    {
+        public RhinoGeoReader()
+          : base("RhinoCityJSONObject", "RCJObject",
+              "Fetches the attributes from an object",
+              "RhinoCityJSON", "Reading")
+        {
+        }
+
+        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        {
+            pManager.AddGeometryParameter("Geometry", "G", "Geometry stored in Rhino document", GH_ParamAccess.list);
+        }
+
+        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        {
+            pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
+            pManager.AddTextParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.list);
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            var geometery = new List<Grasshopper.Kernel.Types.IGH_GeometricGoo>();
+            DA.GetDataList(0, geometery);
+
+            if (geometery.Count > 1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Geometry input empty");
+            }
+
+            var valueCollection = new Grasshopper.DataTree<string>();
+            var keyList = new List<string>();
+            var rawDict = new List<Dictionary<string, string>>();
+
+            var activeDoc = Rhino.RhinoDoc.ActiveDoc;
+
+            var l = new List<string>();
+            var b = new List<string>();
+
+            foreach (var geo in geometery)
+            {
+                Guid id = geo.ReferenceID;
+
+                var obb = activeDoc.Objects.FindId(id);
+                var obbAttributes = obb.Attributes;
+
+                System.Collections.Specialized.NameValueCollection keyValues = obbAttributes.GetUserStrings();
+                var localDict = new Dictionary<string, string>();
+
+                foreach (var key in keyValues.AllKeys)
+                {
+                    if (!keyList.Contains(key))
+                    {
+                        keyList.Add(key);
+                    }
+
+                    localDict.Add(key, obbAttributes.GetUserString(key));
+                }
+                rawDict.Add(localDict);
+            }
+
+            int counter = 0;
+            foreach (var surfacesemantic in rawDict)
+            {
+                var nPath = new Grasshopper.Kernel.Data.GH_Path(counter);
+                foreach (var key in keyList)
+                {
+                    if (key == "Object Name")
+                    {
+                        valueCollection.Add(surfacesemantic[key] + "_LoD_" + surfacesemantic["Object LoD"], nPath);
+                    }
+                    else if (surfacesemantic.ContainsKey(key))
+                    {
+                        valueCollection.Add(surfacesemantic[key], nPath);
+                    }
+                    else
+                    {
+                        valueCollection.Add("None", nPath);
+                    }
+                }
+                counter++;
+            }
+
+            DA.SetDataList(0, keyList);
+            DA.SetDataTree(1, valueCollection);
+
+        }
+
+        protected override System.Drawing.Bitmap Icon
+        {
+            get
+            {
+                return RhinoCityJSON.Properties.Resources.rreadericon;
+            }
+        }
+
+        /// <summary>
+        /// Each component must have a unique Guid to identify it. 
+        /// It is vital this Guid doesn't change otherwise old ghx files 
+        /// that use the old ID will partially fail during loading.
+        /// </summary>
+        public override Guid ComponentGuid
+        {
+            get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a2754e9"); }
+        }
+
+    }
+
+
     public class BuildingToSurfaceInfo : GH_Component
     {
         public BuildingToSurfaceInfo()
@@ -1895,6 +2005,8 @@ namespace RhinoCityJSON
             pManager.AddGenericParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.tree);
             pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.list);
             pManager.AddGenericParameter("Object Info Values", "OiV", "Values of the semantic information output related to the objects", GH_ParamAccess.tree);
+            pManager[3].Optional = true;
+            pManager[4].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -1917,6 +2029,12 @@ namespace RhinoCityJSON
             DA.GetDataTree(2, out siTree);
             DA.GetDataList(3, bKeys);
             DA.GetDataTree(4, out biTree);
+
+            bool bFilter = true; // TODO make function with only surface data input
+            if (bKeys.Count >= 0)
+            {
+                bFilter = false;
+            }
 
             // construct a new key list
             var keyList = new List<string>();
@@ -2044,6 +2162,7 @@ namespace RhinoCityJSON
             get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a274e40"); }
         }
     }
+
 
     public class Bakery : GH_Component
     {
@@ -2441,6 +2560,7 @@ namespace RhinoCityJSON
             get { return new Guid("b2364c3a-18ae-4eb3-aeb3-f76e8a274e18"); }
         }
     }
+
 
     public class Filter : GH_Component
     {

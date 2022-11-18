@@ -123,6 +123,16 @@ namespace RhinoCityJSON.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        public static System.Drawing.Bitmap rreadericon {
+            get {
+                object obj = ResourceManager.GetObject("rreadericon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         public static System.Drawing.Bitmap settingsicon {
             get {
                 object obj = ResourceManager.GetObject("settingsicon", resourceCulture);
