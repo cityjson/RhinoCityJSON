@@ -605,7 +605,8 @@ namespace RhinoCityJSON
             pManager.AddTextParameter("Metadata Keys", "MdK", "Keys of the Metadata stored in the files", GH_ParamAccess.item);
             pManager.AddTextParameter("Metadata Values", "MdV", "Values of the Metadata stored in the files", GH_ParamAccess.tree);
             pManager.AddTextParameter("LoD", "L", "LoD levels", GH_ParamAccess.item);
-            //pManager.AddTextParameter("Material", "M", "Color output representing the material list stord in the files", GH_ParamAccess.tree);
+            pManager.AddTextParameter("Material Keys", "MK", "Key output representing the material list stord in the files", GH_ParamAccess.list);
+            pManager.AddTextParameter("Material Values", "MV", "Color output representing the material list stord in the files", GH_ParamAccess.tree);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -642,9 +643,19 @@ namespace RhinoCityJSON
             }
 
             List<string> lodLevels = new List<string>();
+            var materialsTree = new Grasshopper.DataTree<string>(); ;
             var nestedMetaData = new List<Dictionary<string, string>>();
-
-            // fetch materials
+            List<string> materialKeyList = new List<string>()
+            {
+                "name",
+                "ambientIntensity",
+                "diffuseColor",
+                "emissiveColor",
+                "specularColor",
+                "shininess",
+                "transparency",
+                "isSmooth"
+            };
             Dictionary<string, List<string>> materialsDict = new Dictionary<string, List<string>>();
 
             foreach (var path in pathList)
@@ -699,14 +710,55 @@ namespace RhinoCityJSON
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No metadata found!");
                 }
 
+                // get materials
                 var appearance = Jcity.appearance;
                 if (appearance != null)
                 {
                     var materials = appearance.materials;
                     if (materials != null)
                     {
-                        
+                        int c = 0;
+                        foreach (var material in materials)
+                        {
+                            var nPath = new Grasshopper.Kernel.Data.GH_Path(c);
+
+                            foreach (var mKey in materialKeyList)
+                            {
+                                var currentValue = material[mKey];
+                                if (currentValue != null)
+                                {
+                                    if (currentValue.Type == Newtonsoft.Json.Linq.JTokenType.Array)
+                                    {
+                                        string materialString = "{" + currentValue[0] + ", " + currentValue[1] + ", " + currentValue[2] + " }"; 
+                                        materialsTree.Add(materialString, nPath);
+                                       
+                                    }
+                                    else
+                                    {
+                                        materialsTree.Add(material[mKey].ToString(), nPath);
+                                    }
+
+                                    
+                                }
+                                else
+                                {
+                                    materialsTree.Add("None", nPath);
+                                }
+                                
+                            }
+                            c++;
+                        }
                     }
+                    else
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No materials found!");
+                        materialKeyList = new List<string>();
+                    }
+                }
+                else
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No materials found!");
+                    materialKeyList = new List<string>();
                 }
 
                 // get LoD
@@ -731,6 +783,9 @@ namespace RhinoCityJSON
                         }
                     }
                 }
+
+
+
             }
 
             // make tree from meta data
@@ -771,6 +826,8 @@ namespace RhinoCityJSON
             DA.SetDataList(0, metaKeys);
             DA.SetDataTree(1, dataTree);
             DA.SetDataList(2, lodLevels);
+            DA.SetDataList(3, materialKeyList);
+            DA.SetDataTree(4, materialsTree);
         }
 
         protected override System.Drawing.Bitmap Icon
