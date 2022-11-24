@@ -729,7 +729,7 @@ namespace RhinoCityJSON
                                 {
                                     if (currentValue.Type == Newtonsoft.Json.Linq.JTokenType.Array)
                                     {
-                                        string materialString = "{" + currentValue[0] + ", " + currentValue[1] + ", " + currentValue[2] + " }"; 
+                                        string materialString = Math.Round((float)currentValue[0] * 256) + "," + Math.Round((float)currentValue[1] * 256) + "," + Math.Round((float)currentValue[2] * 256); 
                                         materialsTree.Add(materialString, nPath);                                
                                     }
                                     else
