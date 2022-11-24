@@ -730,21 +730,17 @@ namespace RhinoCityJSON
                                     if (currentValue.Type == Newtonsoft.Json.Linq.JTokenType.Array)
                                     {
                                         string materialString = "{" + currentValue[0] + ", " + currentValue[1] + ", " + currentValue[2] + " }"; 
-                                        materialsTree.Add(materialString, nPath);
-                                       
+                                        materialsTree.Add(materialString, nPath);                                
                                     }
                                     else
                                     {
                                         materialsTree.Add(material[mKey].ToString(), nPath);
                                     }
-
-                                    
                                 }
                                 else
                                 {
                                     materialsTree.Add("None", nPath);
-                                }
-                                
+                                }      
                             }
                             c++;
                         }
@@ -2087,8 +2083,15 @@ namespace RhinoCityJSON
             DA.GetDataList(3, bKeys);
             DA.GetDataTree(4, out biTree);
 
+            if (bKeys.Count > 0 && biTree.DataCount == 0 ||
+                bKeys.Count == 0 && biTree.DataCount > 0)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Object info input is re1uired to be either both null, or both filled");
+                return;
+            }
+
             bool bFilter = true; // TODO make function with only surface data input
-            if (bKeys.Count >= 0)
+            if (bKeys.Count <= 0)
             {
                 bFilter = false;
             }
@@ -2140,7 +2143,7 @@ namespace RhinoCityJSON
                     {
                         continue;
                     }
-                    
+
                     templist.Add(bBranch[i].ToString());
                 }
                 bBranchDict.Add(bBranch[nameIdx].ToString(), templist);
@@ -2151,7 +2154,22 @@ namespace RhinoCityJSON
             {
                 for (int i = 0; i < sBranchCollection.Count; i++)
                 {
-                    if (bBranchDict.ContainsKey(sBranchCollection[i][nameIdx].ToString()))
+                    if (bFilter)
+                    {
+                        if (bBranchDict.ContainsKey(sBranchCollection[i][nameIdx].ToString()))
+                        {
+                            var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+
+                            for (int j = 0; j < sKeys.Count; j++)
+                            {
+                                if (keyList[k] == sKeys[j])
+                                {
+                                    valueCollection.Add(sBranchCollection[i][j].ToString(), nPath);
+                                }
+                            }
+                        }
+                    }
+                    else
                     {
                         var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
 
@@ -2163,28 +2181,36 @@ namespace RhinoCityJSON
                             }
                         }
                     }
+
                 }
             }
 
             var geoIdx = new System.Collections.Concurrent.ConcurrentBag<int>();
             Parallel.For(0, sBranchCollection.Count, i =>
             {
-            var currentBranch = sBranchCollection[i];
-            string branchBuildingName = currentBranch[nameIdx].ToString();
-            var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
-
-                if (bBranchDict.ContainsKey(branchBuildingName))
+                var currentBranch = sBranchCollection[i];
+                string branchBuildingName = currentBranch[nameIdx].ToString();
+                var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+                if (bFilter)
+                {
+                    if (bBranchDict.ContainsKey(branchBuildingName))
+                    {
+                        var stringPath = siTree.get_Path(i).ToString();
+                        geoIdx.Add(int.Parse(stringPath.Substring(1, stringPath.Length - 2)));
+                        for (int k = 1; k < bKeys.Count; k++)
+                        {
+                            if (!ignoreBool[k])
+                            {
+                                valueCollection.Add(bBranchDict[branchBuildingName][k - 1], nPath);
+                            }
+                        }
+                    }
+                }
+                else
                 {
                     var stringPath = siTree.get_Path(i).ToString();
                     geoIdx.Add(int.Parse(stringPath.Substring(1, stringPath.Length - 2)));
-                    for (int k = 1; k < bKeys.Count; k++)
-                    {
-                        if (!ignoreBool[k])
-                        {
-                            valueCollection.Add(bBranchDict[branchBuildingName][k - 1], nPath);
-                        }
-                    }
-                }   
+                }
             });
 
             var geoIdxList = geoIdx.ToList<int>();
@@ -2195,8 +2221,9 @@ namespace RhinoCityJSON
             {
                 newGeoList.Add(geoList[geoIdxList[i]]);
             }
-
             DA.SetDataList(0, newGeoList);
+
+
             DA.SetDataList(1, keyList);
             DA.SetDataTree(2, valueCollection);
         }
