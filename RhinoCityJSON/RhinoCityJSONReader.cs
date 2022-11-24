@@ -42,6 +42,8 @@ namespace RhinoCityJSON
         private double scaler_ = 1;
         private bool hasError_ = false;
 
+        private List<int> materialIdx_ = new List<int>();
+        private List<int> cleanedMaterialIdx_ = new List<int>();
         private List<string> internalizedSurfTypes_ = new List<string>();
         private List<Dictionary<string, string>> surfaceSemantics_ = new List<Dictionary<string, string>>();
         private List<Dictionary<string, string>> cleanedSurfaceSemantics_ = new List<Dictionary<string, string>>();
@@ -63,11 +65,21 @@ namespace RhinoCityJSON
         public List<string> getPresentTypes() { return internalizedSurfTypes_; }
         public List<Dictionary<string, string>> getSurfaceSemantics() { return surfaceSemantics_; }
         public List<Dictionary<string, string>> getCSurfaceSemantics() { return cleanedSurfaceSemantics_; }
+        public List<int> getMaterialValues() { return materialIdx_; }
+        public List<int> getCMaterialValues() { return cleanedMaterialIdx_; }
         public void addCsurfaceSemantic(List<Dictionary<string, string>> surfaceSemantics)
         {
             foreach (Dictionary<string, string> surfaceSemantic in surfaceSemantics)
             {
                 cleanedSurfaceSemantics_.Add(surfaceSemantic);
+            }
+        }
+
+        public void addCmaterialVaues(List<int> surfaceValues)
+        {
+            foreach(int surfaceValue in surfaceValues)
+            {
+                cleanedMaterialIdx_.Add(surfaceValue);
             }
         }
 
@@ -109,6 +121,65 @@ namespace RhinoCityJSON
                     {
                         surfaceSemantics_.Add(surfaceSemantics[typeIdx]);
                     }
+                }
+            }
+        }
+
+        public void matchMaterials(dynamic materialData, int ind = 0)
+        {
+            foreach (var solidIdx in materialData)
+            {
+                foreach (var typeIdx in solidIdx)
+                {
+                    if (ind == 1)
+                    {
+                        if (typeIdx["values"] != null)
+                        {
+                            foreach (var solid in typeIdx["values"])
+                            {
+                                foreach (var valueIdx in solid)
+                                {
+                                    if (valueIdx == null)
+                                    {
+                                        materialIdx_.Add(-1);
+                                    }
+                                    else
+                                    {
+                                        materialIdx_.Add((int)valueIdx);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                        
+                    }// TODO make function with railway model
+                    if (ind == 0)
+                    {
+                        if (typeIdx["values"] != null)
+                        {
+
+                            foreach (var valueIdx in typeIdx["values"])
+                            {
+                                if (valueIdx == null)
+                                {
+                                    materialIdx_.Add(-1);
+                                }
+                                else
+                                {
+                                    materialIdx_.Add((int)valueIdx);
+                                }
+                            }
+                        }
+                        else
+                        {
+                           continue;
+                        }
+                    }
+                    
+                   
                 }
             }
         }
@@ -255,13 +326,13 @@ namespace RhinoCityJSON
             {
                 Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.1 * scalar); 
                 surfaceCurves.Clear();
-                try
-                {
-                    brepList.Add(planarFace[0]);
-                }
-                catch (Exception)
+                if (planarFace == null)
                 {
                     hasError = true;
+                }
+                else
+                {
+                    brepList.Add(planarFace[0]);
                 }
             }
             return Tuple.Create(brepList, hasError);
@@ -280,8 +351,10 @@ namespace RhinoCityJSON
 
             int idx = localCJObject.getBrepCount();
             var surfaceSemantics = localCJObject.getSurfaceSemantics();
+            var surfaceMaterialValues = localCJObject.getMaterialValues();
             List<string> filteredSurfaceNames = new List<string>();
             var filteredSurfaceSemantics = new List<Dictionary<string, string>>();
+            var filteredMaterialValues = new List<int>();
 
             List<Rhino.Geometry.Brep> localBreps = new List<Brep>();
             bool hasError = false;
@@ -307,6 +380,10 @@ namespace RhinoCityJSON
                     {
                         filteredSurfaceSemantics.Add(surfaceSemantics[count]);
                     }
+                    if (surfaceMaterialValues.Count > 0)
+                    {
+                        filteredMaterialValues.Add(surfaceMaterialValues[count]);
+                    }
                 }
 
                 count++;
@@ -315,6 +392,7 @@ namespace RhinoCityJSON
             if (advanced)
             {
                 localCJObject.addCsurfaceSemantic(filteredSurfaceSemantics);
+                localCJObject.addCmaterialVaues(filteredMaterialValues);
             }
 
 
@@ -1557,7 +1635,7 @@ namespace RhinoCityJSON
                 }
 
                 // create surfaces
-                foreach (var objectGroup in Jcity.CityObjects)
+                foreach (var objectGroup in Jcity.CityObjects) // TODO function with multiple geoobjects in one LOD
                 {
                     var oName = ReaderSupport.stripString(objectGroup.Name);
                     foreach (var cObject in objectGroup)
@@ -1620,6 +1698,10 @@ namespace RhinoCityJSON
                                 {
                                     lodBuilding.matchSemantics(boundaryGroup.semantics, 1);
                                 }
+                                if (boundaryGroup.material != null)
+                                {
+                                    lodBuilding.matchMaterials(boundaryGroup.material, 1);
+                                }
 
                                 List<Brep> shapeList = shapeTemplate.getBrepList();
                                 var anchorPoint = vertList[(int)boundaryGroup.boundaries[0]];
@@ -1646,6 +1728,10 @@ namespace RhinoCityJSON
                                 if (boundaryGroup.semantics != null)
                                 {
                                     lodBuilding.matchSemantics(boundaryGroup.semantics, 1);
+                                }
+                                if (boundaryGroup.material != null)
+                                {
+                                    lodBuilding.matchMaterials(boundaryGroup.material, 1);
                                 }
 
                                 foreach (var solid in boundaryGroup.boundaries)
@@ -1678,6 +1764,10 @@ namespace RhinoCityJSON
                                 if (boundaryGroup.semantics != null)
                                 {
                                     lodBuilding.matchSemantics(boundaryGroup.semantics);
+                                }
+                                if (boundaryGroup.material != null)
+                                {
+                                    lodBuilding.matchMaterials(boundaryGroup.material);
                                 }
 
                                 lodBuilding = ReaderSupport.getBrepShape(boundaryGroup.boundaries, vertList, lodBuilding, true);
@@ -1727,6 +1817,7 @@ namespace RhinoCityJSON
                             var surfaceSemanticPairedList = new List<Dictionary<string, string>>();
                             var brepList = lodBuilding.getBrepList();
                             List<Dictionary<string, string>> allSemantic = lodBuilding.getCSurfaceSemantics();
+                            List<int> allMaterialValues = lodBuilding.getCMaterialValues();
                             var name = lodBuilding.getName();
                             var bType = lodBuilding.getGeometryType();
                             var parentName = lodBuilding.getParendName();
@@ -1751,22 +1842,34 @@ namespace RhinoCityJSON
                                     { "Object LoD", endLoD },
                                 };
 
+                                bool hasSem = false;
                                 if (allSemantic.Count != 0)
                                 {
+                                    hasSem = true;
                                     foreach (KeyValuePair<string, string> item in allSemantic[i])
                                     {
                                         semData.Add("Surface " + char.ToUpper(item.Key[0]) + item.Key.Substring(1), item.Value);
                                     }
                                 }
-                                else{
-                                    semData.Add("none", "none");
+                                if (allMaterialValues.Count != 0)
+                                {
+                                    semData.Add("Surface MaterialValue", allMaterialValues[i].ToString());
+                                }
+                                else
+                                {
+                                    semData.Add("Surface MaterialValue", "None");
+                                }
+
+                                if (!hasSem)
+                                {
+                                    semData.Add("None", "None");
                                 }
                                 surfaceSemanticPairedList.Add(semData);
                             }
 
                             var complexName = name + "_LoD_" + endLoD;
-                            simpleNameDict.Add(complexName, name);
 
+                            simpleNameDict.Add(complexName, name);
                             semanticSurfaceInfo.Add(complexName, surfaceSemanticPairedList);
                             geoSurfaceInfo.Add(complexName, brepList);
                         }
@@ -1788,6 +1891,7 @@ namespace RhinoCityJSON
             {
                 sKeyList.Add("Surface " + char.ToUpper(variableKey[0]) + variableKey.Substring(1));
             }
+            sKeyList.Add("Surface MaterialValue");
 
             int counter = 0;
             foreach (var cObject in semanticSurfaceInfo)
