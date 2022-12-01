@@ -123,5 +123,5 @@ Output:
 
 ## Known issues/bugs
 * Complex surfaces are not always correctly constructed.
-* A considerable amount of solids are not loaded into Grasshopper/Rhino as solids.
 * 3D BAG does not include all the data the Normal bag has included
+* Template support has been removed in the most recent push, template support will return in the future
