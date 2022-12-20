@@ -10,223 +10,86 @@ using Newtonsoft.Json;
 
 namespace RhinoCityJSON
 { 
-    class CJTempate
+    public enum errorCodes
     {
-        private int idx_ = 0;
-        private string lod_ = "none";
-        private bool hasError_ = false;
-
-        private List<Brep> brepList_ = new List<Rhino.Geometry.Brep>();
-
-        public CJTempate(int idx)
-        {
-            idx_ = idx;
-        }
-
-        public string getLod() { return lod_; }
-        public void setLod(string lod) { lod_ = lod; }
-        public bool getError() { return hasError_; }
-        public void setError(bool hasError) { hasError_ = hasError; }
-        public List<Rhino.Geometry.Brep> getBrepList() { return brepList_; }
-        public void setBrepList(List<Rhino.Geometry.Brep> brepList) { brepList_ = brepList; }
-        public int getBrepCount() { return brepList_.Count; }
+        noError,
+        offline,
+        multipleInputSettings,
+        surfaceCreation,
+        emptyPath,
+        invalidPath,
+        invalidLod,
+        noScale,
+        invalidJSON,
+        noTeamplateFound
     }
-
-
-    class CJObject
+    
+    static class ErrorCollection // TODO: put all the errors centrally 
     {
-        private string name_ = "None";
-        private string lod_ = "None";
-        private string parentName_ = "None";
-        private string geometryType_ = "None";
-        private double scaler_ = 1;
-        private bool hasError_ = false;
-
-        private List<int> materialIdx_ = new List<int>();
-        private List<int> cleanedMaterialIdx_ = new List<int>();
-        private List<string> internalizedSurfTypes_ = new List<string>();
-        private List<Dictionary<string, string>> surfaceSemantics_ = new List<Dictionary<string, string>>();
-        private List<Dictionary<string, string>> cleanedSurfaceSemantics_ = new List<Dictionary<string, string>>();
-        private List<Rhino.Geometry.Brep> brepList_ = new List<Rhino.Geometry.Brep>();
-
-        public CJObject(string name){ name_ = name; }
-        public string getName() { return name_; }
-        public void setName(string name) { name_ = name; }
-        public string getLod() { return lod_; }
-        public void setLod(string lod) { lod_ = lod; }
-        public string getParendName() { return parentName_; }
-        public void setParendName(string parentName) { parentName_ = parentName; }
-        public string getGeometryType() { return geometryType_; }
-        public void setGeometryType(string geometryType) { geometryType_ = geometryType; }
-        public double getScalar() { return scaler_; }
-        public void setScaler(double scaler) { scaler_ = scaler; }
-        public bool getError() { return hasError_; }
-        public void setError(bool hasError) { hasError_ = hasError; }
-        public List<string> getPresentTypes() { return internalizedSurfTypes_; }
-        public List<Dictionary<string, string>> getSurfaceSemantics() { return surfaceSemantics_; }
-        public List<Dictionary<string, string>> getCSurfaceSemantics() { return cleanedSurfaceSemantics_; }
-        public List<int> getMaterialValues() { return materialIdx_; }
-        public List<int> getCMaterialValues() { return cleanedMaterialIdx_; }
-        public void addCsurfaceSemantic(List<Dictionary<string, string>> surfaceSemantics)
+        static public Dictionary<errorCodes, string> errorCollection = new Dictionary<errorCodes, string>()
         {
-            foreach (Dictionary<string, string> surfaceSemantic in surfaceSemantics)
-            {
-                cleanedSurfaceSemantics_.Add(surfaceSemantic);
-            }
-        }
-
-        public void addCmaterialVaues(List<int> surfaceValues)
-        {
-            foreach(int surfaceValue in surfaceValues)
-            {
-                cleanedMaterialIdx_.Add(surfaceValue);
-            }
-        }
-
-        public List<Rhino.Geometry.Brep> getBrepList() { return brepList_; }
-        public void setBrepList(List<Rhino.Geometry.Brep> brepList) { brepList_ = brepList; }
-        public int getBrepCount() { return brepList_.Count; }
-
-        public void matchSemantics(dynamic semanticData, int ind = 0)
-        {
-            List<string> typeList = new List<string>();
-            var surfaceSemantics = new List<Dictionary<string, string>>();
-
-            foreach (Newtonsoft.Json.Linq.JObject type in semanticData.surfaces)
-            {
-                var localDict = new Dictionary<string, string>();
-                foreach (var t in type)
-                {
-                    localDict.Add(t.Key, t.Value.ToString());
-                    if (!internalizedSurfTypes_.Contains(t.Key))
-                    {
-                        internalizedSurfTypes_.Add(t.Key);
-                    }                  
-                }
-                surfaceSemantics.Add(localDict);
-            }
-
-            if (ind == 0)
-            {
-                foreach (int typeIdx in semanticData.values)
-                {
-                    surfaceSemantics_.Add(surfaceSemantics[typeIdx]);        
-                }
-            }
-            if (ind == 1)
-            {
-                foreach (var solididx in semanticData.values)
-                {
-                    foreach (int typeIdx in solididx)
-                    {
-                        surfaceSemantics_.Add(surfaceSemantics[typeIdx]);
-                    }
-                }
-            }
-        }
-
-        public void matchMaterials(dynamic materialData, int ind = 0)
-        {
-            foreach (var solidIdx in materialData)
-            {
-                foreach (var typeIdx in solidIdx)
-                {
-                    if (ind == 1)
-                    {
-                        if (typeIdx["values"] != null)
-                        {
-                            foreach (var solid in typeIdx["values"])
-                            {
-                                foreach (var valueIdx in solid)
-                                {
-                                    if (valueIdx == null)
-                                    {
-                                        materialIdx_.Add(-1);
-                                    }
-                                    else
-                                    {
-                                        materialIdx_.Add((int)valueIdx);
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            continue;
-                        }
-                        
-                    }// TODO make function with railway model
-                    if (ind == 0)
-                    {
-                        if (typeIdx["values"] != null)
-                        {
-
-                            foreach (var valueIdx in typeIdx["values"])
-                            {
-                                if (valueIdx == null)
-                                {
-                                    materialIdx_.Add(-1);
-                                }
-                                else
-                                {
-                                    materialIdx_.Add((int)valueIdx);
-                                }
-                            }
-                        }
-                        else
-                        {
-                           continue;
-                        }
-                    }
-                    
-                   
-                }
-            }
-        }
-
-        public void joinSimple()
-        {
-            var joinedBrep = Brep.JoinBreps(brepList_, 0.2);
-            brepList_.Clear();
-
-            foreach (Brep brep in joinedBrep)
-            {
-                brepList_.Add(brep);
-            }
-        }
-
-        public void joinSmart(IGH_DataAccess DA)
-        {
-
-        }
-    }
-
-    static class ErrorCollection // TODO put all the errors centrally 
-    {
-        static public int surfaceCreationErrorCode = 00001;
-        static public int emptyPathErrorCode = 00002;
-
-        static public Dictionary<int, string> errorCollection = new Dictionary<int, string>()
-        {
-            {surfaceCreationErrorCode, "Not all surfaces have been correctly created"},
-            {emptyPathErrorCode, "Path is empty"}
+            {errorCodes.offline, "Node is offline"},
+            {errorCodes.multipleInputSettings, "Only a single settings input allowed"},
+            {errorCodes.surfaceCreation, "Not all surfaces have been correctly created"},
+            {errorCodes.emptyPath, "Path is empty"},
+            {errorCodes.invalidPath, "No valid filepath found"},
+            {errorCodes.invalidLod, "Invalid lod input found"},
+            {errorCodes.noScale, "Rhino document scale is not supported, defaulted to unit 1"},
+            {errorCodes.invalidJSON, "Invalid CityJSON file"},
+            {errorCodes.noTeamplateFound, "No templated objects were found"}
         };
     }
 
+    static class DefaultValues
+    {
+        static public List<string> surfaceObjectKeys = new List<string>()
+        {
+            "Object Name",
+            "Geometry Type",
+            "Geometry Name",
+            "Geometry LoD"
+        };
+
+        static public List<string> surfaceTemplateKeys = new List<string>()
+        {
+            "Template Idx",
+            "Geometry Type",
+            "Geometry LoD"
+        };
+
+        static public List<string> objectKeys = new List<string>()
+        {
+            "Object Name",
+            "Object Type",
+            "Object Parent",
+            "Object Child"
+        };
+        
+        static public List<string> templateKeys = new List<string>()
+        {
+            "Object Name",
+            "Object Type",
+            "Object Parent",
+            "Object Child",
+            "Template Idx",
+            "Object Anchor"
+
+        };
+    }
 
     class ReaderSupport
     {
         /// @brief 
         static public List<Rhino.Geometry.Point3d> getVerts(
-            dynamic Jcity, 
-            Point3d worldOrigin, 
+            dynamic Jcity,
+            Point3d worldOrigin,
             double scaler,
             double rotationAngle,
-            bool isFirst, bool 
-            translate
+            bool isFirst, 
+            bool translate,
+            bool isTemplate = false
             )
         {
-
             // coordinates of the first input
             double globalX = 0.0;
             double globalY = 0.0;
@@ -247,7 +110,17 @@ namespace RhinoCityJSON
             double localZ = 0.0;
 
             // get location
-            if (translate)
+            if (isTemplate)
+            {
+                originX = 0.0;
+                globalY = 0.0;
+                globalZ = 0.0;
+
+                scaleX = scaler;
+                scaleY = scaler;
+                scaleZ = scaler;
+            }
+            else if (translate)
             {
                 localX = Jcity.transform.translate[0] * scaler;
                 localY = Jcity.transform.translate[1] * scaler;
@@ -268,7 +141,16 @@ namespace RhinoCityJSON
             }
 
             // ceate vertlist
-            var jsonverts = Jcity.vertices;
+            dynamic jsonverts;
+            if (isTemplate) {
+                dynamic geoTemplates = Jcity["geometry-templates"];
+                if (geoTemplates == null) { return new List<Rhino.Geometry.Point3d>();}
+
+                jsonverts = Jcity["geometry-templates"]["vertices-templates"];
+                if (jsonverts == null) { return new List<Rhino.Geometry.Point3d>(); }
+            }
+            else { jsonverts = Jcity.vertices; }
+            
             List<Rhino.Geometry.Point3d> vertList = new List<Rhino.Geometry.Point3d>();
             foreach (var jsonvert in jsonverts)
             {
@@ -324,7 +206,7 @@ namespace RhinoCityJSON
 
             if (stringList.Count == 1)
             {
-               return stringList[0];
+                return stringList[0];
             }
             else
             {
@@ -336,8 +218,283 @@ namespace RhinoCityJSON
                 return conString;
             }
         }
+
+         public static errorCodes getSettings(
+            List<Grasshopper.Kernel.Types.GH_ObjectWrapper> settingsList,
+            ref List<string> loDList, 
+            ref bool setLoD, 
+            ref Point3d worldOrigin, 
+            ref bool translate, 
+            ref double rotationAngle
+            )
+        {
+            var readSettingsList = new List<Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>>>();
+
+            if (settingsList.Count > 0)
+            {
+                // extract settings
+                foreach (Grasshopper.Kernel.Types.GH_ObjectWrapper objWrap in settingsList)
+                {
+                    readSettingsList.Add(objWrap.Value as Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>>);
+                }
+
+                Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>> settings = readSettingsList[0];
+                translate = settings.Item1;
+                rotationAngle = Math.PI * settings.Item4 / 180.0;
+
+                if (settings.Item3) // if world origin is set
+                {
+                    worldOrigin = settings.Item2;
+                }
+                loDList = settings.Item5;
+            }
+            // check lod validity
+
+
+            foreach (string lod in loDList)
+            {
+                if (lod != "")
+                {
+                    if (lod == "0" || lod == "0.0" || lod == "0.1" || lod == "0.2" || lod == "0.3" ||
+                        lod == "1" || lod == "1.0" || lod == "1.1" || lod == "1.2" || lod == "1.3" ||
+                        lod == "2" || lod == "2.0" || lod == "2.1" || lod == "2.2" || lod == "2.3" ||
+                        lod == "3" || lod == "3.0" || lod == "3.1" || lod == "3.2" || lod == "3.3")
+                    {
+                        setLoD = true;
+                    }
+                    else
+                    {
+                        return errorCodes.invalidLod;
+                    }
+                }
+            }
+            return errorCodes.noError;
+        }
+
+        public static void populateSurfaceKeys(
+            ref List<string> keyList,
+            List<string> surfaceTypes,
+            List<string> materialReferenceNames,
+            bool isTemplate = false
+            )
+        {
+            // populate with default values
+            if (isTemplate) { keyList = new List<string>(DefaultValues.surfaceTemplateKeys); }
+            else { keyList = new List<string>(DefaultValues.surfaceObjectKeys); }
+
+            foreach (var item in surfaceTypes)
+            {
+                keyList.Add("Surface " + item);
+            }
+            foreach (var item in materialReferenceNames)
+            {
+                keyList.Add("Surface Material " + item);
+            }
+        }
+
+
+        public static void populateObjectKeys(
+            ref List<string> keyList,
+            List<string> objectTypes,
+            bool isTemplate = false
+            )
+        {
+            // populate with default values
+            if (isTemplate) { keyList = new List<string>(DefaultValues.templateKeys); }
+            else { keyList = new List<string>(DefaultValues.objectKeys); }
+
+            foreach (string item in objectTypes)
+            {
+                keyList.Add("Object " + item);
+            }
+        }
+
+
+        public static void populateFlatSemanticTree(
+            ref Grasshopper.DataTree<string> flatObjectSemanticTree,
+            CJT.CityObject cityObject,
+            CJT.CityCollection ObjectCollection,
+            List<string> objectTypes,
+            int pathCounter
+            )
+        {
+            var objectPath = new Grasshopper.Kernel.Data.GH_Path(pathCounter);
+
+            // add native object attributes
+            string objectName = cityObject.getName();
+            List<string> objectParents = cityObject.getParents();
+            List<string> objectChildren = cityObject.getChildren();
+
+            flatObjectSemanticTree.Add(objectName, objectPath);
+            flatObjectSemanticTree.Add(cityObject.getType(), objectPath);
+
+            if (objectParents.Count > 0) { flatObjectSemanticTree.Add(ReaderSupport.concatonateStringList(objectParents)); }
+            else { flatObjectSemanticTree.Add("None"); }
+
+            if (objectChildren.Count > 0) { flatObjectSemanticTree.Add(ReaderSupport.concatonateStringList(objectChildren)); }
+            else { flatObjectSemanticTree.Add("None"); }
+
+            if (cityObject.isTemplated())
+            {
+                flatObjectSemanticTree.Add(cityObject.getTemplate().getTemplate().ToString(), objectPath);
+                flatObjectSemanticTree.Add(cityObject.getTemplate().getAnchor().ToString(), objectPath);
+            }
+
+            // add custom object attributes
+            var objectAttributes = cityObject.getAttributes();
+            var inheritedAttributes = cityObject.getInheritancedAtt(ObjectCollection);
+
+            foreach (string item in objectTypes)
+            {
+                if (objectAttributes.ContainsKey(item))
+                {
+                    flatObjectSemanticTree.Add(objectAttributes[item].ToString(), objectPath);
+                }
+                else if (inheritedAttributes.ContainsKey(item))
+                {
+                    flatObjectSemanticTree.Add(inheritedAttributes[item].ToString() + "*", objectPath);
+                }
+                else
+                {
+                    flatObjectSemanticTree.Add("None", objectPath);
+                }
+            }
+        }
+
+
+        public static void addMatSurfValue(
+            ref Grasshopper.DataTree<string> flatSurfaceSemanticTree,
+            List<string> materialReferenceNames,
+            CJT.GeoObject geoObject,
+            CJT.SurfaceObject surface,
+            Grasshopper.Kernel.Data.GH_Path surfacePath
+            )
+        {
+            // add material data
+            foreach (var item in materialReferenceNames)
+            {
+                if (geoObject.hasMaterialData())
+                {
+                    var materialCollection = geoObject.getSurfaceMaterialValues();
+
+                    if (materialCollection.ContainsKey(item))
+                    {
+                        var matNum = materialCollection[item][surface.getSemanticlValue()];
+
+                        if (matNum >= 0)
+                        {
+                            flatSurfaceSemanticTree.Add(matNum.ToString(), surfacePath);
+                        }
+                        else
+                        {
+                            flatSurfaceSemanticTree.Add("None", surfacePath);
+                        }                        
+                    }
+                    else
+                    {
+                        flatSurfaceSemanticTree.Add("None", surfacePath);
+                    }
+                }
+                else
+                {
+                    flatSurfaceSemanticTree.Add("None", surfacePath);
+                }
+            }
+        }
+
+        public static void populateFlatSurfSemanticTree(
+           ref Grasshopper.DataTree<string> flatSurfaceSemanticTree,
+           List<string> surfaceTypes,
+           List<string> materialReferenceNames,
+           CJT.CityObject cityObject,
+           CJT.GeoObject geoObject,
+           CJT.SurfaceObject surface,
+           string geoType,
+           string geoName,
+           string geoLoD,
+           int pathCounter
+           )
+        {
+            var surfacePath = new Grasshopper.Kernel.Data.GH_Path(pathCounter);
+
+            // add object name for aquiring object
+            flatSurfaceSemanticTree.Add(cityObject.getName(), surfacePath);
+
+            // add geometry data
+            flatSurfaceSemanticTree.Add(geoType, surfacePath);
+            flatSurfaceSemanticTree.Add(geoName, surfacePath);
+            flatSurfaceSemanticTree.Add(geoLoD, surfacePath);
+
+            // add semantic surface data
+            if (geoObject.hasSurfaceData())
+            {
+                var surfaceSemantics = geoObject.getSurfaceData(geoObject.getSurfaceTypeValue(surface.getSemanticlValue()));
+
+                foreach (var item in surfaceTypes)
+                {
+                    if (surfaceSemantics.ContainsKey(item))
+                    {
+                        flatSurfaceSemanticTree.Add(surfaceSemantics[item].ToString(), surfacePath);
+                    }
+                    else flatSurfaceSemanticTree.Add("None", surfacePath);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < surfaceTypes.Count; i++)
+                {
+                    flatSurfaceSemanticTree.Add("None", surfacePath);
+                }
+            }
+
+            addMatSurfValue(
+                ref flatSurfaceSemanticTree,
+                materialReferenceNames,
+                geoObject,
+                surface,
+                surfacePath
+                );
+           
+        }
+
+        public static errorCodes checkInput(
+            bool boolOn,
+            List<Grasshopper.Kernel.Types.GH_ObjectWrapper> settingsList,
+            List<string> pathList
+            )
+        {
+            if (!boolOn)
+            {
+                return errorCodes.offline;
+            }
+            else if (settingsList.Count > 1)
+            {
+                return errorCodes.multipleInputSettings;
+            }
+            // validate the data and warn the user if invalid data is supplied.
+            else if (pathList[0] == "")
+            {
+                return errorCodes.emptyPath;
+            }
+            foreach (var path in pathList)
+            {
+                if (!System.IO.File.Exists(path))
+                {
+                    return errorCodes.invalidPath;
+                }
+            }
+            return errorCodes.noError;
+        }
     }
 
+    class writerSupport
+    {
+        static public List<Rhino.Geometry.Point3d> getVerts(List<Brep> brep)
+        {
+            return new List<Point3d>();
+        }
+    }
+    
     namespace CJT
     {
         class RingStructure // simple way to display a surface as a collection of rings
@@ -368,7 +525,7 @@ namespace RhinoCityJSON
                     {
                         curvePointsOuter.Add(curvePointsOuter[0]);
 
-                        try //TODO this can be improved
+                        try //TODO: this can be improved
                         {
                             Rhino.Geometry.Polyline polyRing = new Rhino.Geometry.Polyline(curvePointsOuter);
                             surfaceCurves.Add(polyRing);
@@ -383,7 +540,6 @@ namespace RhinoCityJSON
             }
         }
 
-
         class SurfaceObject
         {
             Rhino.Geometry.Brep shape_;
@@ -393,6 +549,27 @@ namespace RhinoCityJSON
             public Brep getShape() { return shape_; }
             public void setSemanticValue(int materialValue) { semanticValue_ = materialValue; }
             public int getSemanticlValue() { return semanticValue_; } 
+        }
+
+        class TemplateObject
+        {
+            int template_ = 0;
+            Point3d anchor_ = new Point3d(0, 0, 0);
+            //Matrix transformation_ = new Matrix(4,4);
+            // TODO: implement transformation
+
+
+            public TemplateObject(
+                int template,
+                Point3d anchor
+               )
+            {
+                template_ = template;
+                anchor_ = anchor;
+            }
+
+            public Point3d getAnchor() { return anchor_; }
+            public int getTemplate() { return template_; }
         }
 
         class GeoObject
@@ -442,7 +619,13 @@ namespace RhinoCityJSON
                 foreach (var surfaceMaterial in surfaceMaterialCollection)
                 {
                     string valueName = surfaceMaterial.Name.ToString();
-                    surfaceMaterialValues_.Add(valueName, flattenValues(surfaceMaterial.Value.values));
+                    dynamic materialValues = surfaceMaterial.Value.values;
+                    if (materialValues != null)
+                    {
+                        surfaceMaterialValues_.Add(valueName, flattenValues(surfaceMaterial.Value.values));
+                    } // TODO: make single value exceptions
+
+                   
                 }
             }
             public string getGeoType() { return geoType_; }
@@ -453,11 +636,19 @@ namespace RhinoCityJSON
             List<int> flattenValues(dynamic nestedValues)
             {
                 List<int> flatList = new List<int>();
-                if (nestedValues[0].Type == Newtonsoft.Json.Linq.JTokenType.Integer)
+                if (nestedValues[0] == null || nestedValues[0].Type == Newtonsoft.Json.Linq.JTokenType.Integer) // TODO: find issue here
                 {
-                    foreach (int value in nestedValues)
+                    for (int i = 0; i < nestedValues.Count; i++)
                     {
-                        flatList.Add(value);
+                        var nestedValue = nestedValues[i];
+                        if (nestedValue == null)
+                        {
+                            flatList.Add(-1);
+                        }
+                        else
+                        {
+                            flatList.Add((int) nestedValue);
+                        }
                     }
                 }
                 else
@@ -578,12 +769,16 @@ namespace RhinoCityJSON
             string type_ = "";
 
             List<GeoObject> geometry_ = new List<GeoObject>();
+            bool isTemplated_ = false;
+            TemplateObject templateObb_; // TODO: allow for multiple templates 
+
 
             bool hasGeo_ = false;
             bool isParent_ = false;
             bool isChild_ = false;
             bool hasAttributes_ = false;
             bool isFilteredOut_ = false;
+
 
             Dictionary<string, dynamic> attributes_ = new Dictionary<string, dynamic>();
             List<string> parentList_ = new List<string>();
@@ -596,6 +791,13 @@ namespace RhinoCityJSON
             public void setType(string type) { type_ = type; }
             public List<GeoObject> getGeometry() { return geometry_; }
             public void addGeometry(GeoObject geoObject) { geometry_.Add(geoObject); }
+            public void addTemplate(int templateIdx, Point3d anchor)
+            {
+                isTemplated_ = true;
+                templateObb_ = new TemplateObject(templateIdx, anchor);
+            }
+
+            public TemplateObject getTemplate() { return templateObb_; }
             public Dictionary<string, dynamic> getAttributes() { return attributes_; }
             public bool hasGeo() { return hasGeo_; }
             public void setHasGeo(bool hasGeo) { hasGeo_ = hasGeo; }
@@ -607,6 +809,8 @@ namespace RhinoCityJSON
             public void setHasAttributes(bool hasAttributes) { hasAttributes_ = hasAttributes; }
             public void setIsFilteredout() { isFilteredOut_ = true; }
             public bool isFilteredout() { return isFilteredOut_; }
+            public void setIsTemplated() { isTemplated_ = true; }
+            public bool isTemplated() { return isTemplated_; }
             public dynamic getAttribute(string key) { return attributes_[key]; }
             public void addAttribute(string key, dynamic value) { attributes_.Add(key, value); }
             public void setAttributes(dynamic jAttributeList)
@@ -622,7 +826,7 @@ namespace RhinoCityJSON
                 }
             }
             public List<string> getParents() { return parentList_; }
-            public void addParent(string parent) { parentList_.Add(parent); } // TODO string name check?
+            public void addParent(string parent) { parentList_.Add(parent); } // TODO: string name check?
             public void setParents(dynamic jParentList)
             {
                 parentList_ = new List<string>();
@@ -818,18 +1022,18 @@ namespace RhinoCityJSON
 
             if (!boolOn)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Node is offline");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.offline]);
                 return;
             }
             // validate the data and warn the user if invalid data is supplied.
             if (pathList.Count == 0)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[ErrorCollection.surfaceCreationErrorCode]);
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.emptyPath]);
                 return;
             }
             else if (pathList[0] == "")
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[ErrorCollection.surfaceCreationErrorCode]);
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.emptyPath]);
                 return;
             }
             foreach (var path in pathList)
@@ -1164,7 +1368,7 @@ namespace RhinoCityJSON
         /// </summary>
         public RhinoCityJSONReader()
           : base("RCJReader", "Reader",
-              "Reads the complete data stored in a CityJSON file",
+              "Reads the object data stored in a CityJSON file",
               "RhinoCityJSON", "Reading")
         {
         }
@@ -1202,84 +1406,39 @@ namespace RhinoCityJSON
         {
             List<String> pathList = new List<string>();
             var settingsList = new List<Grasshopper.Kernel.Types.GH_ObjectWrapper>();
-            var readSettingsList = new List<Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>>>();
+
             bool boolOn = false;
 
             if (!DA.GetDataList(0, pathList)) return;
             DA.GetData(1, ref boolOn);
             DA.GetDataList(2, settingsList);
 
-            if (!boolOn)
+            errorCodes inputError = ReaderSupport.checkInput(
+                boolOn,
+                settingsList,
+                pathList
+                );
+
+            if (inputError != errorCodes.noError)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Node is offline");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[inputError]);
                 return;
-            }
-            else if (settingsList.Count > 1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Only a single settings input allowed");
-                return;
-            }
-            // validate the data and warn the user if invalid data is supplied.
-            else if (pathList[0] == "")
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Path is empty");
-                return;
-            }
-            foreach (var path in pathList)
-            {
-                if (!System.IO.File.Exists(path))
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid filepath found");
-                    return;
-                }
             }
 
             // get the settings
             List<string> loDList = new List<string>();
+            bool setLoD = false;
             Point3d worldOrigin = new Point3d(0, 0, 0);
             bool translate = false;
             double rotationAngle = 0;
 
-            if (settingsList.Count > 0)
-            {
-                // extract settings
-                foreach (Grasshopper.Kernel.Types.GH_ObjectWrapper objWrap in settingsList)
-                {
-                    readSettingsList.Add(objWrap.Value as Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>>);
-                }
-
-                Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>> settings = readSettingsList[0];
-                translate = settings.Item1;
-                rotationAngle = Math.PI * settings.Item4 / 180.0;
-
-                if (settings.Item3) // if world origin is set
-                {
-                    worldOrigin = settings.Item2;
-                }
-                loDList = settings.Item5;
-            }
-            // check lod validity
-            bool setLoD = false;
-
-            foreach (string lod in loDList)
-            {
-                if (lod != "")
-                {
-                    if (lod == "0" || lod == "0.0" || lod == "0.1" || lod == "0.2" || lod == "0.3" ||
-                        lod == "1" || lod == "1.0" || lod == "1.1" || lod == "1.2" || lod == "1.3" ||
-                        lod == "2" || lod == "2.0" || lod == "2.1" || lod == "2.2" || lod == "2.3" ||
-                        lod == "3" || lod == "3.0" || lod == "3.1" || lod == "3.2" || lod == "3.3")
-                    {
-                        setLoD = true;
-                    }
-                    else
-                    {
-                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid lod input found");
-                        return;
-                    }
-                }
-
-            }
+            ReaderSupport.getSettings(
+                settingsList, 
+                ref loDList, 
+                ref setLoD, 
+                ref worldOrigin, 
+                ref translate, 
+                ref rotationAngle);
 
             // get scale from current session
             double scaler = ReaderSupport.getDocScaler();
@@ -1287,7 +1446,7 @@ namespace RhinoCityJSON
             if (scaler == -1)
             {
                 scaler = 1;
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Rhino document scale is not supported, defaulted to unit 1");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noScale]);
             }
 
             // Parse and check if valid CityJSON format
@@ -1298,7 +1457,7 @@ namespace RhinoCityJSON
                 
                 if (!ReaderSupport.CheckValidity(Jcity))
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidJSON]);
                     return;
                 }
                 cityJsonCollection.Add(Jcity);
@@ -1344,6 +1503,8 @@ namespace RhinoCityJSON
                     int uniqueCounter = 0;
                     foreach (var jGeoObject in JCityObjectAttributes.geometry)
                     {
+                        if (jGeoObject.type == "GeometryInstance") { continue;}
+
                         string lod = jGeoObject.lod.ToString();
 
                         if (setLoD)
@@ -1390,80 +1551,27 @@ namespace RhinoCityJSON
                 }
             }
 
+            // make keyLists
             surfaceTypes = surfaceTypes.Distinct().ToList();
             objectTypes = objectTypes.Distinct().ToList();
             materialReferenceNames = materialReferenceNames.Distinct().ToList();
 
-            // make keyLists
             List<string> surfaceKeyList = new List<string>();
-            surfaceKeyList.Add("Object Name");
-            surfaceKeyList.Add("Geometry type");
-            surfaceKeyList.Add("Geometry Name");
-            surfaceKeyList.Add("Geometry LoD");
-
-            foreach (var item in surfaceTypes)
-            {
-                surfaceKeyList.Add("Surface " + item);
-            }
-            foreach (var item in materialReferenceNames)
-            {
-                surfaceKeyList.Add("Surface Material " + item);
-            }
+            ReaderSupport.populateSurfaceKeys(ref surfaceKeyList, surfaceTypes, materialReferenceNames);
 
             List<string> objectKeyList = new List<string>();
-            objectKeyList.Add("Object Name");
-            objectKeyList.Add("Object Type");
-            objectKeyList.Add("Object Parent");
-            objectKeyList.Add("Object Child");
-
-            foreach (string item in objectTypes)
-            {
-                objectKeyList.Add("Object " + item);
-            }
-
+            ReaderSupport.populateObjectKeys(ref objectKeyList, objectTypes);
+           
             // flatten data for grasshopper output
             List<Brep> flatSurfaceList = new List<Brep>();
             var flatSurfaceSemanticTree = new Grasshopper.DataTree<string>();
             var flatObjectSemanticTree = new Grasshopper.DataTree<string>();
             int objectCounter = 0;
             int surfaceCounter = 0;
+
             foreach (var cityObject in ObjectCollection.getFlatColletion())
             {
-                var objectPath = new Grasshopper.Kernel.Data.GH_Path(objectCounter);
-
-                // add native object attributes
-                string objectName = cityObject.getName();
-                List<string> objectParents = cityObject.getParents();
-                List<string> objectChildren = cityObject.getChildren();
-
-                flatObjectSemanticTree.Add(objectName, objectPath);
-                flatObjectSemanticTree.Add(cityObject.getType(), objectPath);
-
-                if (objectParents.Count > 0) { flatObjectSemanticTree.Add(ReaderSupport.concatonateStringList(objectParents)); }
-                else { flatObjectSemanticTree.Add("None");}
-
-                if (objectChildren.Count > 0) { flatObjectSemanticTree.Add(ReaderSupport.concatonateStringList(objectChildren)); }
-                else { flatObjectSemanticTree.Add("None"); }
-
-                // add custom object attributes
-                var objectAttributes = cityObject.getAttributes();
-                var inheritedAttributes = cityObject.getInheritancedAtt(ObjectCollection);
-
-                foreach (string item in objectTypes)
-                {
-                    if (objectAttributes.ContainsKey(item)) 
-                    {
-                        flatObjectSemanticTree.Add(objectAttributes[item].ToString(), objectPath); 
-                    }
-                    else if (inheritedAttributes.ContainsKey(item))
-                    {
-                        flatObjectSemanticTree.Add(inheritedAttributes[item].ToString() + "*", objectPath);
-                    }
-                    else 
-                    { 
-                        flatObjectSemanticTree.Add("None", objectPath); 
-                    }
-                }
+                ReaderSupport.populateFlatSemanticTree(ref flatObjectSemanticTree, cityObject, ObjectCollection, objectTypes, objectCounter);
 
                 foreach (var geoObject in cityObject.getGeometry())
                 {
@@ -1471,66 +1579,23 @@ namespace RhinoCityJSON
                     string geoName = geoObject.getGeoName();
                     string geoLoD = geoObject.getLoD();
 
-                    int boundaryCounter = 0;
                     foreach (var surface in geoObject.getBoundaries())
                     {
-                        var surfacePath = new Grasshopper.Kernel.Data.GH_Path(surfaceCounter);
                         flatSurfaceList.Add(surface.getShape());
 
-                        // add object name for aquiring object
-                        flatSurfaceSemanticTree.Add(objectName, surfacePath);
-
-                        // add geometry data
-                        flatSurfaceSemanticTree.Add(geoType, surfacePath);
-                        flatSurfaceSemanticTree.Add(geoName, surfacePath);
-                        flatSurfaceSemanticTree.Add(geoLoD, surfacePath);
-
-                        // add semantic surface data
-                        if (geoObject.hasSurfaceData())
-                        {
-                            var surfaceSemantics = geoObject.getSurfaceData(geoObject.getSurfaceTypeValue(surface.getSemanticlValue()));
-
-                            foreach (var item in surfaceTypes)
-                            {
-                                if (surfaceSemantics.ContainsKey(item))
-                                {
-                                    flatSurfaceSemanticTree.Add(surfaceSemantics[item].ToString(), surfacePath);
-                                }
-                                else flatSurfaceSemanticTree.Add("None", surfacePath);
-                            }
-                        }
-                        else
-                        {
-                            for (int i = 0; i < surfaceTypes.Count; i++)
-                            {
-                                flatSurfaceSemanticTree.Add("None", surfacePath);
-                            }
-                        }
-
-                        // add material data
-                        foreach (var item in materialReferenceNames)
-                        {
-                            if (geoObject.hasMaterialData())
-                            {
-                                var materialCollection = geoObject.getSurfaceMaterialValues();
-
-                                if (materialCollection.ContainsKey(item))
-                                {
-                                    flatSurfaceSemanticTree.Add(materialCollection[item][surface.getSemanticlValue()].ToString(), surfacePath);
-                                }
-                                else
-                                {
-                                    flatSurfaceSemanticTree.Add("None", surfacePath);
-                                }
-                            }
-                            else
-                            {
-                                flatSurfaceSemanticTree.Add("None", surfacePath);
-                            }
-                        }
+                        ReaderSupport.populateFlatSurfSemanticTree(
+                            ref flatSurfaceSemanticTree,
+                            surfaceTypes,
+                            materialReferenceNames,
+                            cityObject, geoObject,
+                            surface,
+                            geoType,
+                            geoName,
+                            geoLoD,
+                            surfaceCounter
+                            );
 
                         surfaceCounter++;
-                        boundaryCounter++;
                     }
                 }
                 objectCounter++;
@@ -1572,6 +1637,288 @@ namespace RhinoCityJSON
         }
     }
 
+
+    public class RhinoTemplateJSONReader : GH_Component
+    {
+        public RhinoTemplateJSONReader()
+          : base("RCJTemplateReader", "TReader",
+              "Reads the template data stored in a CityJSON file",
+              "RhinoCityJSON", "Reading")
+        {
+        }
+
+        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        {
+            pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.list, "");
+            pManager.AddBooleanParameter("Activate", "A", "Activate reader", GH_ParamAccess.item, false);
+            pManager.AddGenericParameter("Settings", "S", "Settings coming from the RSettings component", GH_ParamAccess.list);
+            pManager[2].Optional = true;
+        }
+
+        /// <summary>
+        /// Registers all the output parameters for this component.
+        /// </summary>
+        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        {
+            pManager.AddBrepParameter("Geometry", "TG", "Geometry output", GH_ParamAccess.item);
+            pManager.AddTextParameter("Surface Info Keys", "TSiK", "Keys of the information output related to the surfaces", GH_ParamAccess.item);
+            pManager.AddTextParameter("Surface Info Values", "TSiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
+            pManager.AddTextParameter("Object Info Keys", "TOik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.item);
+            pManager.AddTextParameter("Object Info Values", "TOiV", "Values of the semantic information output related to the objects", GH_ParamAccess.item);
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            List<String> pathList = new List<string>();
+            var settingsList = new List<Grasshopper.Kernel.Types.GH_ObjectWrapper>();
+
+            bool boolOn = false;
+
+            if (!DA.GetDataList(0, pathList)) return;
+            DA.GetData(1, ref boolOn);
+            DA.GetDataList(2, settingsList);
+
+            errorCodes inputError = ReaderSupport.checkInput(
+                boolOn,
+                settingsList,
+                pathList
+                );
+
+            if (inputError != errorCodes.noError)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[inputError]);
+                return;
+            }
+
+            // get the settings
+            List<string> loDList = new List<string>();
+            bool setLoD = false;
+            Point3d worldOrigin = new Point3d(0, 0, 0);
+            bool translate = false;
+            double rotationAngle = 0;
+
+            ReaderSupport.getSettings(
+                settingsList,
+                ref loDList,
+                ref setLoD,
+                ref worldOrigin,
+                ref translate,
+                ref rotationAngle);
+
+            // get scale from current session
+            double scaler = ReaderSupport.getDocScaler();
+
+            if (scaler == -1)
+            {
+                scaler = 1;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noScale]);
+            }
+
+            // Parse and check if valid CityJSON format
+            List<dynamic> cityJsonCollection = new List<dynamic>();
+            foreach (var path in pathList)
+            {
+                var Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
+
+                if (!ReaderSupport.CheckValidity(Jcity))
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidJSON]);
+                    return;
+                }
+                cityJsonCollection.Add(Jcity);
+            }
+
+            bool isFirst = true;
+            CJT.CityCollection ObjectCollection = new CJT.CityCollection();
+            List<string> surfaceTypes = new List<string>();
+            List<string> objectTypes = new List<string>();
+            List<string> materialReferenceNames = new List<string>();
+            List<CJT.GeoObject> templateGeoList = new List<CJT.GeoObject>();
+
+            foreach (var Jcity in cityJsonCollection)
+            {
+                // get vertices stored in a tile
+                List<Rhino.Geometry.Point3d> LocationList = ReaderSupport.getVerts(Jcity, worldOrigin, scaler, rotationAngle, isFirst, translate);
+                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, new Point3d(0, 0, 0), scaler, 0.0, isFirst, false, true);
+
+                isFirst = false;
+
+                if (vertList.Count == 0)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noTeamplateFound]);
+                }
+
+                // create template objects
+                int uniqueCounter = 0;
+                foreach (var jGeoObject in Jcity["geometry-templates"]["templates"])
+                {
+                    string lod = jGeoObject.lod.ToString();
+
+                    if (setLoD)
+                    {
+                        if (!loDList.Contains(lod)) { continue; }
+                    }
+
+
+                    CJT.GeoObject geoObject = new CJT.GeoObject();
+                    geoObject.setGeoName(uniqueCounter.ToString());
+                    geoObject.setGeoType(jGeoObject.type.ToString());
+                    geoObject.setLod(lod);
+
+                    if (jGeoObject.semantics != null)
+                    {
+                        if (jGeoObject.semantics.surfaces != null && jGeoObject.semantics.values != null)
+                        {
+                            dynamic jSurfaceAttrubutes = jGeoObject.semantics.surfaces;
+
+                            if (jSurfaceAttrubutes != null)
+                            {
+                                foreach (var attribueCollection in jSurfaceAttrubutes)
+                                {
+                                    foreach (var attribue in attribueCollection) { surfaceTypes.Add(attribue.Name); }
+                                }
+                            }
+
+                            geoObject.setSurfaceData(jSurfaceAttrubutes);
+                            geoObject.setSurfaceTypeValues(jGeoObject.semantics.values);
+                        }
+                    }
+                    if (jGeoObject.material != null)
+                    {
+                        var materialObject = jGeoObject.material;
+                        geoObject.setSurfaceMaterialValues(materialObject);
+                        foreach (var surfaceMaterial in materialObject) { materialReferenceNames.Add(surfaceMaterial.Name.ToString()); }
+                    }
+                    geoObject.setGeometry(jGeoObject.boundaries, vertList, scaler);
+                    templateGeoList.Add(geoObject);
+                    uniqueCounter++;
+                }
+
+                foreach (var JcityObject in Jcity.CityObjects)
+                {
+                    CJT.CityObject cityObject = new CJT.CityObject();
+                    dynamic JCityObjectAttributes = JcityObject.Value;
+                    dynamic JCityObjectAttributesAttributes = JCityObjectAttributes.attributes;
+
+                    if (JCityObjectAttributesAttributes != null)
+                    {
+                        foreach (var attribue in JCityObjectAttributesAttributes) { objectTypes.Add(attribue.Name); }
+                    }
+
+                    cityObject.setName(JcityObject.Name);
+                    cityObject.setType(JCityObjectAttributes.type.ToString());
+                    cityObject.setParents(JCityObjectAttributes.parents);
+                    cityObject.setChildren(JCityObjectAttributes.children);
+                    cityObject.setAttributes(JCityObjectAttributesAttributes);
+
+                    if (JCityObjectAttributes.geometry == null)
+                    {
+                        cityObject.setIsFilteredout();
+                        ObjectCollection.add(cityObject);
+                        continue;
+                    }
+                    cityObject.setHasGeo(true);
+
+                    foreach (var jGeoObject in JCityObjectAttributes.geometry)
+                    {
+                        if (jGeoObject.type != "GeometryInstance") { continue; }
+                        int templateIdx = jGeoObject["template"];
+                        int pointIdx = jGeoObject["boundaries"][0];
+                        cityObject.addTemplate(templateIdx, LocationList[pointIdx]);
+                    }
+                    ObjectCollection.add(cityObject); // data without geometry is still stored for attributes 
+                }
+            }
+
+            surfaceTypes = surfaceTypes.Distinct().ToList();
+            objectTypes = objectTypes.Distinct().ToList();
+            materialReferenceNames = materialReferenceNames.Distinct().ToList();
+
+            List<string> surfaceKeyList = new List<string>();
+            ReaderSupport.populateSurfaceKeys(
+                ref surfaceKeyList, 
+                surfaceTypes, 
+                materialReferenceNames,
+                true);
+
+            List<string> objectKeyList = new List<string>();
+            ReaderSupport.populateObjectKeys(
+                ref objectKeyList, 
+                objectTypes, 
+                true);
+
+
+            List<Brep> flatSurfaceList = new List<Brep>();
+            var flatSurfaceSemanticTree = new Grasshopper.DataTree<string>();
+            var flatObjectSemanticTree = new Grasshopper.DataTree<string>();
+            int objectCounter = 0;
+            int surfaceCounter = 0;
+
+            foreach (var geoObject in templateGeoList)
+            {
+                string geoType = geoObject.getGeoType();
+                int geoNum = objectCounter;
+                string geoLoD = geoObject.getLoD();
+                var nPath = new Grasshopper.Kernel.Data.GH_Path(objectCounter);
+
+                foreach (var surface in geoObject.getBoundaries())
+                {
+                    var nPath2 = new Grasshopper.Kernel.Data.GH_Path(surfaceCounter);
+                    flatSurfaceList.Add(surface.getShape());
+                    flatSurfaceSemanticTree.Add(geoNum.ToString(), nPath2);
+                    flatSurfaceSemanticTree.Add(geoType, nPath2);
+                    flatSurfaceSemanticTree.Add(geoLoD, nPath2);
+
+                    ReaderSupport.addMatSurfValue(
+                        ref flatSurfaceSemanticTree, 
+                        materialReferenceNames, 
+                        geoObject, 
+                        surface, 
+                        nPath2);
+
+                    surfaceCounter++;
+                }
+                objectCounter++; 
+            }
+
+            objectCounter = 0;
+            foreach (var cityObject in ObjectCollection.getFlatColletion())
+            {
+                if (cityObject.isTemplated())
+                {
+                    ReaderSupport.populateFlatSemanticTree(ref flatObjectSemanticTree, cityObject, ObjectCollection, objectTypes, objectCounter);
+                    objectCounter++;
+                }
+            }
+
+
+            DA.SetDataList(0, flatSurfaceList);
+            DA.SetDataList(1, surfaceKeyList);
+            DA.SetDataTree(2, flatSurfaceSemanticTree);
+            DA.SetDataList(3, objectKeyList);
+            DA.SetDataTree(4, flatObjectSemanticTree);
+
+        }
+
+        protected override System.Drawing.Bitmap Icon
+        {
+            get
+            {
+                return RhinoCityJSON.Properties.Resources.sreadericon;
+            }
+        }
+
+        /// <summary>
+        /// Each component must have a unique Guid to identify it. 
+        /// It is vital this Guid doesn't change otherwise old ghx files 
+        /// that use the old ID will partially fail during loading.
+        /// </summary>
+        public override Guid ComponentGuid
+        {
+            get { return new Guid("b2364c3a-18ae-4eb3-aeb5-f76e8a275e15"); }
+        }
+
+    }
 
     public class RhinoGeoReader : GH_Component
     {
@@ -1642,7 +1989,7 @@ namespace RhinoCityJSON
                 {
                     if (key == "Object Name")
                     {
-                        valueCollection.Add(surfacesemantic[key] + "_LoD_" + surfacesemantic["Geometry LoD"], nPath);
+                        valueCollection.Add(surfacesemantic[key], nPath);
                     }
                     else if (surfacesemantic.ContainsKey(key))
                     {
@@ -1655,10 +2002,8 @@ namespace RhinoCityJSON
                 }
                 counter++;
             }
-
             DA.SetDataList(0, keyList);
             DA.SetDataTree(1, valueCollection);
-
         }
 
         protected override System.Drawing.Bitmap Icon
@@ -1730,7 +2075,7 @@ namespace RhinoCityJSON
                 return;
             }
 
-            bool bFilter = true; // TODO make function with only surface data input
+            bool bFilter = true; // TODO: make function with only surface data input
             if (bKeys.Count <= 0)
             {
                 bFilter = false;
@@ -1923,7 +2268,7 @@ namespace RhinoCityJSON
 
             if (!boolOn)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Node is offline");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.offline]);
                 return;
             }
 
@@ -2454,6 +2799,103 @@ namespace RhinoCityJSON
         public override Guid ComponentGuid
         {
             get { return new Guid("b2364c9a-18ae-4eb3-aeb3-f76e8a274e40"); }
+        }
+    }
+
+    public class Inject : GH_Component
+    {
+        public Inject()
+          : base("Inject", "Inject",
+              "Adds information to existing CityJSON files",
+              "RhinoCityJSON", "Writing")
+        {
+        }
+
+        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        {
+            pManager.AddTextParameter("Source File Path", "SF", "Path at which the file is located that is to be injected", GH_ParamAccess.item);
+            pManager.AddTextParameter("Target File Path", "TF", "Path at which the new file is stored", GH_ParamAccess.item);
+            pManager.AddBrepParameter("Geometry", "G", "Geometry input", GH_ParamAccess.list);
+            pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.tree);
+            pManager.AddBooleanParameter("Force", "*", "Override existing objects", GH_ParamAccess.item, false);
+        }
+
+        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        {
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            string sourcePath = "";
+            string targetPath = "";
+            var keyList = new List<string>();
+            var keyStrings = new List<string>();
+            bool force = false;
+            var geometryList = new List<Brep>();
+
+            DA.GetData(0, ref sourcePath);
+            DA.GetData(1, ref targetPath);
+            DA.GetDataList(2, geometryList);
+            DA.GetDataList(3, keyList);
+            DA.GetDataTree(4, out Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo> siTree);
+            DA.GetData(5, ref force);
+
+            if (sourcePath == "")
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No source filepath is supplied");
+                return;
+            }
+            if (targetPath == "")
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No target filepath is supplied");
+                return;
+            }
+            if (geometryList.Count == 0)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No geometry input is supplied");
+                return;
+            }
+            if (keyList.Count == 0)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No keylist is supplied");
+                return;
+            }
+            if (siTree.Branches.Count == 0)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No value tree is supplied");
+                return;
+            }
+
+            var Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(sourcePath));
+            Point3d worldOrigin = new Point3d(0, 0, 0);
+            bool translate = false;
+            double rotationAngle = 0;
+            double scaler = ReaderSupport.getDocScaler();
+
+            // construct the vertlist of the sourceFile
+            List<Rhino.Geometry.Point3d> sourceVertList = ReaderSupport.getVerts(Jcity, worldOrigin, scaler, rotationAngle, true, translate);
+
+            // construct the verlist of the rhinoGeo
+            List<Rhino.Geometry.Point3d> rhinoVertList = writerSupport.getVerts(geometryList);
+        }
+
+        protected override System.Drawing.Bitmap Icon
+        {
+            get
+            {
+                return RhinoCityJSON.Properties.Resources.injecticon;
+            }
+        }
+
+        /// <summary>
+        /// Each component must have a unique Guid to identify it. 
+        /// It is vital this Guid doesn't change otherwise old ghx files 
+        /// that use the old ID will partially fail during loading.
+        /// </summary>
+        public override Guid ComponentGuid
+        {
+            get { return new Guid("b2365c9a-18ae-4eb3-aeb3-f76e8a274e40"); }
         }
     }
 
