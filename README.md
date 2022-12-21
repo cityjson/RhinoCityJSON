@@ -9,6 +9,15 @@ The plugin consists out of multiple Grasshopper components exposing data in a fo
 
 Currently only supports CityJSON 1.1 and 1.2.
 
+## Known issues, bugs or missing features
+* Complex surfaces are not always correctly constructed.
+* 3D BAG does not include all the data the Normal bag has included.
+* Templates can not be baked to rhino as blocks.
+* Materials can not be baked to rhino.
+* Textures are not supported.
+* Rhino data can not be exported to the CityJSON format.
+* Examples are outdated.
+
 ## How to install
 ### Via Food4Rhino
 URL: https://www.food4rhino.com/en/app/rhino-cityjson
@@ -30,19 +39,8 @@ This path can be easily found by opening Grasshopper, going to File->Special Fol
 ## The GH components
 A simple summary of the plugin's component.
 
-### Simple Reader
-The Simple Reader only processes data related to geometry. 
-
-Inputs:
-* Path. A path to a CityJSON file. Multiple file paths are optional, based on the data stored in the file they will be placed correctly related to each other. 
-* Activate. A boolean dictating if the component is active or not.
-* Settings. A settings string that can be supplied by the Settings component.
-
-Outputs:
-* Geometry. A grouping of Breps. The grouping is based on the LoD of the objects
-
 ### Reader
-The Reader processes all the data supplied by a CityJSON.
+The Reader processes all the object data supplied by a CityJSON file.
 
 Inputs:
 * Path. A path to a CityJSON file. Multiple file paths are optional, based on the data stored in the file they will be placed correctly related to each other. 
@@ -55,6 +53,37 @@ Outputs:
 * Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry.
 * Object Info Keys. The keys of sematic info that corresponds with the object (names).
 * Object Info Values. The values of semantic info that corresponds with the object (names).
+
+### Template Reader (untested)
+The Template Reader processes all the template data supplied by a CityJSON file.
+
+Inputs:
+* Path. A path to a CityJSON file. Multiple file paths are optional, based on the data stored in the file they will be placed correctly related to each other. 
+* Activate. A boolean dictating if the component is active or not.
+* Settings. A settings string that can be supplied by the Settings component.
+
+Outputs:
+* Template Geometry. A list of single surface Breps representing the templates.
+* Surface Info Keys. The keys of semantic info that corresponds 1:1 with the geometry.
+* Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry.
+* Object Info Keys. The keys of sematic info that corresponds with the object (names).
+* Object Info Values. The values of semantic info that corresponds with the object (names).
+
+
+### Document Reader
+Fetches the Metadata, Textures and Materials from a CityJSON file.
+
+Inputs:
+* Path. A path to a CityJSON file. Multiple file paths are optional, based on the data stored in the file they will be placed correctly related to each other. 
+* Activate. A boolean dictating if the component is active or not.
+
+Outputs:
+* Metadata Keys. The keys of the Metadata stored in the files.
+* Metadata Values. The values of the Metadata stored in the files.
+* LoD. LoD levels stored in the files.
+* Material Keys. Key output representing the material list stored in the files (will be changed).
+* Material Values. Color output representing the material list stored in the files (Will be changed).
+
 
 ### Settings
 The Settings component gives the user more control over the Simple Reader and Reader component.
@@ -121,7 +150,23 @@ Output:
 * Merged Surface Info Keys. The keys of semantic info from both the input's surface and object keys that corresponds 1:1 with the geometry output of the Reader component.
 * Merged Surface Info Values. The values of semantic info from both the input's surface and object values that corresponds 1:1 with the geometry output of the Reader component.
 
-## Known issues/bugs
-* Complex surfaces are not always correctly constructed.
-* 3D BAG does not include all the data the Normal bag has included
-* Template support has been removed in the most recent push, template support will return in the future
+### Template2Object
+To ease the processing and filtering sets this component can create un-templated objects out of templated objects.
+The format of the converted objects is identical to the normal objects.
+
+input:
+* Template Geometry. A list of single surface Breps.
+* Surface Info Keys. The keys of semantic info that corresponds 1:1 with the geometry output of the Template Reader component.
+* Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry output of the Template Reader component.
+* Object Info Keys. The keys of sematic info that corresponds with the object (names).
+* Object Info Values. The values of semantic info that corresponds with the object (names).
+
+Output:
+* Geometry. A list of single surface Breps.
+* Surface Info Keys. The keys of semantic info that corresponds 1:1 with the geometry.
+* Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry.
+* Object Info Keys. The keys of sematic info that corresponds with the object (names).
+* Object Info Values. The values of semantic info that corresponds with the object (names).
+
+
+
