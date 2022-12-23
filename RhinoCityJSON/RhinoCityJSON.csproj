@@ -61,14 +61,28 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Components\Bakery.cs" />
+    <Compile Include="Components\Filter.cs" />
+    <Compile Include="Components\Manager.cs" />
+    <Compile Include="Components\ManagerTemplate.cs" />
+    <Compile Include="Components\Reader.cs" />
+    <Compile Include="Components\ReaderDoc.cs" />
+    <Compile Include="Components\ReaderRhino.cs" />
+    <Compile Include="Components\ReaderSettings.cs" />
+    <Compile Include="Components\ReaderTemplate.cs" />
+    <Compile Include="SupportClasses\BakerySupport.cs" />
+    <Compile Include="SupportClasses\CJT.cs" />
+    <Compile Include="SupportClasses\DefaultValues.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="RhinoCityJSONReader.cs" />
+    <Compile Include="Components\Inject.cs" />
     <Compile Include="RhinoCityJSONInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SupportClasses\ReaderSupport.cs" />
+    <Compile Include="SupportClasses\WriterSupport.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
