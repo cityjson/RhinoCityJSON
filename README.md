@@ -97,15 +97,6 @@ Inputs:
 Outputs:
 * Settings. A settings string which can be fed into the Simple Reader and/or Reader component
 
-### LoD Reader
-The LoD Reader component extracts the LoD numbers stored in a file.
-
-Input:
-* Path. A path to a CityJSON file. Multiple file paths are optional, but discouraged to use due to slow performance.
-
-Output:
-* LoD. List of present LoDs.
-
 ### Bakery
 The Bakery component is a custom baking component that will not only bake the geometry, but also the related semantic data.
 

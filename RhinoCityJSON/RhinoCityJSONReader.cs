@@ -12,36 +12,57 @@ namespace RhinoCityJSON
 { 
     public enum errorCodes
     {
+        oversizedAngle,
         noError,
         offline,
         multipleInputSettings,
+        multipleOrigins,
+        multipleNorth,
         surfaceCreation,
         emptyPath,
         invalidPath,
         invalidLod,
         noScale,
         invalidJSON,
-        noTeamplateFound
+        noTeamplateFound,
+        noMetaDataFound,
+        noMaterialsFound,
+        noGeoFound,
+        requiresNorth,
+        unevenFilterInput
     }
     
     static class ErrorCollection // TODO: put all the errors centrally 
     {
         static public Dictionary<errorCodes, string> errorCollection = new Dictionary<errorCodes, string>()
         {
+            {errorCodes.oversizedAngle, "True north rotation is larger than 360 degrees"},
             {errorCodes.offline, "Node is offline"},
             {errorCodes.multipleInputSettings, "Only a single settings input allowed"},
+            {errorCodes.multipleNorth, "Only a single settings input allowed"},
+            {errorCodes.multipleOrigins, "Multiple true north angles submitted"},
             {errorCodes.surfaceCreation, "Not all surfaces have been correctly created"},
             {errorCodes.emptyPath, "Path is empty"},
             {errorCodes.invalidPath, "No valid filepath found"},
             {errorCodes.invalidLod, "Invalid lod input found"},
             {errorCodes.noScale, "Rhino document scale is not supported, defaulted to unit 1"},
             {errorCodes.invalidJSON, "Invalid CityJSON file"},
-            {errorCodes.noTeamplateFound, "No templated objects were found"}
+            {errorCodes.noTeamplateFound, "No templated objects were found"},
+            {errorCodes.noMetaDataFound, "No metadata found"},
+            {errorCodes.noMaterialsFound, "No materials found"},
+            {errorCodes.noGeoFound, "Geometry input empty"},
+            {errorCodes.requiresNorth, "True north rotation only functions if origin is given"},
+            {errorCodes.unevenFilterInput, "Object info input is required to be either both null, or both filled"}
         };
     }
 
     static class DefaultValues // TODO: put all the default values here
     {
+        static public string defaultSurfaceAddition = "Surface ";
+        static public string defaultObjectAddition = "Object ";
+        static public string defaultInheritanceAddition = "*";
+        static public string defaultNoneValue = "None";
+
         static public List<string> surfaceObjectKeys = new List<string>()
         {
             "Object Name",
@@ -283,11 +304,11 @@ namespace RhinoCityJSON
 
             foreach (var item in surfaceTypes)
             {
-                keyList.Add("Surface " + item);
+                keyList.Add(DefaultValues.defaultSurfaceAddition + item);
             }
             foreach (var item in materialReferenceNames)
             {
-                keyList.Add("Surface Material " + item);
+                keyList.Add(DefaultValues.defaultSurfaceAddition + "Material " + item);
             }
         }
 
@@ -304,7 +325,7 @@ namespace RhinoCityJSON
 
             foreach (string item in objectTypes)
             {
-                keyList.Add("Object " + item);
+                keyList.Add(DefaultValues.defaultObjectAddition + item);
             }
         }
 
@@ -328,10 +349,10 @@ namespace RhinoCityJSON
             flatObjectSemanticTree.Add(cityObject.getType(), objectPath);
 
             if (objectParents.Count > 0) { flatObjectSemanticTree.Add(ReaderSupport.concatonateStringList(objectParents)); }
-            else { flatObjectSemanticTree.Add("None"); }
+            else { flatObjectSemanticTree.Add(DefaultValues.defaultNoneValue); }
 
             if (objectChildren.Count > 0) { flatObjectSemanticTree.Add(ReaderSupport.concatonateStringList(objectChildren)); }
-            else { flatObjectSemanticTree.Add("None"); }
+            else { flatObjectSemanticTree.Add(DefaultValues.defaultNoneValue); }
 
             if (cityObject.isTemplated())
             {
@@ -351,11 +372,11 @@ namespace RhinoCityJSON
                 }
                 else if (inheritedAttributes.ContainsKey(item))
                 {
-                    flatObjectSemanticTree.Add(inheritedAttributes[item].ToString() + "*", objectPath);
+                    flatObjectSemanticTree.Add(inheritedAttributes[item].ToString() + DefaultValues.defaultInheritanceAddition, objectPath);
                 }
                 else
                 {
-                    flatObjectSemanticTree.Add("None", objectPath);
+                    flatObjectSemanticTree.Add(DefaultValues.defaultNoneValue, objectPath);
                 }
             }
         }
@@ -386,17 +407,17 @@ namespace RhinoCityJSON
                         }
                         else
                         {
-                            flatSurfaceSemanticTree.Add("None", surfacePath);
+                            flatSurfaceSemanticTree.Add(DefaultValues.defaultNoneValue, surfacePath);
                         }                        
                     }
                     else
                     {
-                        flatSurfaceSemanticTree.Add("None", surfacePath);
+                        flatSurfaceSemanticTree.Add(DefaultValues.defaultNoneValue, surfacePath);
                     }
                 }
                 else
                 {
-                    flatSurfaceSemanticTree.Add("None", surfacePath);
+                    flatSurfaceSemanticTree.Add(DefaultValues.defaultNoneValue, surfacePath);
                 }
             }
         }
@@ -435,14 +456,14 @@ namespace RhinoCityJSON
                     {
                         flatSurfaceSemanticTree.Add(surfaceSemantics[item].ToString(), surfacePath);
                     }
-                    else flatSurfaceSemanticTree.Add("None", surfacePath);
+                    else flatSurfaceSemanticTree.Add(DefaultValues.defaultNoneValue, surfacePath);
                 }
             }
             else
             {
                 for (int i = 0; i < surfaceTypes.Count; i++)
                 {
-                    flatSurfaceSemanticTree.Add("None", surfacePath);
+                    flatSurfaceSemanticTree.Add(DefaultValues.defaultNoneValue, surfacePath);
                 }
             }
 
@@ -1007,8 +1028,8 @@ namespace RhinoCityJSON
             pManager.AddTextParameter("Metadata Keys", "MdK", "Keys of the Metadata stored in the files", GH_ParamAccess.item);
             pManager.AddTextParameter("Metadata Values", "MdV", "Values of the Metadata stored in the files", GH_ParamAccess.tree);
             pManager.AddTextParameter("LoD", "L", "LoD levels", GH_ParamAccess.item);
-            pManager.AddTextParameter("Material Keys", "MK", "Key output representing the material list stord in the files", GH_ParamAccess.list);
-            pManager.AddTextParameter("Material Values", "MV", "Color output representing the material list stord in the files", GH_ParamAccess.tree);
+            pManager.AddTextParameter("Material Keys", "MK", "Key output representing the material list stored in the files", GH_ParamAccess.list);
+            pManager.AddTextParameter("Material Values", "MV", "Color output representing the material list stored in the files", GH_ParamAccess.tree);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -1037,8 +1058,8 @@ namespace RhinoCityJSON
             foreach (var path in pathList)
             {
                 if (!System.IO.File.Exists(path))
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid filepath found");
+                {   
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidPath]);
                     return;
                 }
             }
@@ -1066,7 +1087,7 @@ namespace RhinoCityJSON
                 dynamic Jcity = JsonConvert.DeserializeObject<dynamic>(System.IO.File.ReadAllText(path));
                 if (!ReaderSupport.CheckValidity(Jcity))
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid CityJSON file");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidJSON]);
                     return;
                 }
 
@@ -1108,7 +1129,7 @@ namespace RhinoCityJSON
                 }
                 else
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No metadata found!");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMetaDataFound]);
                 }
 
                 // get materials
@@ -1140,7 +1161,7 @@ namespace RhinoCityJSON
                                 }
                                 else
                                 {
-                                    materialsTree.Add("None", nPath);
+                                    materialsTree.Add(DefaultValues.defaultNoneValue, nPath);
                                 }      
                             }
                             c++;
@@ -1148,13 +1169,13 @@ namespace RhinoCityJSON
                     }
                     else
                     {
-                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No materials found!");
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMaterialsFound]);
                         materialKeyList = new List<string>();
                     }
                 }
                 else
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No materials found!");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMaterialsFound]);
                     materialKeyList = new List<string>();
                 }
 
@@ -1281,7 +1302,7 @@ namespace RhinoCityJSON
 
             if (pList.Count > 1)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Multiple true origin points submitted");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.multipleOrigins]);
                 return;
             }
             else if (pList != null && pList.Count == 1)
@@ -1292,12 +1313,12 @@ namespace RhinoCityJSON
 
             if (northList.Count > 1)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Multiple true north angles submitted");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.multipleNorth]);
                 return;
             }
             else if (northList[0] != 0 && !setP)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "True north rotation only functions if origin is given");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.requiresNorth]);
                 return;
             }
             else
@@ -1307,7 +1328,7 @@ namespace RhinoCityJSON
 
             if (north < -360 || north > 360)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "True north rotation is larger than 360 degrees");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.oversizedAngle]);
             }
 
             foreach (string lod in loDList)
@@ -1322,7 +1343,7 @@ namespace RhinoCityJSON
                     }
                     else
                     {
-                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid lod input found");
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidLod]);
                         return;
                     }
                 }
@@ -1655,7 +1676,7 @@ namespace RhinoCityJSON
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddBrepParameter("Geometry", "TG", "Geometry output", GH_ParamAccess.item);
+            pManager.AddBrepParameter("Template Geometry", "TG", "Geometry output", GH_ParamAccess.item);
             pManager.AddTextParameter("Surface Info Keys", "TSiK", "Keys of the information output related to the surfaces", GH_ParamAccess.item);
             pManager.AddTextParameter("Surface Info Values", "TSiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
             pManager.AddTextParameter("Object Info Keys", "TOik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.item);
@@ -1942,7 +1963,7 @@ namespace RhinoCityJSON
 
             if (geometery.Count > 1)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Geometry input empty");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noGeoFound]);
             }
 
             var valueCollection = new Grasshopper.DataTree<string>();
@@ -1992,7 +2013,7 @@ namespace RhinoCityJSON
                     }
                     else
                     {
-                        valueCollection.Add("None", nPath);
+                        valueCollection.Add(DefaultValues.defaultNoneValue, nPath);
                     }
                 }
                 counter++;
@@ -2065,7 +2086,7 @@ namespace RhinoCityJSON
             if (bKeys.Count > 0 && biTree.DataCount == 0 ||
                 bKeys.Count == 0 && biTree.DataCount > 0)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Object info input is re1uired to be either both null, or both filled");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.unevenFilterInput]);
                 return;
             }
 
@@ -2092,7 +2113,7 @@ namespace RhinoCityJSON
                     nameIdx = i;
                 }
 
-                if (!keyList.Contains(bKeys[i]) && bKeys[i] != "None")
+                if (!keyList.Contains(bKeys[i]) && bKeys[i] != DefaultValues.defaultNoneValue)
                 {
                     keyList.Add(bKeys[i]);
                     ignoreBool.Add(false);
@@ -2237,7 +2258,7 @@ namespace RhinoCityJSON
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddBrepParameter("Geometry", "G", "Geometry input", GH_ParamAccess.list);
+            pManager.AddBrepParameter("Template Geometry", "TG", "Geometry input", GH_ParamAccess.list);
             pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
             pManager.AddGenericParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.tree);
             pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.list);
@@ -2270,7 +2291,7 @@ namespace RhinoCityJSON
             if (bKeys.Count > 0 && biTree.DataCount == 0 ||
                 bKeys.Count == 0 && biTree.DataCount > 0)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Object info input is re1uired to be either both null, or both filled");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.unevenFilterInput]);
                 return;
             }
 
@@ -2390,9 +2411,6 @@ namespace RhinoCityJSON
                     }
                 }
             }
-
-
-
 
             // clean key lists
             sKeys.RemoveAt(tempIdxTempIdx);
