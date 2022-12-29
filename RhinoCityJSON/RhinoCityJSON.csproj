@@ -62,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Components\Bakery.cs" />
+    <Compile Include="Components\BakeryTemplate.cs" />
     <Compile Include="Components\Filter.cs" />
     <Compile Include="Components\Manager.cs" />
     <Compile Include="Components\ManagerTemplate.cs" />
@@ -128,6 +129,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\t2oicon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\templatebakeryicon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

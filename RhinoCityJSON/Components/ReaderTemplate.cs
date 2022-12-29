@@ -106,6 +106,8 @@ namespace RhinoCityJSON.Components
 
             foreach (var Jcity in cityJsonCollection)
             {
+                if (Jcity["geometry-templates"] == null) { continue;}
+
                 // get vertices stored in a tile
                 List<Rhino.Geometry.Point3d> LocationList = ReaderSupport.getVerts(Jcity, worldOrigin, scaler, rotationAngle, isFirst, translate);
                 List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, new Point3d(0, 0, 0), scaler, 0.0, isFirst, false, true);

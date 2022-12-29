@@ -8,9 +8,9 @@ namespace RhinoCityJSON.Components
     public class Bakery : GH_Component
     {
         public Bakery()
-          : base("RCJBakery", "Bakery",
+          : base("Bakery", "Baking",
               "Bakes the RCJ data to Rhino",
-              "RhinoCityJSON", "Processing")
+              "RhinoCityJSON", "Baking")
         {
         }
 
