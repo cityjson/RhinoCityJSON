@@ -2,6 +2,7 @@
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RhinoCityJSON.Components
 {
@@ -136,7 +137,6 @@ namespace RhinoCityJSON.Components
             var lodId = new Dictionary<string, System.Guid>();
             var typId = new Dictionary<string, Dictionary<string, int>>();
             var surId = new Dictionary<string, Dictionary<string, int>>();
-
             BakerySupport.createLayers(
                 "RCJ output",
                 lodIdx,
@@ -206,11 +206,23 @@ namespace RhinoCityJSON.Components
                 {
                     objectAttributes.LayerIndex = typId[lod][bType];
                 }
-                else
+                else if (surId[lod].ContainsKey(sType))
                 {
                     objectAttributes.LayerIndex = surId[lod][sType];
                 }
-
+                else
+                {
+                    if (!surId[lod].ContainsKey("Other"))
+                    {
+                        Rhino.DocObjects.Layer otherTypeLayer = new Rhino.DocObjects.Layer();
+                        otherTypeLayer.Name = "Other";
+                        otherTypeLayer.Color = System.Drawing.Color.Gray;
+                        otherTypeLayer.ParentLayerId = activeDoc.Layers.FindIndex(typId[lod]["Building"]).Id;
+                        var idx = activeDoc.Layers.Add(otherTypeLayer);
+                        surId[lod].Add("Other", idx);
+                    }
+                    objectAttributes.LayerIndex = surId[lod]["Other"];
+                }
                 potetialGroupList.Add(activeDoc.Objects.AddBrep(targetBrep, objectAttributes));
             }
 

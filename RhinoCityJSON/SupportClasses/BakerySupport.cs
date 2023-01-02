@@ -362,16 +362,15 @@ namespace RhinoCityJSON
                     surfTypeLayer.Name = sType;
 
                     System.Drawing.Color lColor = System.Drawing.Color.DarkRed;
-                    try
+                    if (surfColor.ContainsKey(sType))
                     {
-                        lColor = surfColor[sType];
+                        surfTypeLayer.Color = surfColor[sType];
                     }
-                    catch
+                    else
                     {
                         continue;
                     }
 
-                    surfTypeLayer.Color = lColor;
                     surfTypeLayer.ParentLayerId = targeLId;
 
                     var idx = activeDoc.Layers.Add(surfTypeLayer);
