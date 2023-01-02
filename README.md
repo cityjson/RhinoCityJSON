@@ -12,7 +12,7 @@ Currently only supports CityJSON 1.1 and 1.2.
 ## Known issues, bugs or missing features
 * Complex surfaces are not always correctly constructed.
 * 3D BAG does not include all the data the Normal bag has included.
-* Templates can not be baked to rhino as blocks.
+* Template handling is potentially unstable.
 * Materials can not be baked to rhino.
 * Textures are not supported.
 * Rhino data can not be exported to the CityJSON format.
@@ -54,7 +54,7 @@ Outputs:
 * Object Info Keys. The keys of sematic info that corresponds with the object (names).
 * Object Info Values. The values of semantic info that corresponds with the object (names).
 
-### Template Reader (untested)
+### Template Reader (potentially buggy)
 The Template Reader processes all the template data supplied by a CityJSON file.
 
 Inputs:
@@ -106,6 +106,23 @@ Input:
 * Surface Info Values. The Values related to the Geometry. (This Tree should be the same length as the geometry List).
 * Activate. A boolean dictating if the component is active or not (Recommended to use a button to activate and not a boolean toggle).
 
+The semantic data will be stored per surface at: Properties->Object-Attribute User Text. Additionally the LoD and major object types will be used to create a hierarchy of layers.
+Semantic values with a * are inherited from the parent object.
+
+
+### Template Bakery (untested)
+The Template Bakery is a custom baking component that will not only bake the template geometry, but also place it at the correct location and include its related semantic data.
+
+Input:
+* Geometry. A List with template geometry that is desired to be baked.
+* Surface Info Keys. The keys related to the Surface Info Values (This list should be the same length as a branch of the Surface Info Values).
+* Surface Info Values. The Values related to the Geometry. (This Tree should be the same length as the geometry List).
+* Object Info Keys. The keys of sematic info that corresponds with the object (names).
+* Object Info Values. The values of semantic info that corresponds with the object (names).
+
+Each instance of a template will be placed in a block. Allowing to move, scale and rotate the objects without changing the underlying geometry.
+Changing the template is possible with the block edit command. 
+Edits made in block edit mode will update every instance of that block
 The semantic data will be stored per surface at: Properties->Object-Attribute User Text. Additionally the LoD and major object types will be used to create a hierarchy of layers.
 Semantic values with a * are inherited from the parent object.
 

@@ -9,7 +9,7 @@ namespace RhinoCityJSON.Components
     public class BakeryTemplate : GH_Component
     {
         public BakeryTemplate()
-          : base("TemplateBakery", "TBakery",
+          : base("Template Bakery", "TBakery",
               "Bakes the template data to Rhino",
               "RhinoCityJSON", "Baking")
         {
@@ -68,36 +68,45 @@ namespace RhinoCityJSON.Components
             int tempIdxObIdx = -1;
             int anchorIdx = -1;
             int nameIdx = -1;
+            int lodIdx = -1;
+            int typeIdx = -1;
+            int surfTypeIdx = -1;
+
             for (int i = 0; i < sKeys.Count; i++)
             {
-                if (sKeys[i] == "Template Idx")
+                if (sKeys[i].ToLower() == "template idx")
                 {
                     tempIdxTempIdx = i;
                 }
+                else if (sKeys[i].ToLower() == "geometry lod")
+                {
+                    lodIdx = i;
+                }
             }
 
             for (int i = 0; i < bKeys.Count; i++)
             {
-                if (bKeys[i] == "Template Idx")
+                if (bKeys[i].ToLower() == "template idx")
                 {
                     tempIdxObIdx = i;
                 }
-            }
-
-            for (int i = 0; i < bKeys.Count; i++)
-            {
-                if (bKeys[i] == "Object Anchor")
+                else if (bKeys[i].ToLower() == "object anchor")
                 {
                     anchorIdx = i;
                 }
-            }
-
-            for (int i = 0; i < bKeys.Count; i++)
-            {
-                if (bKeys[i] == "Object Name")
+                else if (bKeys[i].ToLower() == "object name")
                 {
                     nameIdx = i;
                 }
+                else if (bKeys[i].ToLower() == "object type")
+                {
+                    typeIdx = i;
+                }
+            }
+
+            if (lodIdx == -1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.noLod]);
             }
 
             if (tempIdxTempIdx == -1 || tempIdxObIdx == -1)
@@ -118,13 +127,32 @@ namespace RhinoCityJSON.Components
                 return;
             }
 
+            if (typeIdx == -1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.noBType]);
+            }
+
+            var activeDoc = Rhino.RhinoDoc.ActiveDoc;
+
+            // create layers
+            var lodId = new Dictionary<string, System.Guid>();
+            var typId = new Dictionary<string, Dictionary<string, int>>();
+            var surId = new Dictionary<string, Dictionary<string, int>>();
+            var blockId = new Dictionary<string, int>();
+            var parentID = activeDoc.Layers.FindIndex(BakerySupport.makeParentLayer("RCJ Template output"));
+            var typColor = BakerySupport.getTypeColor();
+
+            // find the blocks are already present
+            var blockList = Rhino.RhinoDoc.ActiveDoc.InstanceDefinitions.GetList(true);
+
+            foreach (var block in blockList)
+            {
+                blockId.Add(block.Name, block.Index);
+            }
+
             // copy geometry 
             var obBranchCollection = biTree.Branches;
             var surfBranchCollection = siTree.Branches;
-            var newGeoList = new List<Brep>();
-            var surfValueCollection = new Grasshopper.DataTree<string>();
-            var obValueCollection = new Grasshopper.DataTree<string>();
-            int offset = 0;
 
             // get unique template indxList
             List<string> uniqueIdx = new List<string>();
@@ -136,28 +164,63 @@ namespace RhinoCityJSON.Components
 
             foreach (string tempIdx in uniqueIdx)
             {
-                Point3d blockAnchor = new Point3d();
-                bool setAnchor = false;
                 List<Brep> blockTemplateList = new List<Brep>();
                 List<Rhino.DocObjects.ObjectAttributes> attributeList = new List<Rhino.DocObjects.ObjectAttributes>();
+
+                string templateLoD = "";
                 for (int i = 0; i < surfBranchCollection.Count; i++)
                 {
                     if (surfBranchCollection[i][tempIdxTempIdx].ToString() == tempIdx)
                     {
+                        templateLoD = surfBranchCollection[i][lodIdx].ToString();
                         blockTemplateList.Add(geoList[i]);
                         Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
                         objectAttributes.Name = "Template " + tempIdx;
 
                         for (int j = 0; j < sKeys.Count; j++)
-                        { objectAttributes.SetUserString(sKeys[j], surfBranchCollection[i][j].ToString());}
+                        {
+                            objectAttributes.SetUserString(sKeys[j], surfBranchCollection[i][j].ToString());
+                        }
                         attributeList.Add(objectAttributes);
 
                     }
                 }
-                int instanceIdx = Rhino.RhinoDoc.ActiveDoc.InstanceDefinitions.Add("Template " + tempIdx, "test", writerSupport.getAnchorPoint(blockTemplateList), blockTemplateList, attributeList);
+
+                // check if data is available in the layer index
+                if (!lodId.ContainsKey(templateLoD))
+                {
+                    BakerySupport.createLodLayer(
+                        templateLoD, 
+                        ref lodId, 
+                        ref typId, 
+                        ref surId, 
+                        parentID
+                        );
+                }
+
+                string blockName = "Template " + tempIdx;
+
+                if (blockId.ContainsKey(blockName))
+                {
+                    int counter = 0;
+                    while (true)
+                    {
+                        blockName = "Template " + tempIdx + " - " + counter.ToString();
+
+                        if (!blockId.ContainsKey(blockName))
+                        {
+                            break;
+                        }
+                        counter++;
+                    }
+                }
+
+                int instanceIdx = Rhino.RhinoDoc.ActiveDoc.InstanceDefinitions.Add(blockName, "test", BakerySupport.getAnchorPoint(blockTemplateList), blockTemplateList, attributeList);
+                blockId.Add(blockName, instanceIdx);
 
                 foreach (var objectSem in obBranchCollection)
                 {
+                    string cleanedTemplateType = BakerySupport.getParentName(objectSem[typeIdx].ToString());
                     if (objectSem[tempIdxObIdx].ToString() == tempIdx)
                     {
                         Point3d location = new Point3d();
@@ -167,13 +230,36 @@ namespace RhinoCityJSON.Components
                         objectAttributes.Name = objectSem[nameIdx].ToString();
 
                         for (int j = 0; j < bKeys.Count; j++)
-                        { objectAttributes.SetUserString(bKeys[j], objectSem[j].ToString()); }
+                        { 
+                            objectAttributes.SetUserString(
+                                bKeys[j], 
+                                objectSem[j].ToString()); 
+                        }
 
+                        // check if data is available in the layer index
+                        if (!typId[templateLoD].ContainsKey(cleanedTemplateType)) // TODO: make function with building surf subs (can test after injector implementation)
+                        {
+                            Rhino.DocObjects.Layer typeLayer = new Rhino.DocObjects.Layer();
+                            typeLayer.Name = cleanedTemplateType;
+                            System.Drawing.Color lColor = System.Drawing.Color.DarkRed;
+
+                            if (typColor.ContainsKey(cleanedTemplateType))
+                            {
+                                lColor = typColor[cleanedTemplateType];
+                            }
+
+                            typeLayer.Color = lColor;
+                            typeLayer.ParentLayerId = lodId[templateLoD];
+
+                            var idx = activeDoc.Layers.Add(typeLayer);
+                            typId[templateLoD].Add(cleanedTemplateType, idx);
+                        }
+
+                        objectAttributes.LayerIndex = typId[templateLoD][cleanedTemplateType];
                         Rhino.RhinoDoc.ActiveDoc.Objects.AddInstanceObject(instanceIdx, Transform.Translation(location.X, location.Y, location.Z), objectAttributes); 
                     }
                 }
             }
-
         }
 
         protected override System.Drawing.Bitmap Icon

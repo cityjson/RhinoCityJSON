@@ -14,6 +14,8 @@ namespace RhinoCityJSON
         emptyPath,
         invalidPath,
         invalidLod,
+        noLod,
+        noBType,
         noScale,
         invalidJSON,
         noTeamplateFound,
@@ -37,6 +39,8 @@ namespace RhinoCityJSON
             {errorCodes.emptyPath, "Path is empty"},
             {errorCodes.invalidPath, "No valid filepath found"},
             {errorCodes.invalidLod, "Invalid lod input found"},
+            {errorCodes.noLod, "No lod data is supplied"},
+            {errorCodes.noBType, "No Object type data is supplied"},
             {errorCodes.noScale, "Rhino document scale is not supported, defaulted to unit 1"},
             {errorCodes.invalidJSON, "Invalid CityJSON file"},
             {errorCodes.noTeamplateFound, "No templated objects were found"},
@@ -87,5 +91,6 @@ namespace RhinoCityJSON
             "Template Idx",
             "Object Anchor"
         };
+
     }
 }

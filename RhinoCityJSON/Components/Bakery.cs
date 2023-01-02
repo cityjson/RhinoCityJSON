@@ -70,7 +70,7 @@ namespace RhinoCityJSON.Components
             var lodTypeDictionary = new Dictionary<string, List<string>>();
             var lodSurfTypeDictionary = new Dictionary<string, List<string>>();
 
-            var branchCollection = siTree.Branches;
+            IList<List<Grasshopper.Kernel.Types.IGH_Goo>> branchCollection = siTree.Branches;
 
             if (branchCollection.Count == 0)
             {
@@ -132,182 +132,24 @@ namespace RhinoCityJSON.Components
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No Surface type data is supplied");
             }
 
-            for (int i = 0; i < branchCollection.Count; i++)
-            {
-                // get LoD
-                string lod = branchCollection[i][lodIdx].ToString();
-
-                if (!lodList.Contains(lod))
-                {
-                    lodList.Add(lod);
-                }
-
-                // get building types present in input
-                string bType = branchCollection[i][typeIdx].ToString();
-
-                if (!lodTypeDictionary.ContainsKey(lod))
-                {
-                    lodTypeDictionary.Add(lod, new List<string>());
-                    lodTypeDictionary[lod].Add(bType);
-
-                }
-                else if (!lodTypeDictionary[lod].Contains(bType))
-                {
-                    lodTypeDictionary[lod].Add(bType);
-                }
-            }
-
-            if (surfTypeIdx != -1)
-            {
-                for (int i = 0; i < branchCollection.Count; i++)
-                {
-                    string lod = branchCollection[i][lodIdx].ToString();
-
-                    // get surface types present in input
-                    string sType = branchCollection[i][surfTypeIdx].ToString();
-
-                    if (!lodSurfTypeDictionary.ContainsKey(lod))
-                    {
-                        lodSurfTypeDictionary.Add(lod, new List<string>());
-                        lodSurfTypeDictionary[lod].Add(sType);
-
-                    }
-                    else if (!lodSurfTypeDictionary[lod].Contains(sType))
-                    {
-                        lodSurfTypeDictionary[lod].Add(sType);
-                    }
-                }
-            }
-
-            var activeDoc = Rhino.RhinoDoc.ActiveDoc;
-
-            // create a new unique master layer name
-            Rhino.DocObjects.Layer parentlayer = new Rhino.DocObjects.Layer();
-            parentlayer.Name = "RCJ output";
-            parentlayer.Color = System.Drawing.Color.Red;
-            parentlayer.Index = 100;
-
-            // if the layer already exists find a new name
-            int count = 0;
-            if (activeDoc.Layers.FindName("RCJ output") != null)
-            {
-                while (true)
-                {
-                    if (activeDoc.Layers.FindName("RCJ output - " + count.ToString()) == null)
-                    {
-                        parentlayer.Name = "RCJ output - " + count.ToString();
-                        parentlayer.Index = parentlayer.Index + count;
-                        break;
-                    }
-                    count++;
-                }
-            }
-
-            activeDoc.Layers.Add(parentlayer);
-            var parentID = activeDoc.Layers.FindName(parentlayer.Name).Id;
-
-            // create LoD layers
+            // create layers
             var lodId = new Dictionary<string, System.Guid>();
             var typId = new Dictionary<string, Dictionary<string, int>>();
             var surId = new Dictionary<string, Dictionary<string, int>>();
-            var typColor = BakerySupport.getTypeColor();
-            var surfColor = BakerySupport.getSurfColor();
 
-            for (int i = 0; i < lodList.Count; i++)
-            {
-                Rhino.DocObjects.Layer lodLayer = new Rhino.DocObjects.Layer();
-                lodLayer.Name = "LoD " + lodList[i];
-                lodLayer.Color = System.Drawing.Color.DarkRed;
-                lodLayer.Index = 200 + i;
-                lodLayer.ParentLayerId = parentID;
-
-                var id = activeDoc.Layers.Add(lodLayer);
-                var idx = activeDoc.Layers.FindIndex(id).Id;
-                lodId.Add(lodList[i], idx);
-                typId.Add(lodList[i], new Dictionary<string, int>());
-                surId.Add(lodList[i], new Dictionary<string, int>());
-            }
-
-            foreach (var lodTypeLink in lodTypeDictionary)
-            {
-                var targeLId = lodId[lodTypeLink.Key];
-                var cleanedTypeList = new List<string>();
-
-                foreach (var bType in lodTypeLink.Value)
-                {
-                    var filteredName = BakerySupport.getParentName(bType);
-
-                    if (!cleanedTypeList.Contains(filteredName))
-                    {
-                        cleanedTypeList.Add(filteredName);
-                    }
-                }
-
-                foreach (var bType in cleanedTypeList)
-                {
-                    Rhino.DocObjects.Layer typeLayer = new Rhino.DocObjects.Layer();
-                    typeLayer.Name = bType;
-
-                    System.Drawing.Color lColor = System.Drawing.Color.DarkRed;
-                    try
-                    {
-                        lColor = typColor[bType];
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-
-                    typeLayer.Color = lColor;
-                    typeLayer.ParentLayerId = targeLId;
-
-                    var idx = activeDoc.Layers.Add(typeLayer);
-                    typId[lodTypeLink.Key].Add(bType, idx);
-                }
-            }
-
-            if (surfTypeIdx != -1)
-            {
-                foreach (var lodTypeLink in lodSurfTypeDictionary)
-                {
-                    var targeLId = activeDoc.Layers.FindIndex(typId[lodTypeLink.Key]["Building"]).Id;
-                    var cleanedSurfTypeList = new List<string>();
-
-                    foreach (var bType in lodTypeLink.Value)
-                    {
-                        var filteredName = BakerySupport.getParentName(bType);
-
-                        if (!cleanedSurfTypeList.Contains(filteredName))
-                        {
-                            cleanedSurfTypeList.Add(filteredName);
-                        }
-                    }
-
-                    foreach (var sType in cleanedSurfTypeList)
-                    {
-                        Rhino.DocObjects.Layer surfTypeLayer = new Rhino.DocObjects.Layer();
-                        surfTypeLayer.Name = sType;
-
-                        System.Drawing.Color lColor = System.Drawing.Color.DarkRed;
-                        try
-                        {
-                            lColor = surfColor[sType];
-                        }
-                        catch
-                        {
-                            continue;
-                        }
-
-                        surfTypeLayer.Color = lColor;
-                        surfTypeLayer.ParentLayerId = targeLId;
-
-                        var idx = activeDoc.Layers.Add(surfTypeLayer);
-                        surId[lodTypeLink.Key].Add(sType, idx);
-                    }
-                }
-            }
+            BakerySupport.createLayers(
+                "RCJ output",
+                lodIdx,
+                typeIdx,
+                surfTypeIdx,
+                branchCollection,
+                ref lodId,
+                ref typId,
+                ref surId
+                );
 
             // bake geo
+            var activeDoc = Rhino.RhinoDoc.ActiveDoc;
             var groupName = branchCollection[0][nameIdx].ToString() + branchCollection[0][lodIdx].ToString();
             activeDoc.Groups.Add("LoD: " + branchCollection[0][lodIdx].ToString() + " - " + branchCollection[0][nameIdx].ToString());
             var groupId = activeDoc.Groups.Add(groupName);
