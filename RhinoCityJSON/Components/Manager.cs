@@ -54,6 +54,23 @@ namespace RhinoCityJSON.Components
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.unevenFilterInput]);
                 return;
             }
+            if (geoList.Count  != 0)
+            {
+                if (geoList[0] == null)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noGeoFound]);
+                    return;
+                }
+
+            }
+            if (sKeys.Count != 0)
+            {
+                if (sKeys[0] == null)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noSurfaceData]);
+                    return;
+                }
+            }
 
             bool bFilter = true; // TODO: make function with only surface data input
             if (bKeys.Count <= 0)

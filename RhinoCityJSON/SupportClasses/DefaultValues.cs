@@ -17,6 +17,7 @@ namespace RhinoCityJSON
         noLod,
         noBType,
         noScale,
+        noSurfaceData,
         invalidJSON,
         noTeamplateFound,
         noMetaDataFound,
@@ -42,11 +43,12 @@ namespace RhinoCityJSON
             {errorCodes.noLod, "No lod data is supplied"},
             {errorCodes.noBType, "No Object type data is supplied"},
             {errorCodes.noScale, "Rhino document scale is not supported, defaulted to unit 1"},
+            {errorCodes.noSurfaceData, "No surface data could be found"},
             {errorCodes.invalidJSON, "Invalid CityJSON file"},
             {errorCodes.noTeamplateFound, "No templated objects were found"},
             {errorCodes.noMetaDataFound, "No metadata found"},
             {errorCodes.noMaterialsFound, "No materials found"},
-            {errorCodes.noGeoFound, "Geometry input empty"},
+            {errorCodes.noGeoFound, "Geometry input is empty"},
             {errorCodes.requiresNorth, "True north rotation only functions if origin is given"},
             {errorCodes.unevenFilterInput, "Object info input is required to be either both null, or both filled"}
         };
