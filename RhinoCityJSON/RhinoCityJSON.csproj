@@ -84,6 +84,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SupportClasses\ReaderSupport.cs" />
     <Compile Include="SupportClasses\WriterSupport.cs" />
+    <Compile Include="Types\CJMaterial.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

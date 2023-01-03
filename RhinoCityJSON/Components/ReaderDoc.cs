@@ -27,8 +27,7 @@ namespace RhinoCityJSON.Components
             pManager.AddTextParameter("Metadata Keys", "MdK", "Keys of the Metadata stored in the files", GH_ParamAccess.item);
             pManager.AddTextParameter("Metadata Values", "MdV", "Values of the Metadata stored in the files", GH_ParamAccess.tree);
             pManager.AddTextParameter("LoD", "L", "LoD levels", GH_ParamAccess.item);
-            pManager.AddTextParameter("Material Keys", "MK", "Key output representing the material list stored in the files", GH_ParamAccess.list);
-            pManager.AddTextParameter("Material Values", "MV", "Color output representing the material list stored in the files", GH_ParamAccess.tree);
+            pManager.AddGenericParameter("test materials", "tm", "a test", GH_ParamAccess.list);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -63,21 +62,9 @@ namespace RhinoCityJSON.Components
                 }
             }
 
+            List<GHMaterial> materialList = new List<GHMaterial>();
             List<string> lodLevels = new List<string>();
-            var materialsTree = new Grasshopper.DataTree<string>(); ;
             var nestedMetaData = new List<Dictionary<string, string>>();
-            List<string> materialKeyList = new List<string>()
-            {
-                "name",
-                "ambientIntensity",
-                "diffuseColor",
-                "emissiveColor",
-                "specularColor",
-                "shininess",
-                "transparency",
-                "isSmooth"
-            };
-            Dictionary<string, List<string>> materialsDict = new Dictionary<string, List<string>>();
 
             foreach (var path in pathList)
             {
@@ -146,39 +133,49 @@ namespace RhinoCityJSON.Components
                             var ghColor = new Grasshopper.Kernel.Types.GH_Colour();
                             var GH_material = new Grasshopper.Kernel.Types.GH_Material();
 
-                            foreach (var mKey in materialKeyList)
-                            {
-                                var currentValue = material[mKey];
-                                if (currentValue != null)
-                                {
-                                    if (currentValue.Type == Newtonsoft.Json.Linq.JTokenType.Array)
-                                    {
-                                        string materialString = Math.Round((float)currentValue[0] * 256) + "," + Math.Round((float)currentValue[1] * 256) + "," + Math.Round((float)currentValue[2] * 256);
-                                        materialsTree.Add(materialString, nPath);
-                                    }
-                                    else
-                                    {
-                                        materialsTree.Add(material[mKey].ToString(), nPath);
-                                    }
-                                }
-                                else
-                                {
-                                    materialsTree.Add(DefaultValues.defaultNoneValue, nPath);
-                                }
-                            }
-                            c++;
+
+                            string name = "";
+                            double ambientIntensity = 0;
+                            double[] diffuseColor = new double[3] { -1, -1, -1 };
+                            double[] emissiveColor = new double[3] { -1, -1, -1 };
+                            double[] specularColor = new double[3] { -1, -1, -1 };
+                            double shininess = 0;
+                            double transparency = 0;
+                            bool isSmooth = false;
+
+                            if (material["name"] != null) { name = material["name"]; }
+                            if (material["ambientIntensity"] != null) { ambientIntensity = material["ambientIntensity"]; }
+                            if (material["diffuseColor"] != null) { diffuseColor =  new double[3]{ material["diffuseColor"][0], material["diffuseColor"][1], material["diffuseColor"][2]};}
+                            if (material["emissiveColor"] != null) { diffuseColor =  new double[3]{ material["emissiveColor"][0], material["emissiveColor"][1], material["emissiveColor"][2]};}
+                            if (material["specularColor"] != null) { diffuseColor =  new double[3]{ material["specularColor"][0], material["specularColor"][1], material["specularColor"][2]};}
+                            if (material["shininess"] != null) { shininess = material["shininess"]; }
+                            if (material["transparency"] != null) { transparency = material["transparency"]; }
+                            if (material["isSmooth"] != null) { isSmooth = material["isSmooth"]; }
+
+                            materialList.Add(
+                                new GHMaterial(
+                                    new Material(
+                                        name,
+                                        ambientIntensity,
+                                        diffuseColor,
+                                        emissiveColor,
+                                        specularColor,
+                                        shininess,
+                                        transparency,
+                                        isSmooth
+                                        )
+                                    )
+                                );
                         }
                     }
                     else
                     {
                         AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMaterialsFound]);
-                        materialKeyList = new List<string>();
                     }
                 }
                 else
                 {
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMaterialsFound]);
-                    materialKeyList = new List<string>();
                 }
 
                 // get LoD
@@ -237,11 +234,11 @@ namespace RhinoCityJSON.Components
                 counter++;
             }
             lodLevels.Sort();
+
             DA.SetDataList(0, metaKeys);
             DA.SetDataTree(1, dataTree);
             DA.SetDataList(2, lodLevels);
-            DA.SetDataList(3, materialKeyList);
-            DA.SetDataTree(4, materialsTree);
+            DA.SetDataList(3, materialList);
         }
 
         protected override System.Drawing.Bitmap Icon
