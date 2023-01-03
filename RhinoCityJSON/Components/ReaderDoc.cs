@@ -27,7 +27,7 @@ namespace RhinoCityJSON.Components
             pManager.AddTextParameter("Metadata Keys", "MdK", "Keys of the Metadata stored in the files", GH_ParamAccess.item);
             pManager.AddTextParameter("Metadata Values", "MdV", "Values of the Metadata stored in the files", GH_ParamAccess.tree);
             pManager.AddTextParameter("LoD", "L", "LoD levels", GH_ParamAccess.item);
-            pManager.AddGenericParameter("test materials", "tm", "a test", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Materials", "m", "materials stored in the files", GH_ParamAccess.list);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -146,8 +146,8 @@ namespace RhinoCityJSON.Components
                             if (material["name"] != null) { name = material["name"]; }
                             if (material["ambientIntensity"] != null) { ambientIntensity = material["ambientIntensity"]; }
                             if (material["diffuseColor"] != null) { diffuseColor =  new double[3]{ material["diffuseColor"][0], material["diffuseColor"][1], material["diffuseColor"][2]};}
-                            if (material["emissiveColor"] != null) { diffuseColor =  new double[3]{ material["emissiveColor"][0], material["emissiveColor"][1], material["emissiveColor"][2]};}
-                            if (material["specularColor"] != null) { diffuseColor =  new double[3]{ material["specularColor"][0], material["specularColor"][1], material["specularColor"][2]};}
+                            if (material["emissiveColor"] != null) { emissiveColor =  new double[3]{ material["emissiveColor"][0], material["emissiveColor"][1], material["emissiveColor"][2]};}
+                            if (material["specularColor"] != null) { specularColor =  new double[3]{ material["specularColor"][0], material["specularColor"][1], material["specularColor"][2]};}
                             if (material["shininess"] != null) { shininess = material["shininess"]; }
                             if (material["transparency"] != null) { transparency = material["transparency"]; }
                             if (material["isSmooth"] != null) { isSmooth = material["isSmooth"]; }

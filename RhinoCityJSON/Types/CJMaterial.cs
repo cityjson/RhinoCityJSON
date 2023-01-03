@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Grasshopper.Kernel.Types;
+using Grasshopper.Kernel;
 
 namespace RhinoCityJSON
 {
@@ -58,7 +59,15 @@ namespace RhinoCityJSON
             isSmooth_ = isSmooth;
         }
 
-        
+        public string getName() { return name_; }
+        public double getAmbient() { return ambientIntensity_; }
+        public double[] getDifColor() { return diffuseColor_; }
+        public double[] getemColor() { return emissiveColor_; }
+        public double[] getspeColor() { return specularColor_; }
+        public double getshine() { return shininess_; }
+        public double getTransparency() { return transparency_; }
+
+        public bool getIsSmooth() { return isSmooth_; }
 
         public bool isValid()
         {
@@ -131,4 +140,8 @@ namespace RhinoCityJSON
 
         public override string ToString() => "CityJSON Material";
     }
+
+    
+
+
 }

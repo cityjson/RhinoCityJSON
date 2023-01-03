@@ -6,6 +6,14 @@ namespace RhinoCityJSON
 {
     class ReaderSupport
     {
+        static public string arrayToString(double[] doubleArray)
+        {
+            if (doubleArray[0] == -1)  {  return DefaultValues.defaultNoneValue; }
+
+            return Math.Round(doubleArray[0] * 255, 0).ToString() + ", " + Math.Round(doubleArray[1] * 255, 0).ToString() + ", " + Math.Round(doubleArray[2] * 255, 0).ToString();
+        }
+
+
         /// @brief 
         static public List<Rhino.Geometry.Point3d> getVerts(
             dynamic Jcity,
