@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Rhino.Geometry;
+using System;
 
 namespace RhinoCityJSON
 {
@@ -377,6 +378,45 @@ namespace RhinoCityJSON
                     surIdLookup[lodTypeLink.Key].Add(sType, idx);
                 }
             }
+        }
+        static public int createRhinoMaterial(GHMaterial materialObject)
+        {
+            var activeDoc = Rhino.RhinoDoc.ActiveDoc;
+            var matIdx = activeDoc.Materials.Add();
+
+            var materialValues = materialObject.Value;
+
+            Rhino.DocObjects.Material rhinoMaterial = activeDoc.Materials[matIdx];
+            rhinoMaterial.Name = materialValues.getName();
+
+            double[] DiffuseColor = materialValues.getDifColor();
+            rhinoMaterial.DiffuseColor = System.Drawing.Color.FromArgb(
+                ((int)Math.Round(DiffuseColor[0] * 255, 0)), ((int)Math.Round(DiffuseColor[1] * 255, 0)), ((int)Math.Round(DiffuseColor[2] * 255, 0)));
+
+            double[] emissiveColor = materialValues.getemColor();
+            if (emissiveColor[0] != -1 && emissiveColor[1] != -1 && emissiveColor[2] != -1)
+            {
+                rhinoMaterial.EmissionColor = System.Drawing.Color.FromArgb(
+                ((int)Math.Round(emissiveColor[0] * 255, 0)), ((int)Math.Round(emissiveColor[1] * 255, 0)), ((int)Math.Round(emissiveColor[2] * 255, 0)));
+            }
+
+            double[] specularColor = materialValues.getspeColor();
+            if (specularColor[0] != -1 && specularColor[1] != -1 && specularColor[2] != -1)
+            {
+                rhinoMaterial.SpecularColor = System.Drawing.Color.FromArgb(
+                ((int)Math.Round(specularColor[0] * 255, 0)), ((int)Math.Round(specularColor[1] * 255, 0)), ((int)Math.Round(specularColor[2] * 255, 0)));
+            }
+
+            rhinoMaterial.Shine = materialValues.getshine();
+            rhinoMaterial.Transparency = materialValues.getTransparency();
+
+            if (!materialValues.getIsSmooth()){ rhinoMaterial.Reflectivity = 0; }
+            else { rhinoMaterial.Reflectivity = 0.2; }
+
+
+            rhinoMaterial.CommitChanges();
+
+            return matIdx;
         }
     }
 }

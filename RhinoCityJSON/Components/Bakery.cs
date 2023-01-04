@@ -20,11 +20,12 @@ namespace RhinoCityJSON.Components
             pManager.AddBrepParameter("Geometry", "G", "Geometry Input", GH_ParamAccess.list);
             pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
             pManager.AddGenericParameter("Surface Info", "SiV", "Semantic information output related to the surfaces", GH_ParamAccess.tree);
-            //pManager.AddGenericParameter("Document Info", "Di", "Information related to the document (metadata, materials and textures", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Materials", "M", "The material information", GH_ParamAccess.list);
             pManager.AddBooleanParameter("Activate", "A", "Activate bakery", GH_ParamAccess.item, false);
             pManager[0].Optional = true;
             pManager[1].Optional = true;
             pManager[2].Optional = true;
+            pManager[3].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -36,8 +37,9 @@ namespace RhinoCityJSON.Components
             bool boolOn = false;
             var keyList = new List<string>();
             var brepList = new List<Brep>();
+            var materialList = new List<GHMaterial>();
 
-            DA.GetData(3, ref boolOn);
+            DA.GetData(4, ref boolOn);
 
             if (!boolOn)
             {
@@ -48,6 +50,7 @@ namespace RhinoCityJSON.Components
             DA.GetDataList(0, brepList);
             DA.GetDataList(1, keyList);
             DA.GetDataTree(2, out Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo> siTree);
+            DA.GetDataList(3, materialList);
 
             if (brepList.Count == 0)
             {
@@ -89,6 +92,7 @@ namespace RhinoCityJSON.Components
             int typeIdx = -1;
             int nameIdx = -1;
             int surfTypeIdx = -1;
+            List<int> materialNames = new List<int>();
             for (int i = 0; i < keyList.Count; i++)
             {
                 if (keyList[i].ToLower() == "geometry lod")
@@ -107,7 +111,10 @@ namespace RhinoCityJSON.Components
                 {
                     surfTypeIdx = i;
                 }
-
+                else if (keyList[i].ToLower().Split(' ')[0] == "surface" && keyList[i].ToLower().Split(' ')[1] == "material")
+                {
+                    materialNames.Add(i);
+                }
             }
 
             if (lodIdx == -1)
@@ -148,8 +155,15 @@ namespace RhinoCityJSON.Components
                 ref surId
                 );
 
-            // bake geo
+            // create materials
             var activeDoc = Rhino.RhinoDoc.ActiveDoc;
+            List<int> materialIdx = new List<int>();
+            foreach (var materialObject in materialList)
+            {
+                materialIdx.Add(BakerySupport.createRhinoMaterial(materialObject));
+            }
+
+            // bake geo
             var groupName = branchCollection[0][nameIdx].ToString() + branchCollection[0][lodIdx].ToString();
             activeDoc.Groups.Add("LoD: " + branchCollection[0][lodIdx].ToString() + " - " + branchCollection[0][nameIdx].ToString());
             var groupId = activeDoc.Groups.Add(groupName);
@@ -184,17 +198,25 @@ namespace RhinoCityJSON.Components
                     sType = branchCollection[i][surfTypeIdx].ToString();
                 }
 
+                // create object attributes
                 Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
                 objectAttributes.Name = branchCollection[i][nameIdx].ToString() + " - " + i;
+
+                // bind material to object
+                if (materialNames.Count > 0 && materialIdx.Count > 0)
+                {
+                    string materialString = branchCollection[i][materialNames[0]].ToString();
+                    if (materialString != DefaultValues.defaultNoneValue)
+                    {
+                        int materalNum = Int32.Parse(branchCollection[i][materialNames[0]].ToString());
+                        objectAttributes.MaterialIndex = materialIdx[materalNum];
+                        objectAttributes.MaterialSource = Rhino.DocObjects.ObjectMaterialSource.MaterialFromObject;
+                    }
+                }
 
                 for (int j = 0; j < branchCollection[i].Count; j++)
                 {
                     string fullName = branchCollection[i][j].ToString();
-                    if (j == 0)
-                    {
-                        //fullName = fullName.Substring(0, fullName.Length - BakerySupport.getPopLength(branchCollection[i][lodIdx].ToString())); 
-                    }
-
                     objectAttributes.SetUserString(keyList[j], fullName);
                 }
 
