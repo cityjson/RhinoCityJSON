@@ -379,12 +379,15 @@ namespace RhinoCityJSON
                 }
             }
         }
-        static public int createRhinoMaterial(GHMaterial materialObject)
+        static public int createRhinoMaterial(GHMaterial materialObject, Rhino.DocObjects.Tables.MaterialTable materialTable)
         {
+            var materialValues = materialObject.Value;
+            int presentIdx = materialTable.Find(materialValues.getName(), true);
+
+            if (presentIdx != -1) { return presentIdx; }
+
             var activeDoc = Rhino.RhinoDoc.ActiveDoc;
             var matIdx = activeDoc.Materials.Add();
-
-            var materialValues = materialObject.Value;
 
             Rhino.DocObjects.Material rhinoMaterial = activeDoc.Materials[matIdx];
             rhinoMaterial.Name = materialValues.getName();
