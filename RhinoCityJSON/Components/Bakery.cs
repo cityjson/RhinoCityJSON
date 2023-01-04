@@ -158,7 +158,6 @@ namespace RhinoCityJSON.Components
             // create materials
             var activeDoc = Rhino.RhinoDoc.ActiveDoc;
             List<int> materialIdx = new List<int>();
-
             foreach (var materialObject in materialList)
             {
                 materialIdx.Add(BakerySupport.createRhinoMaterial(materialObject, activeDoc.Materials));

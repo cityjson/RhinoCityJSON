@@ -22,12 +22,14 @@ namespace RhinoCityJSON.Components
             pManager.AddGenericParameter("Surface Info", "TSiV", "Semantic information output related to the surfaces", GH_ParamAccess.tree);
             pManager.AddTextParameter("Object Info Keys", "TOiK", "Keys of the information output related to the Objects", GH_ParamAccess.list);
             pManager.AddGenericParameter("Object Info", "TOiV", "Semantic information output related to the Objects", GH_ParamAccess.tree);
+            pManager.AddGenericParameter("Materials", "M", "The material information", GH_ParamAccess.list);
             pManager.AddBooleanParameter("Activate", "A", "Activate bakery", GH_ParamAccess.item, false);
             pManager[0].Optional = true;
             pManager[1].Optional = true;
             pManager[2].Optional = true;
             pManager[3].Optional = true;
             pManager[4].Optional = true;
+            pManager[5].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -41,6 +43,7 @@ namespace RhinoCityJSON.Components
             var bKeys = new List<string>();
             var biTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
             var geoList = new List<Brep>();
+            var materialList = new List<GHMaterial>();
             bool boolOn = false;
 
             DA.GetDataList(0, geoList);
@@ -48,7 +51,8 @@ namespace RhinoCityJSON.Components
             DA.GetDataTree(2, out siTree);
             DA.GetDataList(3, bKeys);
             DA.GetDataTree(4, out biTree);
-            DA.GetData(5, ref boolOn);
+            DA.GetDataList(5, materialList);
+            DA.GetData(6, ref boolOn);
 
             if (!boolOn)
             {
@@ -71,6 +75,7 @@ namespace RhinoCityJSON.Components
             int lodIdx = -1;
             int typeIdx = -1;
             int surfTypeIdx = -1;
+            List<int> materialNames = new List<int>();
 
             for (int i = 0; i < sKeys.Count; i++)
             {
@@ -81,6 +86,10 @@ namespace RhinoCityJSON.Components
                 else if (sKeys[i].ToLower() == "geometry lod")
                 {
                     lodIdx = i;
+                }
+                else if (sKeys[i].ToLower().Split(' ')[0] == "surface" && sKeys[i].ToLower().Split(' ')[1] == "material")
+                {
+                    materialNames.Add(i);
                 }
             }
 
@@ -142,6 +151,12 @@ namespace RhinoCityJSON.Components
             var parentID = activeDoc.Layers.FindIndex(BakerySupport.makeParentLayer("RCJ Template output"));
             var typColor = BakerySupport.getTypeColor();
 
+            List<int> materialIdx = new List<int>();
+            foreach (var materialObject in materialList)
+            {
+                materialIdx.Add(BakerySupport.createRhinoMaterial(materialObject, activeDoc.Materials));
+            }
+
             // find the blocks are already present
             var blockList = Rhino.RhinoDoc.ActiveDoc.InstanceDefinitions.GetList(true);
 
@@ -181,6 +196,19 @@ namespace RhinoCityJSON.Components
                         {
                             objectAttributes.SetUserString(sKeys[j], surfBranchCollection[i][j].ToString());
                         }
+
+                        // bind material to object
+                        if (materialNames.Count > 0 && materialIdx.Count > 0)
+                        {
+                            string materialString = surfBranchCollection[i][materialNames[0]].ToString();
+                            if (materialString != DefaultValues.defaultNoneValue)
+                            {
+                                int materalNum = Int32.Parse(surfBranchCollection[i][materialNames[0]].ToString());
+                                objectAttributes.MaterialIndex = materialIdx[materalNum];
+                                objectAttributes.MaterialSource = Rhino.DocObjects.ObjectMaterialSource.MaterialFromObject;
+                            }
+                        }
+
                         attributeList.Add(objectAttributes);
 
                     }
