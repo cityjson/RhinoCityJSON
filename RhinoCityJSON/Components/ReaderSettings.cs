@@ -93,8 +93,16 @@ namespace RhinoCityJSON.Components
 
             }
 
-            var settingsTuple = Tuple.Create(translate, p, setP, north, loDList);
-            DA.SetData(0, new Grasshopper.Kernel.Types.GH_ObjectWrapper(settingsTuple));
+            Types.GHReaderSettings readerSettings = new Types.GHReaderSettings(
+                    new Types.ReaderSettings(
+                    translate,
+                    p,
+                    north,
+                    loDList
+                    )
+                );
+
+            DA.SetData(0, readerSettings);
         }
 
         protected override System.Drawing.Bitmap Icon

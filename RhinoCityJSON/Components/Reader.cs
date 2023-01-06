@@ -55,7 +55,7 @@ namespace RhinoCityJSON.Components
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             List<String> pathList = new List<string>();
-            var settingsList = new List<Grasshopper.Kernel.Types.GH_ObjectWrapper>();
+            List<Types.GHReaderSettings> settingsList = new List<Types.GHReaderSettings>();
 
             bool boolOn = false;
 
@@ -82,13 +82,18 @@ namespace RhinoCityJSON.Components
             bool translate = false;
             double rotationAngle = 0;
 
-            ReaderSupport.getSettings(
-                settingsList,
-                ref loDList,
-                ref setLoD,
-                ref worldOrigin,
-                ref translate,
-                ref rotationAngle);
+            if (settingsList.Count() > 0)
+            {
+                ReaderSupport.getSettings(
+                                settingsList[0],
+                                ref loDList,
+                                ref setLoD,
+                                ref worldOrigin,
+                                ref translate,
+                                ref rotationAngle);
+            }
+
+            
 
             // get scale from current session
             double scaler = ReaderSupport.getDocScaler();

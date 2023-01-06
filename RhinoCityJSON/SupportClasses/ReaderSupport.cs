@@ -156,7 +156,7 @@ namespace RhinoCityJSON
         }
 
         public static errorCodes getSettings(
-           List<Grasshopper.Kernel.Types.GH_ObjectWrapper> settingsList,
+           Types.GHReaderSettings ghSettings,
            ref List<string> loDList,
            ref bool setLoD,
            ref Point3d worldOrigin,
@@ -164,28 +164,13 @@ namespace RhinoCityJSON
            ref double rotationAngle
            )
         {
-            var readSettingsList = new List<Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>>>();
+            var CJSettings = ghSettings.Value;
+            translate = CJSettings.getTranslate();
+            rotationAngle = Math.PI * CJSettings.getTrueNorth() / 180.0;
 
-            if (settingsList.Count > 0)
-            {
-                // extract settings
-                foreach (Grasshopper.Kernel.Types.GH_ObjectWrapper objWrap in settingsList)
-                {
-                    readSettingsList.Add(objWrap.Value as Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>>);
-                }
+            worldOrigin = CJSettings.getModelOrigin();
 
-                Tuple<bool, Rhino.Geometry.Point3d, bool, double, List<string>> settings = readSettingsList[0];
-                translate = settings.Item1;
-                rotationAngle = Math.PI * settings.Item4 / 180.0;
-
-                if (settings.Item3) // if world origin is set
-                {
-                    worldOrigin = settings.Item2;
-                }
-                loDList = settings.Item5;
-            }
-            // check lod validity
-
+            loDList = CJSettings.getLoDList();
 
             foreach (string lod in loDList)
             {
@@ -395,7 +380,7 @@ namespace RhinoCityJSON
 
         public static errorCodes checkInput(
             bool boolOn,
-            List<Grasshopper.Kernel.Types.GH_ObjectWrapper> settingsList,
+            List<Types.GHReaderSettings> ghSettings,
             List<string> pathList
             )
         {
@@ -403,7 +388,7 @@ namespace RhinoCityJSON
             {
                 return errorCodes.offline;
             }
-            else if (settingsList.Count > 1)
+            else if (ghSettings.Count > 1)
             {
                 return errorCodes.multipleInputSettings;
             }

@@ -24,6 +24,7 @@ namespace RhinoCityJSON
             pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
             pManager.AddGenericParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.tree);
             pManager.AddBooleanParameter("Force", "*", "Override existing objects", GH_ParamAccess.item, false);
+            pManager.AddBooleanParameter("Activate", "A", "Activate bakery", GH_ParamAccess.item, false);
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -32,6 +33,16 @@ namespace RhinoCityJSON
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+
+            bool boolOn = false;
+            DA.GetData(6, ref boolOn);
+
+            if (!boolOn)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.offline]);
+                return;
+            }
+
             string sourcePath = "";
             string targetPath = "";
             var keyList = new List<string>();

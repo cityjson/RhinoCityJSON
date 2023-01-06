@@ -13,7 +13,7 @@ Currently only supports CityJSON 1.1 and 1.2.
 * Complex surfaces are not always correctly constructed.
 * 3D BAG does not include all the data the Normal bag has included.
 * Template handling is potentially unstable.
-* Materials can not be baked to rhino.
+* Many materials importing can be extremely slow (This sadly is an issue with Rhino).
 * Textures are not supported.
 * Rhino data can not be exported to the CityJSON format.
 * Examples are outdated.
@@ -81,9 +81,7 @@ Outputs:
 * Metadata Keys. The keys of the Metadata stored in the files.
 * Metadata Values. The values of the Metadata stored in the files.
 * LoD. LoD levels stored in the files.
-* Material Keys. Key output representing the material list stored in the files (will be changed).
-* Material Values. Color output representing the material list stored in the files (Will be changed).
-
+* Materials. The materials that are stored in the file.
 
 ### Settings
 The Settings component gives the user more control over the Simple Reader and Reader component.
@@ -104,6 +102,7 @@ Input:
 * Geometry. A List with geometry that is desired to be baked.
 * Surface Info Keys. The keys related to the Surface Info Values (This list should be the same length as a branch of the Surface Info Values).
 * Surface Info Values. The Values related to the Geometry. (This Tree should be the same length as the geometry List).
+* Materials. The materials related to the Geometry.
 * Activate. A boolean dictating if the component is active or not (Recommended to use a button to activate and not a boolean toggle).
 
 The semantic data will be stored per surface at: Properties->Object-Attribute User Text. Additionally the LoD and major object types will be used to create a hierarchy of layers.
@@ -118,6 +117,7 @@ Input:
 * Surface Info Keys. The keys related to the Surface Info Values (This list should be the same length as a branch of the Surface Info Values).
 * Surface Info Values. The Values related to the Geometry. (This Tree should be the same length as the geometry List).
 * Object Info Keys. The keys of sematic info that corresponds with the object (names).
+* Materials. The materials related to the Geometry
 * Object Info Values. The values of semantic info that corresponds with the object (names).
 
 Each instance of a template will be placed in a block. Allowing to move, scale and rotate the objects without changing the underlying geometry.
@@ -162,7 +162,7 @@ Output:
 To ease the processing and filtering sets this component can create un-templated objects out of templated objects.
 The format of the converted objects is identical to the normal objects.
 
-input:
+Input:
 * Template Geometry. A list of single surface Breps.
 * Surface Info Keys. The keys of semantic info that corresponds 1:1 with the geometry output of the Template Reader component.
 * Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry output of the Template Reader component.
@@ -176,5 +176,19 @@ Output:
 * Object Info Keys. The keys of sematic info that corresponds with the object (names).
 * Object Info Values. The values of semantic info that corresponds with the object (names).
 
+### Explode Material
+The material output of the Document Reader Component is of a custom type. 
+To display this type in grasshoper the Explode material component can be used.
 
+Input:
+* Materials. The materials related to the Geometry.
 
+Output:
+* Name. The material name.
+* Ambient Intensity. The ambient intensity.
+* Diffuse Color. The diffuse color.
+* Emissive Color. The emissive color.
+* Specular Color. The specular color.
+* Shininess. The shininess of the material.
+* Transparency. The transperancy of the material.
+* isSmooth. Boolean defining smoothness.
