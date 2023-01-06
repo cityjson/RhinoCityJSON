@@ -43,7 +43,7 @@ namespace RhinoCityJSON.Components
             var bKeys = new List<string>();
             var biTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
             var geoList = new List<Brep>();
-            var materialList = new List<GHMaterial>();
+            var materialList = new List<Types.GHMaterial>();
             bool boolOn = false;
 
             DA.GetDataList(0, geoList);

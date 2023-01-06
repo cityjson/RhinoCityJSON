@@ -106,6 +106,9 @@ namespace RhinoCityJSON.Components
             List<string> objectTypes = new List<string>();
             List<string> materialReferenceNames = new List<string>();
             List<CJT.GeoObject> templateGeoList = new List<CJT.GeoObject>();
+            
+            int uniqueCounter = 0;
+            int templateBuffer = 0;
 
             foreach (var Jcity in cityJsonCollection)
             {
@@ -123,7 +126,7 @@ namespace RhinoCityJSON.Components
                 }
 
                 // create template objects
-                int uniqueCounter = 0;
+                
                 foreach (var jGeoObject in Jcity["geometry-templates"]["templates"])
                 {
                     string lod = jGeoObject.lod.ToString();
@@ -196,12 +199,13 @@ namespace RhinoCityJSON.Components
                     foreach (var jGeoObject in JCityObjectAttributes.geometry)
                     {
                         if (jGeoObject.type != "GeometryInstance") { continue; }
-                        int templateIdx = jGeoObject["template"];
+                        int templateIdx = jGeoObject["template"] + templateBuffer;
                         int pointIdx = jGeoObject["boundaries"][0];
                         cityObject.addTemplate(templateIdx, LocationList[pointIdx]);
                     }
                     ObjectCollection.add(cityObject); // data without geometry is still stored for attributes 
                 }
+                templateBuffer = templateBuffer + uniqueCounter;
             }
 
             surfaceTypes = surfaceTypes.Distinct().ToList();

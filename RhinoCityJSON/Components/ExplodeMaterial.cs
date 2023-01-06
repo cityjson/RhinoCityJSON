@@ -35,7 +35,7 @@ namespace RhinoCityJSON.Components
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            var materialList = new List<GHMaterial>();
+            var materialList = new List<Types.GHMaterial>();
             DA.GetDataList(0, materialList);
 
             List<string> nameList = new List<string>();

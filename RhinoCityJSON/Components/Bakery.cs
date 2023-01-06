@@ -37,7 +37,7 @@ namespace RhinoCityJSON.Components
             bool boolOn = false;
             var keyList = new List<string>();
             var brepList = new List<Brep>();
-            var materialList = new List<GHMaterial>();
+            var materialList = new List<Types.GHMaterial>();
 
             DA.GetData(4, ref boolOn);
 

@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using Grasshopper.Kernel.Types;
 
-namespace RhinoCityJSON
+namespace RhinoCityJSON.Types
 {
     public class Material
     {

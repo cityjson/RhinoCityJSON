@@ -62,7 +62,7 @@ namespace RhinoCityJSON.Components
                 }
             }
 
-            List<GHMaterial> materialList = new List<GHMaterial>();
+            List<Types.GHMaterial> materialList = new List<Types.GHMaterial>();
             List<string> lodLevels = new List<string>();
             var nestedMetaData = new List<Dictionary<string, string>>();
 
@@ -153,8 +153,8 @@ namespace RhinoCityJSON.Components
                             if (material["isSmooth"] != null) { isSmooth = material["isSmooth"]; }
 
                             materialList.Add(
-                                new GHMaterial(
-                                    new Material(
+                                new Types.GHMaterial(
+                                    new Types.Material(
                                         name,
                                         ambientIntensity,
                                         diffuseColor,
