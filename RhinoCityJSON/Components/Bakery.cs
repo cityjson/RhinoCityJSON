@@ -166,7 +166,6 @@ namespace RhinoCityJSON.Components
                     materialIdx.Add(BakerySupport.createRhinoMaterial(materialObject, activeDoc.Materials));
                     continue;
                 }
-                Rhino.RhinoApp.WriteLine("found");
                 materialIdx.Add(dubIdx);
             }
 

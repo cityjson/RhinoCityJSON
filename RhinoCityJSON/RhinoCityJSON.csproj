@@ -80,7 +80,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Components\Inject.cs" />
+    <None Include="Components\Inject.cs" />
     <Compile Include="RhinoCityJSONInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SupportClasses\ReaderSupport.cs" />

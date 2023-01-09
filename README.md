@@ -16,7 +16,6 @@ Currently only supports CityJSON 1.1 and 1.2.
 * Many materials importing can be extremely slow (This sadly is an issue with Rhino).
 * Textures are not supported.
 * Rhino data can not be exported to the CityJSON format.
-* Examples are outdated.
 
 ## How to install
 ### Via Food4Rhino
