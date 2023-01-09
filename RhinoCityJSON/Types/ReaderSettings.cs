@@ -4,6 +4,55 @@ using Grasshopper.Kernel.Types;
 
 namespace RhinoCityJSON.Types
 {
+    public class DocumentSettings
+    {
+        int dominantFile_ = 0;
+        bool merge_ = false;
+        double mergeDistance_ = 5;
+
+        public DocumentSettings() { }
+
+        public DocumentSettings(DocumentSettings other)
+        {
+            dominantFile_ = other.dominantFile_;
+            merge_ = other.merge_;
+            mergeDistance_ = other.mergeDistance_;
+        }
+
+        public int getDominantFile() { return dominantFile_; }
+        public bool getMerge() { return merge_; }
+        public double getMergeDistance() { return mergeDistance_; }
+
+        public bool isValid()
+        {
+            return true;
+        }
+    }
+
+    public class GHDocumentSettigs : GH_Goo<DocumentSettings>
+    {
+        public GHDocumentSettigs(DocumentSettings readerSettings)
+        {
+            this.Value = new DocumentSettings(
+                new DocumentSettings(readerSettings));
+        }
+
+        public GHDocumentSettigs(GHDocumentSettigs other)
+        {
+            this.Value = new DocumentSettings(other.Value);
+        }
+
+        public override string TypeName => "CJDSettings";
+
+        public override string TypeDescription => "The settings required for the document reader object";
+
+        public override bool IsValid => Value.isValid();
+
+        public override IGH_Goo Duplicate() => new GHDocumentSettigs(this);
+
+        public override string ToString() => "CityJSON Document Reader Settings";
+    }
+
     public class ReaderSettings
     {
         bool translate_ = false;
@@ -20,6 +69,7 @@ namespace RhinoCityJSON.Types
             trueNorth_ = other.trueNorth_;
             LoD_ = other.LoD_;
         }
+
         public ReaderSettings
         (
             bool translate,
@@ -43,7 +93,6 @@ namespace RhinoCityJSON.Types
         {
             return true;
         }
-
     }
 
     public class GHReaderSettings : GH_Goo<ReaderSettings>
@@ -61,7 +110,7 @@ namespace RhinoCityJSON.Types
 
         public override string TypeName => "CJSettings";
 
-        public override string TypeDescription => "The settings required for the document and template reader object";
+        public override string TypeDescription => "The settings required for the object and template reader object";
 
         public override bool IsValid => Value.isValid();
 
@@ -69,5 +118,4 @@ namespace RhinoCityJSON.Types
 
         public override string ToString() => "CityJSON Reader Settings";
     }
-
 }

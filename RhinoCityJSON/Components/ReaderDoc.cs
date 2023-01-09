@@ -20,6 +20,8 @@ namespace RhinoCityJSON.Components
         {
             pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.list, "");
             pManager.AddBooleanParameter("Activate", "A", "Activate reader", GH_ParamAccess.item, false);
+            pManager.AddGenericParameter("Settings", "S", "Settings coming from the DSettings component", GH_ParamAccess.list);
+            pManager[2].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)

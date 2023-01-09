@@ -154,7 +154,13 @@ namespace RhinoCityJSON.Components
             List<int> materialIdx = new List<int>();
             foreach (var materialObject in materialList)
             {
-                materialIdx.Add(BakerySupport.createRhinoMaterial(materialObject, activeDoc.Materials));
+                int dubIdx = activeDoc.Materials.Find(materialObject.Value.getName(), false);
+                if (dubIdx == -1)
+                {
+                    materialIdx.Add(BakerySupport.createRhinoMaterial(materialObject, activeDoc.Materials));
+                    continue;
+                }
+                materialIdx.Add(dubIdx);
             }
 
             // find the blocks are already present
