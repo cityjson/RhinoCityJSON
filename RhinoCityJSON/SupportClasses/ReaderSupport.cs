@@ -231,6 +231,35 @@ namespace RhinoCityJSON
         }
 
 
+        public static void populateObjectOtherDataDict(
+           ref Dictionary<string, string> flatObjectSemanticTree,
+           CJT.CityObject cityObject,
+           CJT.CityCollection ObjectCollection,
+           List<string> objectTypes
+           )
+        {
+
+            // add custom object attributes
+            var objectAttributes = cityObject.getAttributes();
+            var inheritedAttributes = cityObject.getInheritancedAtt(ObjectCollection);
+
+            foreach (string item in objectTypes)
+            {
+                if (objectAttributes.ContainsKey(item))
+                {
+                    flatObjectSemanticTree.Add(item, objectAttributes[item].ToString());
+                }
+                else if (inheritedAttributes.ContainsKey(item))
+                {
+                    flatObjectSemanticTree.Add(item, inheritedAttributes[item].ToString() + DefaultValues.defaultInheritanceAddition);
+                }
+                else
+                {
+                    flatObjectSemanticTree.Add(item, DefaultValues.defaultNoneValue);
+                }
+            }
+        }
+
         public static void populateFlatSemanticTree(
             ref Grasshopper.DataTree<string> flatObjectSemanticTree,
             CJT.CityObject cityObject,
@@ -284,11 +313,10 @@ namespace RhinoCityJSON
 
 
         public static void addMatSurfValue(
-            ref Grasshopper.DataTree<string> flatSurfaceSemanticTree,
+            ref Dictionary<string, string> flatSurfaceSemanticTree,
             List<string> materialReferenceNames,
             CJT.GeoObject geoObject,
-            CJT.SurfaceObject surface,
-            Grasshopper.Kernel.Data.GH_Path surfacePath
+            CJT.SurfaceObject surface
             )
         {
             // add material data
@@ -304,47 +332,34 @@ namespace RhinoCityJSON
 
                         if (matNum >= 0)
                         {
-                            flatSurfaceSemanticTree.Add(matNum.ToString(), surfacePath);
+                            flatSurfaceSemanticTree.Add(DefaultValues.defaultMaterialAddition + item, matNum.ToString());
                         }
                         else
                         {
-                            flatSurfaceSemanticTree.Add(DefaultValues.defaultNoneValue, surfacePath);
+                            flatSurfaceSemanticTree.Add(DefaultValues.defaultMaterialAddition + item ,DefaultValues.defaultNoneValue);
                         }
                     }
                     else
                     {
-                        flatSurfaceSemanticTree.Add(DefaultValues.defaultNoneValue, surfacePath);
+                        flatSurfaceSemanticTree.Add(DefaultValues.defaultMaterialAddition + item, DefaultValues.defaultNoneValue);
                     }
                 }
                 else
                 {
-                    flatSurfaceSemanticTree.Add(DefaultValues.defaultNoneValue, surfacePath);
+                    flatSurfaceSemanticTree.Add(DefaultValues.defaultMaterialAddition + item, DefaultValues.defaultNoneValue);
                 }
             }
         }
 
-        public static void populateFlatSurfSemanticTree(
-           ref Grasshopper.DataTree<string> flatSurfaceSemanticTree,
+
+        public static void populateSurfaceOtherDataDict(
+           ref Dictionary<string, string> flatSurfaceSemanticTree,
            List<string> surfaceTypes,
            List<string> materialReferenceNames,
-           CJT.CityObject cityObject,
            CJT.GeoObject geoObject,
-           CJT.SurfaceObject surface,
-           string geoType,
-           string geoName,
-           string geoLoD,
-           int pathCounter
+           CJT.SurfaceObject surface
            )
         {
-            var surfacePath = new Grasshopper.Kernel.Data.GH_Path(pathCounter);
-
-            // add object name for aquiring object
-            flatSurfaceSemanticTree.Add(cityObject.getName(), surfacePath);
-
-            // add geometry data
-            flatSurfaceSemanticTree.Add(geoType, surfacePath);
-            flatSurfaceSemanticTree.Add(geoName, surfacePath);
-            flatSurfaceSemanticTree.Add(geoLoD, surfacePath);
 
             // add semantic surface data
             if (geoObject.hasSurfaceData())
@@ -355,16 +370,16 @@ namespace RhinoCityJSON
                 {
                     if (surfaceSemantics.ContainsKey(item))
                     {
-                        flatSurfaceSemanticTree.Add(surfaceSemantics[item].ToString(), surfacePath);
+                        flatSurfaceSemanticTree.Add(item ,surfaceSemantics[item].ToString());
                     }
-                    else flatSurfaceSemanticTree.Add(DefaultValues.defaultNoneValue, surfacePath);
+                    else flatSurfaceSemanticTree.Add(item, DefaultValues.defaultNoneValue);
                 }
             }
             else
             {
-                for (int i = 0; i < surfaceTypes.Count; i++)
+                foreach (var item in surfaceTypes)
                 {
-                    flatSurfaceSemanticTree.Add(DefaultValues.defaultNoneValue, surfacePath);
+                    flatSurfaceSemanticTree.Add(item, DefaultValues.defaultNoneValue);
                 }
             }
 
@@ -372,11 +387,11 @@ namespace RhinoCityJSON
                 ref flatSurfaceSemanticTree,
                 materialReferenceNames,
                 geoObject,
-                surface,
-                surfacePath
-                );
+                surface
+              );
 
         }
+
 
         public static errorCodes checkInput(
             bool boolOn,

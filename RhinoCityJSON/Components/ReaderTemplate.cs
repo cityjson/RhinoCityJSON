@@ -10,7 +10,7 @@ namespace RhinoCityJSON.Components
     public class RhinoTemplateJSONReader : GH_Component
     {
         public RhinoTemplateJSONReader()
-          : base("RCJTemplateReader", "TReader",
+          : base("Reader Templates", "TReader",
               "Reads the template data stored in a CityJSON file",
               "RhinoCityJSON", "Reading")
         {
@@ -247,12 +247,12 @@ namespace RhinoCityJSON.Components
                     flatSurfaceSemanticTree.Add(geoType, nPath2);
                     flatSurfaceSemanticTree.Add(geoLoD, nPath2);
 
-                    ReaderSupport.addMatSurfValue(
+                    /*ReaderSupport.addMatSurfValue(
                         ref flatSurfaceSemanticTree,
                         materialReferenceNames,
                         geoObject,
                         surface,
-                        nPath2);
+                        nPath2);*/
 
                     surfaceCounter++;
                 }

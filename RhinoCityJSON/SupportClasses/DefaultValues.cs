@@ -24,7 +24,8 @@ namespace RhinoCityJSON
         noMaterialsFound,
         noGeoFound,
         requiresNorth,
-        unevenFilterInput
+        unevenFilterInput,
+        incorrectSetComponent
     }
 
     static class ErrorCollection // TODO: put all the errors centrally 
@@ -50,7 +51,8 @@ namespace RhinoCityJSON
             {errorCodes.noMaterialsFound, "No materials found"},
             {errorCodes.noGeoFound, "Geometry input is empty"},
             {errorCodes.requiresNorth, "True north rotation only functions if origin is given"},
-            {errorCodes.unevenFilterInput, "Object info input is required to be either both null, or both filled"}
+            {errorCodes.unevenFilterInput, "Object info input is required to be either both null, or both filled"},
+            {errorCodes.incorrectSetComponent, "Incorrect settings component is used for this process"}
         };
     }
 
@@ -58,6 +60,7 @@ namespace RhinoCityJSON
     {
         static public string defaultSurfaceAddition = "Surface ";
         static public string defaultObjectAddition = "Object ";
+        static public string defaultMaterialAddition = "Material ";
         static public string defaultInheritanceAddition = "*";
         static public string defaultNoneValue = "None";
 
@@ -93,6 +96,11 @@ namespace RhinoCityJSON
             "Template Idx",
             "Object Anchor"
         };
+
+        static public int surfaceObjectKeysSize = surfaceObjectKeys.Count;
+        static public int surfaceTemplateKeysSize = surfaceTemplateKeys.Count;
+        static public int objectKeysSize = objectKeys.Count;
+        static public int templateKeysSize = templateKeys.Count;
 
     }
 }

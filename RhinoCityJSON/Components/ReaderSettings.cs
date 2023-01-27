@@ -7,8 +7,8 @@ namespace RhinoCityJSON.Components
     public class ReaderSettings : GH_Component
     {
         public ReaderSettings()
-          : base("ReaderSettings", "RSettings",
-              "Sets the additional configuration for the SReader and reader",
+          : base("Settings Reader", "RSettings",
+              "Sets the additional configuration for the Template and Document reader",
               "RhinoCityJSON", "Reading")
         {
         }

@@ -4,61 +4,17 @@ using Grasshopper.Kernel.Types;
 
 namespace RhinoCityJSON.Types
 {
-    public class DocumentSettings
-    {
-        int dominantFile_ = 0;
-        bool merge_ = false;
-        double mergeDistance_ = 5;
-
-        public DocumentSettings() { }
-
-        public DocumentSettings(DocumentSettings other)
-        {
-            dominantFile_ = other.dominantFile_;
-            merge_ = other.merge_;
-            mergeDistance_ = other.mergeDistance_;
-        }
-
-        public int getDominantFile() { return dominantFile_; }
-        public bool getMerge() { return merge_; }
-        public double getMergeDistance() { return mergeDistance_; }
-
-        public bool isValid()
-        {
-            return true;
-        }
-    }
-
-    public class GHDocumentSettigs : GH_Goo<DocumentSettings>
-    {
-        public GHDocumentSettigs(DocumentSettings readerSettings)
-        {
-            this.Value = new DocumentSettings(
-                new DocumentSettings(readerSettings));
-        }
-
-        public GHDocumentSettigs(GHDocumentSettigs other)
-        {
-            this.Value = new DocumentSettings(other.Value);
-        }
-
-        public override string TypeName => "CJDSettings";
-
-        public override string TypeDescription => "The settings required for the document reader object";
-
-        public override bool IsValid => Value.isValid();
-
-        public override IGH_Goo Duplicate() => new GHDocumentSettigs(this);
-
-        public override string ToString() => "CityJSON Document Reader Settings";
-    }
-
     public class ReaderSettings
     {
         bool translate_ = false;
         Point3d modelOrigin_ = new Point3d(0, 0, 0);
         double trueNorth_ = 0;
         List<string> LoD_ = new List<string>();
+
+        bool isDocumentSetting_ = false;
+        int dominantFile_ = 0;
+        bool merge_ = false;
+        double mergeDistance_ = 5;
 
         public ReaderSettings() { }
 
@@ -68,6 +24,10 @@ namespace RhinoCityJSON.Types
             modelOrigin_ = other.modelOrigin_;
             trueNorth_ = other.trueNorth_;
             LoD_ = other.LoD_;
+            dominantFile_ = other.dominantFile_;
+            merge_ = other.merge_;
+            mergeDistance_ = other.mergeDistance_;
+            isDocumentSetting_ = other.isDocumentSetting_;
         }
 
         public ReaderSettings
@@ -84,10 +44,29 @@ namespace RhinoCityJSON.Types
             LoD_ = LoDList;
         }
 
+        public ReaderSettings
+        (
+        int dominantFile,
+        bool merge,
+        double mergeDistance
+        )
+        {
+            dominantFile_ = dominantFile;
+            merge_ = merge;
+            mergeDistance_ = mergeDistance;
+            isDocumentSetting_ = true;
+        }
+
         public bool getTranslate() { return translate_; }
         public Point3d getModelOrigin() { return modelOrigin_; }
         public double getTrueNorth() { return trueNorth_; }
         public List<string> getLoDList() { return LoD_; }
+
+        public bool isDocSetting() { return isDocumentSetting_; }
+        public int getDominantFile() { return dominantFile_; }
+        public bool getMerge() { return merge_; }
+        public double getMergeDistance() { return mergeDistance_; }
+
 
         public bool isValid()
         {
@@ -110,7 +89,7 @@ namespace RhinoCityJSON.Types
 
         public override string TypeName => "CJSettings";
 
-        public override string TypeDescription => "The settings required for the object and template reader object";
+        public override string TypeDescription => "The settings required for the reader object";
 
         public override bool IsValid => Value.isValid();
 

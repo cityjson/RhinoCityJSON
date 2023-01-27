@@ -10,7 +10,7 @@ namespace RhinoCityJSON.Components
     public class ReaderDoc : GH_Component
     {
         public ReaderDoc()
-          : base("Document Reader", "DReader",
+          : base("Reader Documents", "DReader",
               "Fetches the Metadata, Textures and Materials from a CityJSON file, Autoresolves when multiple inputs",
               "RhinoCityJSON", "Reading")
         {

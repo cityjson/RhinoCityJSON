@@ -86,6 +86,7 @@
     <Compile Include="SupportClasses\ReaderSupport.cs" />
     <Compile Include="SupportClasses\WriterSupport.cs" />
     <Compile Include="Types\CJMaterial.cs" />
+    <Compile Include="Types\ObjectInfo.cs" />
     <Compile Include="Types\ReaderSettings.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -138,6 +139,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\ematerialicon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\settingdocsicon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

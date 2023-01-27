@@ -17,7 +17,7 @@ namespace RhinoCityJSON.Components
         /// new tabs/panels will automatically be created.
         /// </summary>
         public RhinoCityJSONReader()
-          : base("RCJReader", "Reader",
+          : base("Reader Objects", "OReader",
               "Reads the object data stored in a CityJSON file",
               "RhinoCityJSON", "Reading")
         {
@@ -40,10 +40,8 @@ namespace RhinoCityJSON.Components
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
-            pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.item);
-            pManager.AddTextParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
-            pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.item);
-            pManager.AddTextParameter("Object Info Values", "OiV", "Values of the semantic information output related to the objects", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Surface Information", "Si", "Information related to the surfaces", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Object Information", "Oi", "Information related to the Objects", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -84,6 +82,12 @@ namespace RhinoCityJSON.Components
 
             if (settingsList.Count() > 0)
             {
+                if (settingsList[0].Value.isDocSetting())
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.incorrectSetComponent]);
+                    return;
+                }
+                
                 ReaderSupport.getSettings(
                                 settingsList[0],
                                 ref loDList,
@@ -219,14 +223,22 @@ namespace RhinoCityJSON.Components
 
             // flatten data for grasshopper output
             List<Brep> flatSurfaceList = new List<Brep>();
-            var flatSurfaceSemanticTree = new Grasshopper.DataTree<string>();
-            var flatObjectSemanticTree = new Grasshopper.DataTree<string>();
-            int objectCounter = 0;
-            int surfaceCounter = 0;
+            List<Types.GHObjectInfo> objectDataList = new List<Types.GHObjectInfo>();
+            List<Types.GHObjectInfo> surfaceDataList = new List<Types.GHObjectInfo>();
 
             foreach (var cityObject in ObjectCollection.getFlatColletion())
             {
-                ReaderSupport.populateFlatSemanticTree(ref flatObjectSemanticTree, cityObject, ObjectCollection, objectTypes, objectCounter);
+                Dictionary<string, string> additionalObjectData = new Dictionary<string, string>();
+                ReaderSupport.populateObjectOtherDataDict(ref additionalObjectData, cityObject, ObjectCollection, objectTypes);
+
+                objectDataList.Add(new Types.GHObjectInfo(
+                    new Types.ObjectInfo(
+                    cityObject.getName(),
+                    cityObject.getType(),
+                    cityObject.getParents(),
+                    cityObject.getChildren(),
+                    additionalObjectData
+                )));
 
                 foreach (var geoObject in cityObject.getGeometry())
                 {
@@ -237,30 +249,32 @@ namespace RhinoCityJSON.Components
                     foreach (var surface in geoObject.getBoundaries())
                     {
                         flatSurfaceList.Add(surface.getShape());
+                        Dictionary<string, string> additionalSurfaceData = new Dictionary<string, string>();
 
-                        ReaderSupport.populateFlatSurfSemanticTree(
-                            ref flatSurfaceSemanticTree,
-                            surfaceTypes,
-                            materialReferenceNames,
-                            cityObject, geoObject,
-                            surface,
-                            geoType,
+                        ReaderSupport.populateSurfaceOtherDataDict(
+                            ref additionalSurfaceData, 
+                            surfaceTypes, 
+                            materialReferenceNames, 
+                            geoObject, 
+                            surface)
+                            ;
+
+                        surfaceDataList.Add(new Types.GHObjectInfo(
+                            new Types.ObjectInfo(
                             geoName,
+                            geoType,
                             geoLoD,
-                            surfaceCounter
-                            );
-
-                        surfaceCounter++;
+                            "",
+                            cityObject.getName(),
+                            additionalSurfaceData
+                            )));
                     }
                 }
-                objectCounter++;
             }
 
             DA.SetDataList(0, flatSurfaceList);
-            DA.SetDataList(1, surfaceKeyList);
-            DA.SetDataTree(2, flatSurfaceSemanticTree);
-            DA.SetDataList(3, objectKeyList);
-            DA.SetDataTree(4, flatObjectSemanticTree);
+            DA.SetDataList(1, objectDataList);
+            DA.SetDataList(2, surfaceDataList);
         }
 
 
