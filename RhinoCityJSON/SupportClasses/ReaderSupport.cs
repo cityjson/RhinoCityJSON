@@ -245,17 +245,17 @@ namespace RhinoCityJSON
 
             foreach (string item in objectTypes)
             {
-                if (objectAttributes.ContainsKey(item))
+                if (objectAttributes.ContainsKey(DefaultValues.defaultObjectAddition + item))
                 {
-                    flatObjectSemanticTree.Add(item, objectAttributes[item].ToString());
+                    flatObjectSemanticTree.Add(DefaultValues.defaultObjectAddition + item, objectAttributes[item].ToString());
                 }
                 else if (inheritedAttributes.ContainsKey(item))
                 {
-                    flatObjectSemanticTree.Add(item, inheritedAttributes[item].ToString() + DefaultValues.defaultInheritanceAddition);
+                    flatObjectSemanticTree.Add(DefaultValues.defaultObjectAddition + item, inheritedAttributes[item].ToString() + DefaultValues.defaultInheritanceAddition);
                 }
                 else
                 {
-                    flatObjectSemanticTree.Add(item, DefaultValues.defaultNoneValue);
+                    flatObjectSemanticTree.Add(DefaultValues.defaultObjectAddition + item, DefaultValues.defaultNoneValue);
                 }
             }
         }
@@ -370,16 +370,16 @@ namespace RhinoCityJSON
                 {
                     if (surfaceSemantics.ContainsKey(item))
                     {
-                        flatSurfaceSemanticTree.Add(item ,surfaceSemantics[item].ToString());
+                        flatSurfaceSemanticTree.Add(DefaultValues.defaultObjectAddition + item ,surfaceSemantics[item].ToString());
                     }
-                    else flatSurfaceSemanticTree.Add(item, DefaultValues.defaultNoneValue);
+                    else flatSurfaceSemanticTree.Add(DefaultValues.defaultObjectAddition + item, DefaultValues.defaultNoneValue);
                 }
             }
             else
             {
                 foreach (var item in surfaceTypes)
                 {
-                    flatSurfaceSemanticTree.Add(item, DefaultValues.defaultNoneValue);
+                    flatSurfaceSemanticTree.Add(DefaultValues.defaultObjectAddition + item, DefaultValues.defaultNoneValue);
                 }
             }
 

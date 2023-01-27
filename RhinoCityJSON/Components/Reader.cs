@@ -273,8 +273,8 @@ namespace RhinoCityJSON.Components
             }
 
             DA.SetDataList(0, flatSurfaceList);
-            DA.SetDataList(1, objectDataList);
-            DA.SetDataList(2, surfaceDataList);
+            DA.SetDataList(1, surfaceDataList);
+            DA.SetDataList(2, objectDataList);
         }
 
 

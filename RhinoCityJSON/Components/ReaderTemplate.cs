@@ -30,10 +30,8 @@ namespace RhinoCityJSON.Components
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddBrepParameter("Template Geometry", "TG", "Geometry output", GH_ParamAccess.item);
-            pManager.AddTextParameter("Surface Info Keys", "TSiK", "Keys of the information output related to the surfaces", GH_ParamAccess.item);
-            pManager.AddTextParameter("Surface Info Values", "TSiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
-            pManager.AddTextParameter("Object Info Keys", "TOik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.item);
-            pManager.AddTextParameter("Object Info Values", "TOiV", "Values of the semantic information output related to the objects", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Surface Information", "Si", "Information related to the surfaces", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Object Information", "Oi", "Information related to the Objects", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -212,40 +210,37 @@ namespace RhinoCityJSON.Components
             objectTypes = objectTypes.Distinct().ToList();
             materialReferenceNames = materialReferenceNames.Distinct().ToList();
 
-            List<string> surfaceKeyList = new List<string>();
-            ReaderSupport.populateSurfaceKeys(
-                ref surfaceKeyList,
-                surfaceTypes,
-                materialReferenceNames,
-                true);
-
-            List<string> objectKeyList = new List<string>();
-            ReaderSupport.populateObjectKeys(
-                ref objectKeyList,
-                objectTypes,
-                true);
-
-
             List<Brep> flatSurfaceList = new List<Brep>();
-            var flatSurfaceSemanticTree = new Grasshopper.DataTree<string>();
-            var flatObjectSemanticTree = new Grasshopper.DataTree<string>();
             int objectCounter = 0;
             int surfaceCounter = 0;
 
+            List<Types.GHObjectInfo> surfaceDataList = new List<Types.GHObjectInfo>();
             foreach (var geoObject in templateGeoList)
             {
+               
                 string geoType = geoObject.getGeoType();
                 int geoNum = objectCounter;
                 string geoLoD = geoObject.getLoD();
-                var nPath = new Grasshopper.Kernel.Data.GH_Path(objectCounter);
 
                 foreach (var surface in geoObject.getBoundaries())
                 {
-                    var nPath2 = new Grasshopper.Kernel.Data.GH_Path(surfaceCounter);
                     flatSurfaceList.Add(surface.getShape());
-                    flatSurfaceSemanticTree.Add(geoNum.ToString(), nPath2);
-                    flatSurfaceSemanticTree.Add(geoType, nPath2);
-                    flatSurfaceSemanticTree.Add(geoLoD, nPath2);
+                    Dictionary<string, string> additionalSurfaceData = new Dictionary<string, string>();
+
+                    ReaderSupport.populateSurfaceOtherDataDict(
+                        ref additionalSurfaceData,
+                        surfaceTypes,
+                        materialReferenceNames,
+                        geoObject,
+                        surface)
+                        ;
+
+                    surfaceDataList.Add(new Types.GHObjectInfo(
+                        new Types.ObjectInfo(
+                            geoNum,
+                            geoType,
+                            geoLoD
+                            )));
 
                     /*ReaderSupport.addMatSurfValue(
                         ref flatSurfaceSemanticTree,
@@ -259,23 +254,31 @@ namespace RhinoCityJSON.Components
                 objectCounter++;
             }
 
-            objectCounter = 0;
+            List<Types.GHObjectInfo> objectDataList = new List<Types.GHObjectInfo>();
             foreach (var cityObject in ObjectCollection.getFlatColletion())
             {
                 if (cityObject.isTemplated())
                 {
-                    ReaderSupport.populateFlatSemanticTree(ref flatObjectSemanticTree, cityObject, ObjectCollection, objectTypes, objectCounter);
-                    objectCounter++;
+                    Dictionary<string, string> additionalObjectData = new Dictionary<string, string>();
+                    ReaderSupport.populateObjectOtherDataDict(ref additionalObjectData, cityObject, ObjectCollection, objectTypes);
+
+                    objectDataList.Add(new Types.GHObjectInfo(
+                        new Types.ObjectInfo(
+                        cityObject.getName(),
+                        cityObject.getType(),
+                        cityObject.getTemplate().getTemplate(),
+                        cityObject.getTemplate().getAnchor(),
+                        cityObject.getParents(),
+                        cityObject.getChildren(),
+                        additionalObjectData
+                    )));
                 }
             }
 
 
             DA.SetDataList(0, flatSurfaceList);
-            DA.SetDataList(1, surfaceKeyList);
-            DA.SetDataTree(2, flatSurfaceSemanticTree);
-            DA.SetDataList(3, objectKeyList);
-            DA.SetDataTree(4, flatObjectSemanticTree);
-
+            DA.SetDataList(1, surfaceDataList);
+            DA.SetDataList(2, objectDataList);
         }
 
         protected override System.Drawing.Bitmap Icon

@@ -219,224 +219,48 @@ namespace RhinoCityJSON.Components
             if (values.Count > 0 && filterKey.Count == 0)
             {
                 updatedList = true;
-                if (this.Params.Input[1].Sources.Count != 0)
+
+                var vallist = new Grasshopper.Kernel.Special.GH_ValueList();
+                vallist.CreateAttributes();
+                vallist.Name = "Filter keys"; //TODO: make smarter
+                vallist.NickName = "Filter:"; //TODO: make smarter
+                vallist.ListMode = Grasshopper.Kernel.Special.GH_ValueListMode.DropDown;
+
+                int inputcount = 2; //TODO: make smarter
+                vallist.Attributes.Pivot = new System.Drawing.PointF((float)this.Attributes.DocObject.Attributes.Bounds.Left - vallist.Attributes.Bounds.Width - 5, (float)this.Params.Input[1].Attributes.Bounds.Y + inputcount * 30);
+                vallist.ListItems.Clear();
+
+                Types.ObjectInfo firstItem = values[0].Value;
+                filterLookup = firstItem.fetchIdxDict();
+
+                for (int i = 0; i < filterLookup.Count(); i++)
                 {
-                    //TODO: check if update is needed
-                    //TODO: check if original selected value is present
-                    //TODO: preserve origina connections
+                    vallist.ListItems.Add(new Grasshopper.Kernel.Special.GH_ValueListItem(filterLookup[i].ToString(), i.ToString()));
                 }
-                else
-                {
-                    var vallist = new Grasshopper.Kernel.Special.GH_ValueList();
-                    vallist.CreateAttributes();
-                    vallist.Name = "Filter keys"; //TODO: make smarter
-                    vallist.NickName = "Filter:"; //TODO: make smarter
-                    vallist.ListMode = Grasshopper.Kernel.Special.GH_ValueListMode.DropDown;
 
-                    int inputcount = 2; //TODO: make smarter
-                    vallist.Attributes.Pivot = new System.Drawing.PointF((float)this.Attributes.DocObject.Attributes.Bounds.Left - vallist.Attributes.Bounds.Width - 5, (float)this.Params.Input[1].Attributes.Bounds.Y + inputcount * 30);
+                vallist.Description = vallist.ListItems.Count.ToString() + "types were found int the input";
+                Grasshopper.Instances.ActiveCanvas.Document.AddObject(vallist, false);
 
-                    vallist.ListItems.Clear();
+                this.Params.Input[1].AddSource(vallist, 0);
+                vallist.ExpireSolution(true);
 
-                    int filterIdx = 0;
-                    Types.ObjectInfo firstItem = values[0].Value;
-
-                    string[] firstItemKeys = firstItem.getOtherData().Keys.ToArray();
-
-                    if (firstItem.isSurface())
-                    {
-                        for (int i = 0; i < DefaultValues.objectKeys.Count; i++)
-                        {
-                            filterLookup.Add(filterIdx, DefaultValues.surfaceObjectKeys[i]);
-                            vallist.ListItems.Add(new Grasshopper.Kernel.Special.GH_ValueListItem(DefaultValues.surfaceObjectKeys[i], filterIdx.ToString()));
-                            filterIdx++;
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < DefaultValues.objectKeys.Count; i++)
-                        {
-                            filterLookup.Add(filterIdx, DefaultValues.objectKeys[i]);
-                            vallist.ListItems.Add(new Grasshopper.Kernel.Special.GH_ValueListItem(DefaultValues.objectKeys[i], filterIdx.ToString()));
-                            filterIdx++;
-                        }
-                    }
-                    for (int i = 0; i < firstItemKeys.Length; i++)
-                    {
-                        filterLookup.Add(filterIdx, firstItemKeys[i]);
-                        vallist.ListItems.Add(new Grasshopper.Kernel.Special.GH_ValueListItem(firstItemKeys[i], filterIdx.ToString()));
-                        filterIdx++;
-                    }
-
-                    vallist.Description = vallist.ListItems.Count.ToString() + "types were found int the input";
-                    Grasshopper.Instances.ActiveCanvas.Document.AddObject(vallist, false);
-
-                    this.Params.Input[1].AddSource(vallist, 0);
-                    vallist.ExpireSolution(true);
-                }
             }
             if (!updatedList)
             {
                 // filter process
                 var outputTree = new Grasshopper.DataTree<string>();
-                Types.ObjectInfo refItem = values[0].Value;
-                bool found = false;
-
-                if (refItem.isSurface())
+                for (int i = 0; i < values.Count(); i++)
                 {
-                    if (filterKey[0] == 0)
+                    var nPath = new Grasshopper.Kernel.Data.GH_Path(i);
+                    List<string> answer = values[i].Value.getItemByIdx(filterKey[0]);
+                    foreach (var item in answer)
                     {
-                        found = true;
-                        for (int i = 0; i < values.Count(); i++)
-                        {
-                            var objectPath = new Grasshopper.Kernel.Data.GH_Path(i);
-                            outputTree.Add(values[i].Value.getName(), objectPath);
-                        }
+                        outputTree.Add(item, nPath);
                     }
-                    if (filterKey[0] == 1)
-                    {
-                        found = true;
-                        for (int i = 0; i < values.Count(); i++)
-                        {
-                            var objectPath = new Grasshopper.Kernel.Data.GH_Path(i);
-                            outputTree.Add(values[i].Value.getGeoType(), objectPath);
-                        }
-                    }
-                    if (filterKey[0] == 2)
-                    {
-                        found = true;
-                        for (int i = 0; i < values.Count(); i++)
-                        {
-                            var objectPath = new Grasshopper.Kernel.Data.GH_Path(i);
-                            outputTree.Add(values[i].Value.getGeoName(), objectPath);
-                        }
-                    }
-                    if (filterKey[0] == 3)
-                    {
-                        found = true;
-                        for (int i = 0; i < values.Count(); i++)
-                        {
-                            var objectPath = new Grasshopper.Kernel.Data.GH_Path(i);
-                            outputTree.Add(values[i].Value.getLod(), objectPath);
-                        }
-                    }
-                }
-                else
-                {
-                    if (filterKey[0] == 0)
-                    {
-                        found = true;
-                        for (int i = 0; i < values.Count(); i++)
-                        {
-                            var objectPath = new Grasshopper.Kernel.Data.GH_Path(i);
-                            outputTree.Add(values[i].Value.getName(), objectPath);
-                        }
-                    }
-                    if (filterKey[0] == 1)
-                    {
-                        found = true;
-                        for (int i = 0; i < values.Count(); i++)
-                        {
-                            var objectPath = new Grasshopper.Kernel.Data.GH_Path(i);
-                            outputTree.Add(values[i].Value.getObjectType(), objectPath);
-                        }
-                    }
-                    if (filterKey[0] == 2)
-                    {
-                        found = true;
-                        for (int i = 0; i < values.Count(); i++)
-                        {
-                            var objectPath = new Grasshopper.Kernel.Data.GH_Path(i);
-
-                            foreach (var parent in values[i].Value.getParents())
-                            {
-                                outputTree.Add(parent, objectPath);
-                            }
-                        }
-                    }
-                    if (filterKey[0] == 3)
-                    {
-                        found = true;
-                        for (int i = 0; i < values.Count(); i++)
-                        {
-                            var objectPath = new Grasshopper.Kernel.Data.GH_Path(i);
-
-                            foreach (var child in values[i].Value.getChildren())
-                            {
-                                outputTree.Add(child, objectPath);
-                            }
-                        }
-                    }
-                }
-
-                if (!found)
-                {
-                    int idx = filterKey[0];
-                    if (refItem.isSurface())
-                    {
-                        idx = idx - DefaultValues.surfaceObjectKeysSize;
-                    }
-                    else
-                    {
-                        idx = idx - DefaultValues.objectKeysSize;
-                    }
-
-                    string[] keys = refItem.getOtherData().Keys.ToArray();
-                    string reqKey = keys[idx];
-
-                    for (int i = 0; i < values.Count(); i++)
-                    {
-                        var objectPath = new Grasshopper.Kernel.Data.GH_Path(i);
-                        outputTree.Add(values[i].Value.getOtherData()[reqKey], objectPath);
-                    }
-
                 }
 
                 DA.SetDataTree(0, outputTree);
             }
-
-            
-
-/*            if (filterLookup.Count == 0)
-            {
-                string[] firstItemKeys = refItem.getOtherData().Keys.ToArray();
-                int filterIdx = 0;
-                if (refItem.isSurface())
-                {
-                    for (int i = 0; i < DefaultValues.objectKeys.Count; i++)
-                    {
-                        filterLookup.Add(filterIdx, DefaultValues.surfaceObjectKeys[i]);
-                        filterIdx++;
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < DefaultValues.objectKeys.Count; i++)
-                    {
-                        filterLookup.Add(filterIdx, DefaultValues.objectKeys[i]);
-                        filterIdx++;
-                    }
-                }
-                for (int i = 0; i < firstItemKeys.Length; i++)
-                {
-                    filterLookup.Add(filterIdx, firstItemKeys[i]);
-                    filterIdx++;
-                }
-            }
-
-            string filterString = filterLookup[filterKey[0]];
-
-            if (refItem.getOtherData().ContainsKey(filterString))
-            {
-                for (int i = 0; i < values.Count(); i++)
-                {
-                    var objectPath = new Grasshopper.Kernel.Data.GH_Path(i);
-                    outputTree.Add(values[i].Value.getOtherData()[filterString], objectPath);
-                }
-            }*/
-
-
-
         }
         protected override System.Drawing.Bitmap Icon
         {
