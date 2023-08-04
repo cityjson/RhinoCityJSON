@@ -18,9 +18,11 @@ namespace RhinoCityJSON.Components
             pManager.AddBooleanParameter("Translate", "T", "Translate according to the stored translation vector", GH_ParamAccess.item, false);
             pManager.AddPointParameter("Model origin", "O", "The Origin of the model. This coordiante will be set as the {0,0,0} point for the imported JSON", GH_ParamAccess.list);
             pManager.AddNumberParameter("True north", "Tn", "The direction of the true north", GH_ParamAccess.list, 0.0);
-            pManager.AddTextParameter("LoD", "L", "Desired Lod, keep empty for all", GH_ParamAccess.list, "");
+            pManager.AddBoxParameter("Domain", "D", "The domain within objects should be located to be loaded (disabled for Document Reader)", GH_ParamAccess.list);
+            pManager.AddTextParameter("LoD", "L", "Desired Lod, keep empty for all (disabled for Document Reader)", GH_ParamAccess.list, "");
 
             pManager[1].Optional = true; // origin is optional
+            pManager[3].Optional = true; // origin is optional
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -37,11 +39,14 @@ namespace RhinoCityJSON.Components
             var north = 0.0;
             var northList = new List<double>();
             var loDList = new List<string>();
+            var domainList = new List<Rhino.Geometry.Box>();
+            var domain = new Rhino.Geometry.Box();
 
             DA.GetData(0, ref translate);
             DA.GetDataList(1, pList);
             DA.GetDataList(2, northList);
-            DA.GetDataList(3, loDList);
+            DA.GetDataList(3, domainList);
+            DA.GetDataList(4, loDList);
 
             if (pList.Count > 1)
             {
@@ -53,15 +58,9 @@ namespace RhinoCityJSON.Components
                 setP = true;
                 p = pList[0];
             }
-
             if (northList.Count > 1)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.multipleNorth]);
-                return;
-            }
-            else if (northList[0] != 0 && !setP)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.requiresNorth]);
                 return;
             }
             else
@@ -73,6 +72,15 @@ namespace RhinoCityJSON.Components
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.oversizedAngle]);
             }
+            if (domainList.Count > 1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.multipleDomain]);
+            }
+            else if (domainList.Count == 1)
+            {
+                domain = domainList[0];
+            }
+
 
             foreach (string lod in loDList)
             {
@@ -98,6 +106,7 @@ namespace RhinoCityJSON.Components
                     translate,
                     p,
                     north,
+                    domain,
                     loDList
                     )
                 );

@@ -61,6 +61,9 @@ namespace RhinoCityJSON.Components
             DA.GetData(1, ref boolOn);
             DA.GetDataList(2, settingsList);
 
+            var activeDoc = Rhino.RhinoDoc.ActiveDoc;
+
+
             errorCodes inputError = ReaderSupport.checkInput(
                 boolOn,
                 settingsList,
@@ -79,6 +82,7 @@ namespace RhinoCityJSON.Components
             Point3d worldOrigin = new Point3d(0, 0, 0);
             bool translate = false;
             double rotationAngle = 0;
+            Box domainBox = new Box();
 
             if (settingsList.Count() > 0)
             {
@@ -94,10 +98,18 @@ namespace RhinoCityJSON.Components
                                 ref setLoD,
                                 ref worldOrigin,
                                 ref translate,
-                                ref rotationAngle);
+                                ref rotationAngle,
+                                ref domainBox);
             }
 
-            
+            // find out if domain has to be filtered
+            Point3d lll = domainBox.PointAt(0, 0, 0);
+            Point3d urr = domainBox.PointAt(1, 1, 1);
+            bool filterDomain = true;
+            if (lll.Equals(urr)) { filterDomain = false; }
+
+            // hold translation value
+            Vector3d firstTranslation = new Vector3d(0, 0, 0);
 
             // get scale from current session
             double scaler = ReaderSupport.getDocScaler();
@@ -130,12 +142,23 @@ namespace RhinoCityJSON.Components
 
             foreach (var Jcity in cityJsonCollection)
             {
+                if (isFirst)
+                { // compute the translation of every object
+                    var firstTransformationData =  Jcity.metadata.geographicalExtent;
+                    isFirst = false;
+                    firstTranslation.X = -(double) firstTransformationData[0];
+                    firstTranslation.Y = -(double) firstTransformationData[1];
+                    firstTranslation.Z = -(double) firstTransformationData[2];
+                }
+
                 // get vertices stored in a tile
-                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, worldOrigin, scaler, rotationAngle, isFirst, translate);
-                isFirst = false;
+                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, firstTranslation, worldOrigin, scaler, rotationAngle, translate);
 
                 foreach (var JcityObject in Jcity.CityObjects)
                 {
+                    // check if name is present
+                    if (ObjectCollection.getCollection().ContainsKey(JcityObject.Name)) {  continue; }
+
                     CJT.CityObject cityObject = new CJT.CityObject();
                     dynamic JCityObjectAttributes = JcityObject.Value;
                     dynamic JCityObjectAttributesAttributes = JCityObjectAttributes.attributes;
@@ -170,10 +193,22 @@ namespace RhinoCityJSON.Components
                         {
                             if (!loDList.Contains(lod)) { continue; }
                         }
+                        // check if any vertex falls in domain
+                        if (filterDomain)
+                        {
+                            if (!ReaderSupport.CheckInDomain(jGeoObject.boundaries, vertList, scaler, domainBox))
+                            {
+                                continue;
+                            }
+                        }
 
-
+                        // immidiately set geometry to allow for cancelling if object is not withing range
                         CJT.GeoObject geoObject = new CJT.GeoObject();
-                        geoObject.setGeoName(uniqueCounter.ToString());
+                        geoObject.setGeometry(jGeoObject.boundaries, vertList, scaler);
+
+                        // pass if object has no geometry
+                        if (!geoObject.hasGeometry()) { continue; }
+                        geoObject.setGeoName(JcityObject.Name + "-" + uniqueCounter.ToString());
                         geoObject.setGeoType(jGeoObject.type.ToString());
                         geoObject.setLod(lod);
 
@@ -246,8 +281,13 @@ namespace RhinoCityJSON.Components
                     string geoName = geoObject.getGeoName();
                     string geoLoD = geoObject.getLoD();
 
+                    int counter = 0;
                     foreach (var surface in geoObject.getBoundaries())
                     {
+                        string surfaceName = geoName + "-" + counter;
+
+                        surface.getShape().SetUserString("_Geoname", surfaceName);
+                        surface.getShape().SetUserString("_ObjName", cityObject.getName());
                         flatSurfaceList.Add(surface.getShape());
                         Dictionary<string, string> additionalSurfaceData = new Dictionary<string, string>();
 
@@ -259,15 +299,37 @@ namespace RhinoCityJSON.Components
                             surface)
                             ;
 
-                        surfaceDataList.Add(new Types.GHObjectInfo(
-                            new Types.ObjectInfo(
-                            geoName,
+
+                        var objectInfoObject =
+                             new Types.ObjectInfo(
+                            surfaceName,
                             geoType,
                             geoLoD,
                             "",
                             cityObject.getName(),
                             additionalSurfaceData
-                            )));
+                            );
+
+                        // add material data
+                        foreach (var item in materialReferenceNames)
+                        {
+                            if (geoObject.hasMaterialData())
+                            {
+                                var materialCollection = geoObject.getSurfaceMaterialValues();
+
+                                if (materialCollection.ContainsKey(item))
+                                {
+                                    var matNum = materialCollection[item][surface.getSemanticlValue()];
+                                    if (matNum >= 0)
+                                    {
+                                        objectInfoObject.addMaterial(item, matNum.ToString());
+                                        break; // currently only single materials are supported
+                                    }
+                                }
+                            }
+                        }
+                        surfaceDataList.Add(new Types.GHObjectInfo(objectInfoObject));
+                        counter++;
                     }
                 }
             }

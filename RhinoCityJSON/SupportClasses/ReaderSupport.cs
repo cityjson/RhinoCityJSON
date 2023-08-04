@@ -17,67 +17,51 @@ namespace RhinoCityJSON
         /// @brief 
         static public List<Rhino.Geometry.Point3d> getVerts(
             dynamic Jcity,
-            Point3d worldOrigin,
+            Vector3d firstTranslation,
+            Point3d worldCenter,
             double scaler,
             double rotationAngle,
-            bool isFirst,
             bool translate,
-            bool isTemplate = false
+            bool isTemplateSurf = false,
+            bool isTemplateObb = false
             )
         {
-            // coordinates of the first input
-            double globalX = 0.0;
-            double globalY = 0.0;
-            double globalZ = 0.0;
 
-            double originX = worldOrigin.X;
-            double originY = worldOrigin.Y;
-            double originZ = worldOrigin.Z;
+            double scaleX = scaler;
+            double scaleY = scaler;
+            double scaleZ = scaler;
 
-            // get scalers
-            double scaleX = Jcity.transform.scale[0] * scaler;
-            double scaleY = Jcity.transform.scale[1] * scaler;
-            double scaleZ = Jcity.transform.scale[2] * scaler;
-
-            // translation vectors
-            double localX = 0.0;
-            double localY = 0.0;
-            double localZ = 0.0;
-
-            // get location
-            if (isTemplate)
+            if (!isTemplateSurf)
             {
-                originX = 0.0;
-                globalY = 0.0;
-                globalZ = 0.0;
-
-                scaleX = scaler;
-                scaleY = scaler;
-                scaleZ = scaler;
+                scaleX = (double) Jcity.transform.scale[0] * scaleX;
+                scaleY = (double) Jcity.transform.scale[1] * scaleY;
+                scaleZ = (double) Jcity.transform.scale[2] * scaleZ;
             }
-            else if (translate)
+
+            var transformationData = Jcity.transform.translate;
+            Vector3d translation = new Vector3d();
+            if (translate)
             {
-                localX = Jcity.transform.translate[0] * scaler;
-                localY = Jcity.transform.translate[1] * scaler;
-                localZ = Jcity.transform.translate[2] * scaler;
+                translation.X = transformationData[0];
+                translation.Y = transformationData[1];
+                translation.Z = transformationData[2];
             }
-            else if (isFirst && !translate)
+            else if (!isTemplateSurf && !isTemplateObb)
             {
-                isFirst = false;
-                globalX = Jcity.transform.translate[0];
-                globalY = Jcity.transform.translate[1];
-                globalZ = Jcity.transform.translate[2];
+                translation.X = firstTranslation.X + (double)transformationData[0];
+                translation.Y = firstTranslation.Y + (double)transformationData[1];
+                translation.Z = firstTranslation.Z + (double)transformationData[2];
             }
-            else if (!isFirst && !translate)
+            else //TODO: matrix implementation
             {
-                localX = Jcity.transform.translate[0] * scaler - globalX * scaler;
-                localY = Jcity.transform.translate[1] * scaler - globalY * scaler;
-                localZ = Jcity.transform.translate[2] * scaler - globalZ * scaler;
+                translation.X = 0;
+                translation.Y = 0;
+                translation.Z = 0;
             }
 
             // ceate vertlist
             dynamic jsonverts;
-            if (isTemplate)
+            if (isTemplateSurf)
             {
                 dynamic geoTemplates = Jcity["geometry-templates"];
                 if (geoTemplates == null) { return new List<Rhino.Geometry.Point3d>(); }
@@ -94,9 +78,9 @@ namespace RhinoCityJSON
                 double y = jsonvert[1];
                 double z = jsonvert[2];
 
-                double tX = x * scaleX + localX - originX;
-                double tY = y * scaleY + localY - originY;
-                double tZ = z * scaleZ + localZ - originZ;
+                double tX = x * scaleX - worldCenter.X + translation.X;
+                double tY = y * scaleY - worldCenter.Y + translation.Y;
+                double tZ = z * scaleZ - worldCenter.Z + translation.Z;
 
                 Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(
                     tX * Math.Cos(rotationAngle) - tY * Math.Sin(rotationAngle),
@@ -106,6 +90,39 @@ namespace RhinoCityJSON
                 vertList.Add(vert);
             }
             return vertList;
+        }
+
+        static public bool CheckInDomain(dynamic boundaries, List<Point3d> pointList, double scaler, Box domainBox)
+        {
+            if (boundaries[0][0].Type == Newtonsoft.Json.Linq.JTokenType.Integer)
+            {
+                foreach (var ring in boundaries)
+                {
+                    foreach (int idx in ring)
+                    {
+                        Point3d p = pointList[idx];
+
+                        if (domainBox.Contains(p, true))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                foreach (var boundary in boundaries)
+                {
+                    if (CheckInDomain(boundary, pointList, scaler, domainBox))
+                    {
+                        return true;
+                    }
+                   
+                }
+            }
+
+             return false;
         }
 
 
@@ -154,6 +171,19 @@ namespace RhinoCityJSON
                 return conString;
             }
         }
+        public static errorCodes getSettings(
+          Types.GHReaderSettings ghSettings,
+          ref Point3d worldOrigin,
+          ref bool translate,
+          ref double rotationAngle
+          )
+        {
+            var CJSettings = ghSettings.Value;
+            translate = CJSettings.getTranslate();
+            rotationAngle = Math.PI * CJSettings.getTrueNorth() / 180.0;
+            worldOrigin = CJSettings.getModelOrigin();
+            return errorCodes.noError;
+        }
 
         public static errorCodes getSettings(
            Types.GHReaderSettings ghSettings,
@@ -161,14 +191,17 @@ namespace RhinoCityJSON
            ref bool setLoD,
            ref Point3d worldOrigin,
            ref bool translate,
-           ref double rotationAngle
+           ref double rotationAngle,
+           ref Box domainbox
            )
         {
-            var CJSettings = ghSettings.Value;
-            translate = CJSettings.getTranslate();
-            rotationAngle = Math.PI * CJSettings.getTrueNorth() / 180.0;
+            getSettings(ghSettings,
+                ref worldOrigin,
+                ref translate,
+                ref rotationAngle);
 
-            worldOrigin = CJSettings.getModelOrigin();
+            var CJSettings = ghSettings.Value;
+            domainbox = CJSettings.getDomain();
 
             loDList = CJSettings.getLoDList();
 
@@ -241,11 +274,12 @@ namespace RhinoCityJSON
 
             // add custom object attributes
             var objectAttributes = cityObject.getAttributes();
+
             var inheritedAttributes = cityObject.getInheritancedAtt(ObjectCollection);
 
             foreach (string item in objectTypes)
             {
-                if (objectAttributes.ContainsKey(DefaultValues.defaultObjectAddition + item))
+                if (objectAttributes.ContainsKey(item))
                 {
                     flatObjectSemanticTree.Add(DefaultValues.defaultObjectAddition + item, objectAttributes[item].ToString());
                 }
@@ -312,46 +346,6 @@ namespace RhinoCityJSON
         }
 
 
-        public static void addMatSurfValue(
-            ref Dictionary<string, string> flatSurfaceSemanticTree,
-            List<string> materialReferenceNames,
-            CJT.GeoObject geoObject,
-            CJT.SurfaceObject surface
-            )
-        {
-            // add material data
-            foreach (var item in materialReferenceNames)
-            {
-                if (geoObject.hasMaterialData())
-                {
-                    var materialCollection = geoObject.getSurfaceMaterialValues();
-
-                    if (materialCollection.ContainsKey(item))
-                    {
-                        var matNum = materialCollection[item][surface.getSemanticlValue()];
-
-                        if (matNum >= 0)
-                        {
-                            flatSurfaceSemanticTree.Add(DefaultValues.defaultMaterialAddition + item, matNum.ToString());
-                        }
-                        else
-                        {
-                            flatSurfaceSemanticTree.Add(DefaultValues.defaultMaterialAddition + item ,DefaultValues.defaultNoneValue);
-                        }
-                    }
-                    else
-                    {
-                        flatSurfaceSemanticTree.Add(DefaultValues.defaultMaterialAddition + item, DefaultValues.defaultNoneValue);
-                    }
-                }
-                else
-                {
-                    flatSurfaceSemanticTree.Add(DefaultValues.defaultMaterialAddition + item, DefaultValues.defaultNoneValue);
-                }
-            }
-        }
-
-
         public static void populateSurfaceOtherDataDict(
            ref Dictionary<string, string> flatSurfaceSemanticTree,
            List<string> surfaceTypes,
@@ -370,26 +364,18 @@ namespace RhinoCityJSON
                 {
                     if (surfaceSemantics.ContainsKey(item))
                     {
-                        flatSurfaceSemanticTree.Add(DefaultValues.defaultObjectAddition + item ,surfaceSemantics[item].ToString());
+                        flatSurfaceSemanticTree.Add(DefaultValues.defaultSurfaceAddition + item ,surfaceSemantics[item].ToString());
                     }
-                    else flatSurfaceSemanticTree.Add(DefaultValues.defaultObjectAddition + item, DefaultValues.defaultNoneValue);
+                    else flatSurfaceSemanticTree.Add(DefaultValues.defaultSurfaceAddition + item, DefaultValues.defaultNoneValue);
                 }
             }
             else
             {
                 foreach (var item in surfaceTypes)
                 {
-                    flatSurfaceSemanticTree.Add(DefaultValues.defaultObjectAddition + item, DefaultValues.defaultNoneValue);
+                    flatSurfaceSemanticTree.Add(DefaultValues.defaultSurfaceAddition + item, DefaultValues.defaultNoneValue);
                 }
             }
-
-            addMatSurfValue(
-                ref flatSurfaceSemanticTree,
-                materialReferenceNames,
-                geoObject,
-                surface
-              );
-
         }
 
 

@@ -63,6 +63,7 @@ namespace RhinoCityJSON.Components
             Point3d worldOrigin = new Point3d(0, 0, 0);
             bool translate = false;
             double rotationAngle = 0;
+            Box domainBox = new Box();
 
             if (settingsList.Count() > 0)
             {
@@ -72,8 +73,15 @@ namespace RhinoCityJSON.Components
                                 ref setLoD,
                                 ref worldOrigin,
                                 ref translate,
-                                ref rotationAngle);
+                                ref rotationAngle,
+                                ref domainBox);
             }
+
+            // find out if domain has to be filtered
+            Point3d lll = domainBox.PointAt(0, 0, 0);
+            Point3d urr = domainBox.PointAt(1, 1, 1);
+            bool filterDomain = true;
+            if (lll.Equals(urr)) { filterDomain = false; }
 
             // get scale from current session
             double scaler = ReaderSupport.getDocScaler();
@@ -113,8 +121,8 @@ namespace RhinoCityJSON.Components
                 if (Jcity["geometry-templates"] == null) { continue;}
 
                 // get vertices stored in a tile
-                List<Rhino.Geometry.Point3d> LocationList = ReaderSupport.getVerts(Jcity, worldOrigin, scaler, rotationAngle, isFirst, translate);
-                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, new Point3d(0, 0, 0), scaler, 0.0, isFirst, false, true);
+                List<Rhino.Geometry.Point3d> LocationList = ReaderSupport.getVerts(Jcity, new Vector3d(0, 0, 0) , worldOrigin, scaler, rotationAngle, translate, false, true);
+                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, new Vector3d(0, 0, 0), new Point3d(0, 0, 0), scaler, 0.0, false, true);
 
                 isFirst = false;
 
@@ -133,7 +141,6 @@ namespace RhinoCityJSON.Components
                     {
                         if (!loDList.Contains(lod)) { continue; }
                     }
-
 
                     CJT.GeoObject geoObject = new CJT.GeoObject();
                     geoObject.setGeoName(uniqueCounter.ToString());
@@ -171,6 +178,7 @@ namespace RhinoCityJSON.Components
 
                 foreach (var JcityObject in Jcity.CityObjects)
                 {
+
                     CJT.CityObject cityObject = new CJT.CityObject();
                     dynamic JCityObjectAttributes = JcityObject.Value;
                     dynamic JCityObjectAttributesAttributes = JCityObjectAttributes.attributes;
@@ -194,11 +202,21 @@ namespace RhinoCityJSON.Components
                     }
                     cityObject.setHasGeo(true);
 
+                    bool isSet = false;
                     foreach (var jGeoObject in JCityObjectAttributes.geometry)
                     {
                         if (jGeoObject.type != "GeometryInstance") { continue; }
                         int templateIdx = jGeoObject["template"] + templateBuffer;
                         int pointIdx = jGeoObject["boundaries"][0];
+
+                        if (filterDomain)
+                        {
+                            if (domainBox.Contains(LocationList[pointIdx], true))
+                            {
+                                cityObject.addTemplate(templateIdx, LocationList[pointIdx]);
+                            }
+                            continue;
+                        }
                         cityObject.addTemplate(templateIdx, LocationList[pointIdx]);
                     }
                     ObjectCollection.add(cityObject); // data without geometry is still stored for attributes 

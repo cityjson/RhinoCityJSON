@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Rhino.Geometry;
 
 
 namespace RhinoCityJSON.Components
@@ -20,22 +21,25 @@ namespace RhinoCityJSON.Components
         {
             pManager.AddTextParameter("Path", "P", "Location of JSON file", GH_ParamAccess.list, "");
             pManager.AddBooleanParameter("Activate", "A", "Activate reader", GH_ParamAccess.item, false);
-            pManager.AddGenericParameter("Settings", "S", "Settings coming from the DSettings component", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Settings", "S", "Settings coming from the RSettings component", GH_ParamAccess.list);
             pManager[2].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddTextParameter("Metadata Keys", "MdK", "Keys of the Metadata stored in the files", GH_ParamAccess.item);
-            pManager.AddTextParameter("Metadata Values", "MdV", "Values of the Metadata stored in the files", GH_ParamAccess.tree);
+            pManager.AddGenericParameter("Metadata Information", "Mi", "Information related to the document", GH_ParamAccess.item);
             pManager.AddTextParameter("LoD", "L", "LoD levels", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Materials", "m", "materials stored in the files", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Materials", "m", "Materials stored in the files", GH_ParamAccess.list);
+            pManager.AddBoxParameter("Domain", "D", "Full spacial domain of the file", GH_ParamAccess.tree);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             bool boolOn = false;
             List<string> pathList = new List<string>();
+            List<Types.GHReaderSettings> settingsList = new List<Types.GHReaderSettings>();
+            DA.GetDataList(2, settingsList);
+
             if (!DA.GetDataList(0, pathList)) return;
             DA.GetData(1, ref boolOn);
 
@@ -64,9 +68,37 @@ namespace RhinoCityJSON.Components
                 }
             }
 
+            // get the settings
+            bool setLoD = false;
+            Point3d worldOrigin = new Point3d(0, 0, 0);
+            bool translate = false;
+            double rotationAngle = 0;
+
+            if (settingsList.Count() > 0)
+            {
+                if (settingsList[0].Value.isDocSetting())
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.incorrectSetComponent]);
+                    return;
+                }
+
+                ReaderSupport.getSettings(
+                                settingsList[0],
+                                ref worldOrigin,
+                                ref translate,
+                                ref rotationAngle
+                                );
+            }
+
             List<Types.GHMaterial> materialList = new List<Types.GHMaterial>();
             List<string> lodLevels = new List<string>();
             var nestedMetaData = new List<Dictionary<string, string>>();
+
+            var domainList = new List<Rhino.Geometry.Box>();
+
+            // hold translation value
+            Rhino.Geometry.Vector3d firstTranslation = new Rhino.Geometry.Vector3d(0, 0, 0);
+            bool isFirst = true;
 
             foreach (var path in pathList)
             {
@@ -82,6 +114,7 @@ namespace RhinoCityJSON.Components
                 // fetch metadata
                 if (Jcity.metadata != null)
                 {
+                    bool hasExtend = false;
                     foreach (Newtonsoft.Json.Linq.JProperty metaGroup in Jcity.metadata)
                     {
                         var metaValue = metaGroup.Value;
@@ -95,16 +128,44 @@ namespace RhinoCityJSON.Components
                         {
                             if (metaName.ToString() == "geographicalExtent" && metaValue.Count() == 6)
                             {
-                                // create two string points
-                                string minPoint = "{" + metaValue[0].ToString() + ", " + metaValue[1].ToString() + ", " + metaValue[2].ToString() + "}";
-                                metadata.Add("geographicalExtent minPoint", minPoint);
+                                Rhino.Geometry.Box domain = new Rhino.Geometry.Box();
+                                if (!translate) 
+                                {
+                                    if (isFirst)
+                                    { // compute the translation of every object
+                                        isFirst = false;
+                                        firstTranslation.X = -(double)metaValue[0];
+                                        firstTranslation.Y = -(double)metaValue[1];
+                                        firstTranslation.Z = -(double)metaValue[2];
+                                    }
 
-                                string maxPoint = "{" + metaValue[3].ToString() + ", " + metaValue[4].ToString() + ", " + metaValue[5].ToString() + "}";
-                                metadata.Add("geographicalExtent maxPoint", maxPoint);
+                                    Rhino.Geometry.BoundingBox bbox = new Rhino.Geometry.BoundingBox(
+                                        (double)metaValue[0] + firstTranslation.X, (double)metaValue[1] + firstTranslation.Y, (double)metaValue[2] + firstTranslation.Z,
+                                        (double)metaValue[3] + firstTranslation.X, (double)metaValue[4] + firstTranslation.Y, (double)metaValue[5] + firstTranslation.Z
+                                        );
+                                    domain = new Rhino.Geometry.Box(bbox);
+                                }
+                                else
+                                {
+                                    Rhino.Geometry.BoundingBox bbox = new Rhino.Geometry.BoundingBox(
+                                        (double)metaValue[0], (double)metaValue[1], (double)metaValue[2],
+                                        (double)metaValue[3], (double)metaValue[4], (double)metaValue[5]
+                                        );
+                                    domain = new Rhino.Geometry.Box(bbox);
+                                }
 
+                                Transform translateTransform = Transform.Translation(new Vector3d(-worldOrigin.X, -worldOrigin.Y, -worldOrigin.Z));
+                                Transform rotateTransform = Transform.Rotation(rotationAngle, new Point3d(0, 0, 0));
+
+                                domain.Transform(translateTransform);
+                                domain.Transform(rotateTransform);
+
+                                domainList.Add(domain);
+                                hasExtend = true;
                             }
                             else
                             {
+                                if (metaValue.Type == Newtonsoft.Json.Linq.JTokenType.Array) { continue; }
                                 foreach (Newtonsoft.Json.Linq.JProperty nestedMetaValue in metaValue)
                                 {
                                     metadata.Add(metaName.ToString() + " " + nestedMetaValue.Name.ToString(), nestedMetaValue.Value.ToString());
@@ -112,6 +173,10 @@ namespace RhinoCityJSON.Components
                             }
                         }
 
+                    }
+                    if (!hasExtend)
+                    {
+                        domainList.Add(new Rhino.Geometry.Box());
                     }
                     nestedMetaData.Add(metadata);
                 }
@@ -206,41 +271,39 @@ namespace RhinoCityJSON.Components
 
             // make tree from meta data
             var dataTree = new Grasshopper.DataTree<string>();
-
-            var metaValues = new List<string>();
-            var metaKeys = new List<string>();
-
-            foreach (var metadata in nestedMetaData)
-            {
-                foreach (var item in metadata)
-                {
-                    if (!metaKeys.Contains(item.Key))
-                    {
-                        metaKeys.Add(item.Key);
-                    }
-                }
-            }
+            var domainTree = new Grasshopper.DataTree<Rhino.Geometry.Box>();
+            List<Types.GHObjectInfo> objectDataList = new List<Types.GHObjectInfo>();
 
             int counter = 0;
             foreach (var metadata in nestedMetaData)
             {
+                Types.ObjectInfo objectData = new Types.ObjectInfo();
+                foreach (var pair in metadata)
+                {
+                    objectData.addOtherData(pair.Key, pair.Value);
+                }
+
+                objectDataList.Add(new Types.GHObjectInfo(objectData));
+
+            }
+
+            counter = 0;
+
+            foreach(var domain in domainList)
+            {
                 var nPath = new Grasshopper.Kernel.Data.GH_Path(counter);
 
-                foreach (var metaKey in metaKeys)
-                {
-                    if (metadata.ContainsKey(metaKey))
-                    {
-                        dataTree.Add(metadata[metaKey], nPath);
-                    }
-                }
-                counter++;
+                domainTree.Add(domain, nPath);
             }
+
+
+
             lodLevels.Sort();
 
-            DA.SetDataList(0, metaKeys);
-            DA.SetDataTree(1, dataTree);
-            DA.SetDataList(2, lodLevels);
-            DA.SetDataList(3, materialList);
+            DA.SetDataList(0, objectDataList);
+            DA.SetDataList(1, lodLevels);
+            DA.SetDataList(2, materialList);
+            DA.SetDataTree(3, domainTree);
         }
 
         protected override System.Drawing.Bitmap Icon

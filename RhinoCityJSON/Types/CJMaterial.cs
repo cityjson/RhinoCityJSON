@@ -2,7 +2,7 @@
 using Grasshopper.Kernel.Types;
 
 namespace RhinoCityJSON.Types
-{
+{ 
     public class Material
     {
         string name_ = "";
@@ -61,7 +61,6 @@ namespace RhinoCityJSON.Types
         public double[] getspeColor() { return specularColor_; }
         public double getshine() { return shininess_; }
         public double getTransparency() { return transparency_; }
-
         public bool getIsSmooth() { return isSmooth_; }
 
         public bool isValid()
@@ -135,8 +134,4 @@ namespace RhinoCityJSON.Types
 
         public override string ToString() => "CityJSON Material";
     }
-
-    
-
-
 }

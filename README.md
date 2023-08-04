@@ -12,7 +12,7 @@ Currently only supports CityJSON 1.1 and 1.2.
 ## Known issues, bugs or missing features
 * Complex surfaces are not always correctly constructed.
 * 3D BAG does not include all the data the Normal bag has included.
-* Template handling is potentially unstable.
+* Template handling is untested.
 * Many materials importing can be extremely slow (This sadly is an issue with Rhino).
 * Textures are not supported.
 * Rhino data can not be exported to the CityJSON format.
@@ -38,35 +38,35 @@ This path can be easily found by opening Grasshopper, going to File->Special Fol
 ## The GH components
 A simple summary of the plugin's component.
 
-### Reader
-The Reader processes all the object data supplied by a CityJSON file.
+### Reader Objects
+The Reader Objects processes all the object data supplied by a CityJSON file.
 
 Inputs:
-* Path. A path to a CityJSON file. Multiple file paths are optional, based on the data stored in the file they will be placed correctly related to each other. 
-* Activate. A boolean dictating if the component is active or not.
-* Settings. A settings string that can be supplied by the Settings component.
+* Path. A path to a CityJSON file. Multiple file paths are optional, 
+based on the data stored in the file they will be placed correctly related to each other. 
+* Activate. A Boolean dictating if the component is active or not.
+* Settings. A settings object that can be supplied by the Settings component.
 
 Outputs:
 * Geometry. A list of single surface Breps.
-* Surface Info Keys. The keys of semantic info that corresponds 1:1 with the geometry.
-* Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry.
-* Object Info Keys. The keys of sematic info that corresponds with the object (names).
-* Object Info Values. The values of semantic info that corresponds with the object (names).
+* Surface Information. Information 1:1 related to the surfaces that are output by the geometry output.
+* Object Information. Information related to the objects.
 
-### Template Reader (potentially buggy)
-The Template Reader processes all the template data supplied by a CityJSON file.
+### Reader Template (buggy)
+The Reader Template processes all the template data supplied by a CityJSON file. 
+The Geometry and Surface Information output are related to the templates while the Object data is related to the objects that use the templates.
+This data can be baked directly to rhino with the Template Bakery. To cast all the data to represent the objects use the Tempate2Object component. 
+This will allow the user to easily modify the data in grasshopper however it will lose the template knowledge. 
 
 Inputs:
 * Path. A path to a CityJSON file. Multiple file paths are optional, based on the data stored in the file they will be placed correctly related to each other. 
-* Activate. A boolean dictating if the component is active or not.
-* Settings. A settings string that can be supplied by the Settings component.
+* Activate. A Boolean dictating if the component is active or not.
+* Settings. A settings object that can be supplied by the Settings component.
 
 Outputs:
 * Template Geometry. A list of single surface Breps representing the templates.
-* Surface Info Keys. The keys of semantic info that corresponds 1:1 with the geometry.
-* Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry.
-* Object Info Keys. The keys of sematic info that corresponds with the object (names).
-* Object Info Values. The values of semantic info that corresponds with the object (names).
+* Surface Information. Information 1:1 related to the surfaces that are output by the geometry output.
+* Object Information. Information related to the objects that utilize the templates.
 
 
 ### Document Reader
@@ -74,113 +74,138 @@ Fetches the Metadata, Textures and Materials from a CityJSON file.
 
 Inputs:
 * Path. A path to a CityJSON file. Multiple file paths are optional, based on the data stored in the file they will be placed correctly related to each other. 
-* Activate. A boolean dictating if the component is active or not.
+* Activate. A Boolean dictating if the component is active or not.
+* Settings. A settings object that can be supplied by the Settings component.
 
 Outputs:
-* Metadata Keys. The keys of the Metadata stored in the files.
-* Metadata Values. The values of the Metadata stored in the files.
-* LoD. LoD levels stored in the files.
+* Metadata Infomation. Generic metadate output.
+* LoD. the stored LoD levels.
 * Materials. The materials that are stored in the file.
+* Domain. The spatial domain that is stored in the file.
 
 ### Settings
-The Settings component gives the user more control over the Simple Reader and Reader component.
+The Settings component gives the user more control over the Reader Object, Template and Document components.
 
 Inputs:
 * Translation. If true, the geometry will be placed in the rhino model as if the Rhino world coordinates comply 1:1 with the coordinate system that is used in the CityJSON file.
 * Model Origin. If a point/coordinate is supplied this coordinate will be translated to be at the origin of the Rhino model (0,0,0).
 * True north. If a value is supplied the geometry will be rotated around the Model Origin coordinate to comply with this True North.
 * LoD. If a value is supplied only the data related to that LoD is loaded (multiple values allowed).
+* Domain. Box within the objects stored in the files are loaded into grasshopper. 
+Objects falling completely outside will be ignored 
 
 Outputs:
-* Settings. A settings string which can be fed into the Simple Reader and/or Reader component
+* Settings. A settings object which can be fed into the Simple Reader and/or Reader component
 
 ### Bakery
 The Bakery component is a custom baking component that will not only bake the geometry, but also the related semantic data.
 
 Input:
 * Geometry. A List with geometry that is desired to be baked.
-* Surface Info Keys. The keys related to the Surface Info Values (This list should be the same length as a branch of the Surface Info Values).
-* Surface Info Values. The Values related to the Geometry. (This Tree should be the same length as the geometry List).
-* Materials. The materials related to the Geometry.
-* Activate. A boolean dictating if the component is active or not (Recommended to use a button to activate and not a boolean toggle).
+* Surface Information. Information 1:1 related to the surfaces that are input in the geometry input. 
+Use the Information Manager component to convert and merge the object data to surface data.
+* Materials. The material output from the Reader Document output.
+* Activate. A Boolean dictating if the component is active or not (Recommended to use a button to activate and not a Boolean toggle).
 
 The semantic data will be stored per surface at: Properties->Object-Attribute User Text. Additionally the LoD and major object types will be used to create a hierarchy of layers.
 Semantic values with a * are inherited from the parent object.
 
-
 ### Template Bakery (untested)
-The Template Bakery is a custom baking component that will not only bake the template geometry, but also place it at the correct location and include its related semantic data.
+The Template Bakery is a custom baking component that will not only bake the template geometry, 
+but also place it at the correct location and include its related semantic data.
+Every templated object will be converted to a Rhino Block.
+Unlike the normal Bakery the Template Bakery does not require use of the information manager.
 
 Input:
 * Geometry. A List with template geometry that is desired to be baked.
-* Surface Info Keys. The keys related to the Surface Info Values (This list should be the same length as a branch of the Surface Info Values).
-* Surface Info Values. The Values related to the Geometry. (This Tree should be the same length as the geometry List).
-* Object Info Keys. The keys of sematic info that corresponds with the object (names).
-* Materials. The materials related to the Geometry
-* Object Info Values. The values of semantic info that corresponds with the object (names).
+* Surface Information. Information 1:1 related to the surfaces that are output by the geometry output.
+* Object Information. Information related to the objects that utilize the templates.
+* Materials. The materials related to the geometry
+* Activate. A Boolean dictating if the component is active or not (Recommended to use a button to activate and not a Boolean toggle).
 
 Each instance of a template will be placed in a block. Allowing to move, scale and rotate the objects without changing the underlying geometry.
 Changing the template is possible with the block edit command. 
 Edits made in block edit mode will update every instance of that block
-The semantic data will be stored per surface at: Properties->Object-Attribute User Text. Additionally the LoD and major object types will be used to create a hierarchy of layers.
+The semantic data will be stored per surface at: Properties->Object-Attribute User Text. 
+Additionally the LoD and major object types will be used to create a hierarchy of layers.
 Semantic values with a * are inherited from the parent object.
 
-### Filter
-The filter component filters the semantic data based on a key/value pair. 
-The output of this component can be fed directly in the Information manager to filter the geometry
+### Attribute Add
+The Attribute Add component allows the user to add an attribute to the information objects related to the loaded surfaces and objects.
 
 Input:
-* Information Keys. The keys of semantic info, this can be either Surface Info Keys or Object Info Keys.
-* Info Values. The values of semantic info, this can be either Surface Info Values or Object Info Values.
-* Filter Info Key. The key that is used to filter on
-* Filter Info Value(s). The values that are tested against (no * is needed to access inherited values)
-* Equals/ Not Equals. A boolean, if true the component will return the objects or surfaces where the values match, if false the component will return the objects or surfaces where the values do not math.
+* Information Objects. Information objects related to the objects, surfaces or metadata.
+* Attribute Name. The name/key of the new attribute (Selector will be spawn automatically).
+* Attribute Value. The value of the new attribute. 
+This is a nested value, more values per key are possible.
 
 Output:
-* Filtered Info Values. The Values of the objects/surfaces that match the requested query.
+* Information Objects output. The updated Information list with the new attribute included.
 
-Note that this component does not filter the geometry, the Information Manager does this.
+### Attribute Filter
+The attribute Fiter component allows the user to filter data from the information objects related to the loaded surfaces and objects.
+
+Input:
+* Information Objects. Information objects related to the objects, surfaces or metadata.
+* Attribute Name. The name/key of the attribute used to be filtered (Selector will be spawn automatically).
+* Attribute Value. The value which the attribute is desired to have (can be a list). 
+
+Output:
+* Filtered Information Objects. The filtered object information.
+
+Note that this component does not filter the geometry, 
+feeding this output in the Information Manager will resolve this.
+
+### Attribute Remover
+The attribute Remover component allows the user to remove an attribute from the information objects related to the loaded surfaces and objects.
+
+Input:
+* Information Objects. Information objects related to the objects, surfaces or metadata.
+* Attribute Name. The name/key of the attribute that is to be removed (Selector will be spawn automatically).
+
+Output:
+* Information Objects output. The updated Information list with the attribute excluded.
+
+### Attribute Selector
+The Attribute Selector exposes the value(s) of a desired attribute stored in the information objects.
+
+* Information Objects. Information objects related to the objects, surfaces or metadata.
+* Attribute Name. Attribute name of which the values are desired (Selector will be spawn automatically).
 
 ### Information Manager
-The Object Info Keys and Object Info Values can not be directly used by the bakery component. 
-The Manager Divider enables this data to be used.
-The Information Manager also resolves the collecting of geometry based on the Filter component output
+The Object Information can not be directly used by the bakery component. 
+The Information Manager splits the data over the surfaces allowing it to be used by the bakery.
+The Information Manager also resolves the filtering of geometry based on the information object (both related to the surfaces and city objects) input.
 
 Input:
 * Geometry. A list of single surface Breps.
-* Surface Info Keys. The keys of semantic info that corresponds 1:1 with the geometry output of the Reader component.
-* Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry output of the Reader component.
-* Object Info Keys. The keys of sematic info that corresponds with the object (names).
-* Object Info Values. The values of semantic info that corresponds with the object (names).
+* Surface Information. Information related to the surfaces.
+* Object Information. Information related to the objects.
 
 Output:
-* Merged Surface Info Keys. The keys of semantic info from both the input's surface and object keys that corresponds 1:1 with the geometry output of the Reader component.
-* Merged Surface Info Values. The values of semantic info from both the input's surface and object values that corresponds 1:1 with the geometry output of the Reader component.
+* Geometry. (Filtered) geometry output.
+* Merged Surface Information. Merged and filtered information output related to the surfaces.
 
 ### Template2Object
-To ease the processing and filtering sets this component can create un-templated objects out of templated objects.
-The format of the converted objects is identical to the normal objects.
+To ease the processing and filtering this component can create un-templated objects out of templated objects.
+The format of the converted objects is identical to the normal objects that are outputted by the Reader Objects component.
 
 Input:
-* Template Geometry. A list of single surface Breps.
-* Surface Info Keys. The keys of semantic info that corresponds 1:1 with the geometry output of the Template Reader component.
-* Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry output of the Template Reader component.
-* Object Info Keys. The keys of sematic info that corresponds with the object (names).
-* Object Info Values. The values of semantic info that corresponds with the object (names).
+* Template Geometry. A list of single surface Breps representing the templates.
+* Surface Information. Information 1:1 related to the surfaces that are put in the geometry outtput.
+* Object Information. Information related to the objects that utilize the templates.
 
 Output:
-* Geometry. A list of single surface Breps.
-* Surface Info Keys. The keys of semantic info that corresponds 1:1 with the geometry.
-* Surface Info Values. The values of semantic info that corresponds 1:1 with the geometry.
-* Object Info Keys. The keys of sematic info that corresponds with the object (names).
-* Object Info Values. The values of semantic info that corresponds with the object (names).
+* Geometry. A list of single surface Breps representing all the templated objects as normal objects.
+ Surface Information. Information 1:1 related to the surfaces that are output by the geometry output.
+* Object Information. Information related to the objects.
 
 ### Explode Material
 The material output of the Document Reader Component is of a custom type. 
-To display this type in grasshoper the Explode material component can be used.
+To display this type in grasshopper the Explode material component can be used.
 
 Input:
-* Materials. The materials related to the Geometry.
+* Materials. The material output from the Reader Document component.
 
 Output:
 * Name. The material name.

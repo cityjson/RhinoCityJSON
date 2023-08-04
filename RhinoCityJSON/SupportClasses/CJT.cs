@@ -92,6 +92,7 @@ namespace RhinoCityJSON
             string geoType_ = "";
             string GeoName_ = "";
             bool hasSurfaceData_ = false;
+            bool hasGeometry_ = false;
 
             public List<SurfaceObject> getBoundaries() { return boundaries_; }
             public void setBoundaries(List<SurfaceObject> boundaries) { boundaries_ = boundaries; }
@@ -99,6 +100,7 @@ namespace RhinoCityJSON
             public void setLod(string lod) { lod_ = lod; }
             public List<Dictionary<string, dynamic>> getSurfaceData() { return surfaceData_; }
             public Dictionary<string, dynamic> getSurfaceData(int i) { return surfaceData_[i]; }
+            public bool hasGeometry() { return hasGeometry_; }
             public void setSurfaceData(dynamic surfaceData)
             {
                 List<Dictionary<string, dynamic>> completeSemanticColletion = new List<Dictionary<string, dynamic>>();
@@ -230,6 +232,7 @@ namespace RhinoCityJSON
                     }
                     counter++;
                 }
+                if (boundaries_.Count() > 0) { hasGeometry_ = true; }
             }
 
             private List<RingStructure> boundaries2Rings(dynamic JBoundaryList)

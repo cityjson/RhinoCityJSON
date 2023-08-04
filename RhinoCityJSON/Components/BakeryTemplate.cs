@@ -17,19 +17,18 @@ namespace RhinoCityJSON.Components
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddBrepParameter("Template Geometry", "TG", "Geometry Input", GH_ParamAccess.list);
-            pManager.AddTextParameter("Surface Info Keys", "TSiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Surface Info", "TSiV", "Semantic information output related to the surfaces", GH_ParamAccess.tree);
-            pManager.AddTextParameter("Object Info Keys", "TOiK", "Keys of the information output related to the Objects", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Object Info", "TOiV", "Semantic information output related to the Objects", GH_ParamAccess.tree);
-            pManager.AddGenericParameter("Materials", "M", "The material information", GH_ParamAccess.list);
+            pManager.AddBrepParameter("Geometry", "G", "Geometry input", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Surface Information", "Si", "Information related to the template surfaces", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Object Information", "Oi", "Information related to the templated Objects", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Materials", "M", "Material information", GH_ParamAccess.list);
             pManager.AddBooleanParameter("Activate", "A", "Activate bakery", GH_ParamAccess.item, false);
             pManager[0].Optional = true;
             pManager[1].Optional = true;
             pManager[2].Optional = true;
             pManager[3].Optional = true;
             pManager[4].Optional = true;
-            pManager[5].Optional = true;
+
+
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -38,21 +37,13 @@ namespace RhinoCityJSON.Components
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            var sKeys = new List<string>();
-            var siTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
-            var bKeys = new List<string>();
-            var biTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
-            var geoList = new List<Brep>();
-            var materialList = new List<Types.GHMaterial>();
             bool boolOn = false;
+            List<Types.GHObjectInfo> surfaceInfoList = new List<Types.GHObjectInfo>();
+            List<Types.GHObjectInfo> objectInfoList = new List<Types.GHObjectInfo>();
+            var brepList = new List<Brep>();
+            var materialList = new List<Types.GHMaterial>();
 
-            DA.GetDataList(0, geoList);
-            DA.GetDataList(1, sKeys);
-            DA.GetDataTree(2, out siTree);
-            DA.GetDataList(3, bKeys);
-            DA.GetDataTree(4, out biTree);
-            DA.GetDataList(5, materialList);
-            DA.GetData(6, ref boolOn);
+            DA.GetData(4, ref boolOn);
 
             if (!boolOn)
             {
@@ -60,85 +51,67 @@ namespace RhinoCityJSON.Components
                 return;
             }
 
-            if (bKeys.Count > 0 && biTree.DataCount == 0 ||
-                bKeys.Count == 0 && biTree.DataCount > 0)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.unevenFilterInput]);
-                return;
-            }
+            DA.GetDataList(0, brepList);
+            DA.GetDataList(1, surfaceInfoList);
+            DA.GetDataList(2, objectInfoList);
+            DA.GetDataList(3, materialList);
 
-            // find locations of crucial data
-            int tempIdxTempIdx = -1;
-            int tempIdxObIdx = -1;
-            int anchorIdx = -1;
-            int nameIdx = -1;
-            int lodIdx = -1;
-            int typeIdx = -1;
-            int surfTypeIdx = -1;
-            List<int> materialNames = new List<int>();
+            Dictionary<int, List<Brep>> geometryLookup = new Dictionary<int, List<Brep>>();
+            Dictionary<int, List<Types.GHObjectInfo>> dataSurfLookup = new Dictionary<int, List<Types.GHObjectInfo>>();
+            Dictionary<int, List<Types.GHObjectInfo>> dataObjLookup = new Dictionary<int, List<Types.GHObjectInfo>>();
 
-            for (int i = 0; i < sKeys.Count; i++)
+            //check if template data
+            foreach (var objectInfo in objectInfoList)
             {
-                if (sKeys[i].ToLower() == "template idx")
+                if (objectInfo.Value.isSurface())
                 {
-                    tempIdxTempIdx = i;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all input objects are objects");
+                    return;
                 }
-                else if (sKeys[i].ToLower() == "geometry lod")
+                if (!objectInfo.Value.isTemplate())
                 {
-                    lodIdx = i;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all input is a template object");
+                    return;
                 }
-                else if (sKeys[i].ToLower().Split(' ')[0] == "surface" && sKeys[i].ToLower().Split(' ')[1] == "material")
+                if (dataObjLookup.ContainsKey(objectInfo.Value.getTemplateIdx()))
                 {
-                    materialNames.Add(i);
+                    dataObjLookup[objectInfo.Value.getTemplateIdx()].Add(objectInfo);
                 }
-            }
-
-            for (int i = 0; i < bKeys.Count; i++)
-            {
-                if (bKeys[i].ToLower() == "template idx")
+                else
                 {
-                    tempIdxObIdx = i;
-                }
-                else if (bKeys[i].ToLower() == "object anchor")
-                {
-                    anchorIdx = i;
-                }
-                else if (bKeys[i].ToLower() == "object name")
-                {
-                    nameIdx = i;
-                }
-                else if (bKeys[i].ToLower() == "object type")
-                {
-                    typeIdx = i;
+                    dataObjLookup.Add(objectInfo.Value.getTemplateIdx(), new List<Types.GHObjectInfo>());
+                    dataObjLookup[objectInfo.Value.getTemplateIdx()].Add(objectInfo);
                 }
             }
 
-            if (lodIdx == -1)
+            for (int i = 0; i < surfaceInfoList.Count; i++)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.noLod]);
-            }
+                var surfaceInfo = surfaceInfoList[i];
 
-            if (tempIdxTempIdx == -1 || tempIdxObIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Template Idx data can not be found");
-                return;
-            }
+                if (!surfaceInfo.Value.isSurface())
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all input surfaces are surfaces");
+                    return;
+                }
+                if (!surfaceInfo.Value.isTemplate())
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all input is a template surface");
+                    return;
+                }
 
-            if (anchorIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Template Anchor data can not be found");
-                return;
-            }
+                if (dataSurfLookup.ContainsKey(surfaceInfo.Value.getTemplateIdx()))
+                {
+                    dataSurfLookup[surfaceInfo.Value.getTemplateIdx()].Add(surfaceInfo);
+                    geometryLookup[surfaceInfo.Value.getTemplateIdx()].Add(brepList[i]);
+                }
+                else
+                {
+                    dataSurfLookup.Add(surfaceInfo.Value.getTemplateIdx(), new List<Types.GHObjectInfo>());
+                    geometryLookup.Add(surfaceInfo.Value.getTemplateIdx(), new List<Brep>());
+                    dataSurfLookup[surfaceInfo.Value.getTemplateIdx()].Add(surfaceInfo);
+                    geometryLookup[surfaceInfo.Value.getTemplateIdx()].Add(brepList[i]);
+                }
 
-            if (nameIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No object names can be found");
-                return;
-            }
-
-            if (typeIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.noBType]);
             }
 
             var activeDoc = Rhino.RhinoDoc.ActiveDoc;
@@ -165,69 +138,68 @@ namespace RhinoCityJSON.Components
 
             // find the blocks are already present
             var blockList = Rhino.RhinoDoc.ActiveDoc.InstanceDefinitions.GetList(true);
+            foreach (var block in blockList) { blockId.Add(block.Name, block.Index); }
 
-            foreach (var block in blockList)
+            // get unique Idx numbers
+            List<int> uniqueIdx = new List<int>();
+            foreach (var item in dataObjLookup)
             {
-                blockId.Add(block.Name, block.Index);
+                if (uniqueIdx.Contains(item.Key)) { continue; }
+                uniqueIdx.Add(item.Key);
+            }
+            foreach (var item in dataSurfLookup)
+            {
+                if (uniqueIdx.Contains(item.Key)) { continue; }
+                uniqueIdx.Add(item.Key);
             }
 
-            // copy geometry 
-            var obBranchCollection = biTree.Branches;
-            var surfBranchCollection = siTree.Branches;
 
-            // get unique template indxList
-            List<string> uniqueIdx = new List<string>();
-            foreach (var item in surfBranchCollection)
-            {
-                uniqueIdx.Add(item[tempIdxTempIdx].ToString());
-            }
-            uniqueIdx = uniqueIdx.Distinct().ToList();
-
-            foreach (string tempIdx in uniqueIdx)
+            foreach (int tempIdx in uniqueIdx)
             {
                 List<Brep> blockTemplateList = new List<Brep>();
                 List<Rhino.DocObjects.ObjectAttributes> attributeList = new List<Rhino.DocObjects.ObjectAttributes>();
 
                 string templateLoD = "";
-                for (int i = 0; i < surfBranchCollection.Count; i++)
+
+                // surface data
+                for (int i = 0; i < dataSurfLookup[tempIdx].Count; i++)
                 {
-                    if (surfBranchCollection[i][tempIdxTempIdx].ToString() == tempIdx)
-                    {
-                        templateLoD = surfBranchCollection[i][lodIdx].ToString();
-                        blockTemplateList.Add(geoList[i]);
-                        Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
-                        objectAttributes.Name = "Template " + tempIdx;
+                    var surfInfo = dataSurfLookup[tempIdx][i];
+                    templateLoD = surfInfo.Value.getLod();
+                    blockTemplateList.Add(geometryLookup[tempIdx][i]);
 
-                        for (int j = 0; j < sKeys.Count; j++)
-                        {
-                            objectAttributes.SetUserString(sKeys[j], surfBranchCollection[i][j].ToString());
-                        }
+                    Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
+                    objectAttributes.Name = "Template " + tempIdx;
 
-                        // bind material to object
-                        if (materialNames.Count > 0 && materialIdx.Count > 0)
-                        {
-                            string materialString = surfBranchCollection[i][materialNames[0]].ToString();
-                            if (materialString != DefaultValues.defaultNoneValue)
-                            {
-                                int materalNum = Int32.Parse(surfBranchCollection[i][materialNames[0]].ToString());
-                                objectAttributes.MaterialIndex = materialIdx[materalNum];
-                                objectAttributes.MaterialSource = Rhino.DocObjects.ObjectMaterialSource.MaterialFromObject;
-                            }
-                        }
+                    var surfaceValues = surfInfo.Value;
+                    objectAttributes.Name = surfaceValues.getName() + " - " + i;
+                    objectAttributes.SetUserString("LoD", surfaceValues.getLod());
+                    objectAttributes.SetUserString("Geometry Name", surfaceValues.getGeoName());
+                    objectAttributes.SetUserString("Geometry Type", surfaceValues.getGeoType());
 
-                        attributeList.Add(objectAttributes);
+                    /*                       // bind material to object
+                                           if (materialNames.Count > 0 && materialIdx.Count > 0)
+                                           {
+                                               string materialString = surfBranchCollection[i][materialNames[0]].ToString();
+                                               if (materialString != DefaultValues.defaultNoneValue)
+                                               {
+                                                   int materalNum = Int32.Parse(surfBranchCollection[i][materialNames[0]].ToString());
+                                                   objectAttributes.MaterialIndex = materialIdx[materalNum];
+                                                   objectAttributes.MaterialSource = Rhino.DocObjects.ObjectMaterialSource.MaterialFromObject;
+                                               }
+                                           }*/
 
-                    }
+                    attributeList.Add(objectAttributes);
                 }
 
                 // check if data is available in the layer index
                 if (!lodId.ContainsKey(templateLoD))
                 {
                     BakerySupport.createLodLayer(
-                        templateLoD, 
-                        ref lodId, 
-                        ref typId, 
-                        ref surId, 
+                        templateLoD,
+                        ref lodId,
+                        ref typId,
+                        ref surId,
                         parentID
                         );
                 }
@@ -252,49 +224,80 @@ namespace RhinoCityJSON.Components
                 int instanceIdx = Rhino.RhinoDoc.ActiveDoc.InstanceDefinitions.Add(blockName, "test", BakerySupport.getAnchorPoint(blockTemplateList), blockTemplateList, attributeList);
                 blockId.Add(blockName, instanceIdx);
 
-                foreach (var objectSem in obBranchCollection)
+                for (int i = 0; i < dataObjLookup[tempIdx].Count; i++)
                 {
-                    string cleanedTemplateType = BakerySupport.getParentName(objectSem[typeIdx].ToString());
-                    if (objectSem[tempIdxObIdx].ToString() == tempIdx)
+                    var objInfo = dataObjLookup[tempIdx][i];
+                    string cleanedTemplateType = BakerySupport.getParentName(objInfo.Value.getObjectType());
+
+                    Point3d location = objInfo.Value.getAnchor();
+                    Rhino.RhinoApp.WriteLine(location.ToString());
+                    Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
+                    objectAttributes.Name = objInfo.Value.getName();
+
+                    objectAttributes.SetUserString("Object Name", objInfo.Value.getName());
+                    objectAttributes.SetUserString("Object Type", objInfo.Value.getObjectType());
+                    objectAttributes.SetUserString("LoD", objInfo.Value.getLod());
+
+                    if (objInfo.Value.getParents().Count() > 0)
                     {
-                        Point3d location = new Point3d();
-                        Point3d.TryParse(objectSem[anchorIdx].ToString(), out location);
-
-                        Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
-                        objectAttributes.Name = objectSem[nameIdx].ToString();
-
-                        for (int j = 0; j < bKeys.Count; j++)
-                        { 
-                            objectAttributes.SetUserString(
-                                bKeys[j], 
-                                objectSem[j].ToString()); 
-                        }
-
-                        // check if data is available in the layer index
-                        if (!typId[templateLoD].ContainsKey(cleanedTemplateType)) // TODO: make function with building surf subs (can test after injector implementation)
+                        string combinatedString = "";
+                        for (int j = 0; j < objInfo.Value.getParents().Count(); j++)
                         {
-                            Rhino.DocObjects.Layer typeLayer = new Rhino.DocObjects.Layer();
-                            typeLayer.Name = cleanedTemplateType;
-                            System.Drawing.Color lColor = System.Drawing.Color.DarkRed;
-
-                            if (typColor.ContainsKey(cleanedTemplateType))
+                            if (objInfo.Value.getParents().Count() - 1 == j)
                             {
-                                lColor = typColor[cleanedTemplateType];
+                                combinatedString += objInfo.Value.getParents()[j];
+                                continue;
                             }
+                            combinatedString += objInfo.Value.getParents()[j] + ", ";
+                        }
+                        objectAttributes.SetUserString("Parents", combinatedString);
+                    }
 
-                            typeLayer.Color = lColor;
-                            typeLayer.ParentLayerId = lodId[templateLoD];
+                    if (objInfo.Value.getChildren().Count() > 0)
+                    {
+                        string combinatedString = "";
+                        for (int j = 0; j < objInfo.Value.getChildren().Count(); j++)
+                        {
+                            if (objInfo.Value.getChildren().Count() - 1 == j)
+                            {
+                                combinatedString += objInfo.Value.getChildren()[j];
+                                continue;
+                            }
+                            combinatedString += objInfo.Value.getChildren()[j] + ", ";
+                        }
+                        objectAttributes.SetUserString("Children", combinatedString);
+                    }
 
-                            var idx = activeDoc.Layers.Add(typeLayer);
-                            typId[templateLoD].Add(cleanedTemplateType, idx);
+                    foreach (var pair in objInfo.Value.getOtherData())
+                    {
+                        objectAttributes.SetUserString(pair.Key, pair.Value);
+                    }
+
+                    // check if data is available in the layer index
+                    if (!typId[templateLoD].ContainsKey(cleanedTemplateType)) // TODO: make function with building surf subs (can test after injector implementation)
+                    {
+                        Rhino.DocObjects.Layer typeLayer = new Rhino.DocObjects.Layer();
+                        typeLayer.Name = cleanedTemplateType;
+                        System.Drawing.Color lColor = System.Drawing.Color.DarkRed;
+
+                        if (typColor.ContainsKey(cleanedTemplateType))
+                        {
+                            lColor = typColor[cleanedTemplateType];
                         }
 
-                        objectAttributes.LayerIndex = typId[templateLoD][cleanedTemplateType];
-                        Rhino.RhinoDoc.ActiveDoc.Objects.AddInstanceObject(instanceIdx, Transform.Translation(location.X, location.Y, location.Z), objectAttributes); 
+                        typeLayer.Color = lColor;
+                        typeLayer.ParentLayerId = lodId[templateLoD];
+
+                        var idx = activeDoc.Layers.Add(typeLayer);
+                        typId[templateLoD].Add(cleanedTemplateType, idx);
                     }
+
+                    objectAttributes.LayerIndex = typId[templateLoD][cleanedTemplateType];
+                    Rhino.RhinoDoc.ActiveDoc.Objects.AddInstanceObject(instanceIdx, Transform.Translation(location.X, location.Y, location.Z), objectAttributes);
                 }
             }
         }
+    
 
         protected override System.Drawing.Bitmap Icon
         {

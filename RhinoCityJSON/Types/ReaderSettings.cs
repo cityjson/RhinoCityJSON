@@ -9,6 +9,7 @@ namespace RhinoCityJSON.Types
         bool translate_ = false;
         Point3d modelOrigin_ = new Point3d(0, 0, 0);
         double trueNorth_ = 0;
+        Box domain_ = new Box();
         List<string> LoD_ = new List<string>();
 
         bool isDocumentSetting_ = false;
@@ -23,6 +24,7 @@ namespace RhinoCityJSON.Types
             translate_ = other.translate_;
             modelOrigin_ = other.modelOrigin_;
             trueNorth_ = other.trueNorth_;
+            domain_ = other.domain_;
             LoD_ = other.LoD_;
             dominantFile_ = other.dominantFile_;
             merge_ = other.merge_;
@@ -35,12 +37,14 @@ namespace RhinoCityJSON.Types
             bool translate,
             Point3d modelOrigin,
             double trueNorth,
+            Box domain,
             List<string> LoDList
             )
         {
             translate_ = translate;
             modelOrigin_ = modelOrigin;
             trueNorth_ = trueNorth;
+            domain_ = domain;
             LoD_ = LoDList;
         }
 
@@ -60,6 +64,7 @@ namespace RhinoCityJSON.Types
         public bool getTranslate() { return translate_; }
         public Point3d getModelOrigin() { return modelOrigin_; }
         public double getTrueNorth() { return trueNorth_; }
+        public Box getDomain() { return domain_; }
         public List<string> getLoDList() { return LoD_; }
 
         public bool isDocSetting() { return isDocumentSetting_; }

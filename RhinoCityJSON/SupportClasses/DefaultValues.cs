@@ -10,6 +10,7 @@ namespace RhinoCityJSON
         multipleInputSettings,
         multipleOrigins,
         multipleNorth,
+        multipleDomain,
         surfaceCreation,
         emptyPath,
         invalidPath,
@@ -18,6 +19,8 @@ namespace RhinoCityJSON
         noBType,
         noScale,
         noSurfaceData,
+        noBuildingData,
+        noSurfaceBuildingMatch,
         invalidJSON,
         noTeamplateFound,
         noMetaDataFound,
@@ -37,6 +40,7 @@ namespace RhinoCityJSON
             {errorCodes.multipleInputSettings, "Only a single settings input allowed"},
             {errorCodes.multipleNorth, "Only a single settings input allowed"},
             {errorCodes.multipleOrigins, "Multiple true north angles submitted"},
+            {errorCodes.multipleDomain, "Multiple domain shapes submitted"},
             {errorCodes.surfaceCreation, "Not all surfaces have been correctly created"},
             {errorCodes.emptyPath, "Path is empty"},
             {errorCodes.invalidPath, "No valid filepath found"},
@@ -45,6 +49,8 @@ namespace RhinoCityJSON
             {errorCodes.noBType, "No Object type data is supplied"},
             {errorCodes.noScale, "Rhino document scale is not supported, defaulted to unit 1"},
             {errorCodes.noSurfaceData, "No surface data could be found"},
+            {errorCodes.noBuildingData, "No building data could be found"},
+            {errorCodes.noSurfaceBuildingMatch, "No matching parent building of surface could be found"},
             {errorCodes.invalidJSON, "Invalid CityJSON file"},
             {errorCodes.noTeamplateFound, "No templated objects were found"},
             {errorCodes.noMetaDataFound, "No metadata found"},
@@ -69,14 +75,16 @@ namespace RhinoCityJSON
             "Object Name",
             "Geometry Type",
             "Geometry Name",
-            "Geometry LoD"
+            "Geometry LoD",
+            "Surface Material"
         };
 
         static public List<string> surfaceTemplateKeys = new List<string>()
         {
             "Template Idx",
             "Geometry Type",
-            "Geometry LoD"
+            "Geometry LoD",
+            "Surface Material"
         };
 
         static public List<string> objectKeys = new List<string>()

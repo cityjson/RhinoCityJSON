@@ -123,16 +123,13 @@ namespace RhinoCityJSON
             return activeDoc.Layers.Add(parentlayer);
         }
 
-        static public List<string> getUniqueLoDList(
-            int lodIdx,
-            IList<List<Grasshopper.Kernel.Types.IGH_Goo>> branchCollection
-            )
+        static public List<string> getUniqueLoDList(List<Types.GHObjectInfo> surfaceInfo)
         {
             var lodList = new List<string>();
-            for (int i = 0; i < branchCollection.Count; i++)
+            for (int i = 0; i < surfaceInfo.Count; i++)
             {
                 // get LoD
-                string lod = branchCollection[i][lodIdx].ToString();
+                string lod = surfaceInfo[i].Value.getLod();
 
                 if (!lodList.Contains(lod))
                 {
@@ -142,18 +139,14 @@ namespace RhinoCityJSON
             return lodList;
         }
 
-        static public Dictionary<string, List<string>> getUniqueTypeLod(
-            int lodIdx,
-            int typeIdx,
-            IList<List<Grasshopper.Kernel.Types.IGH_Goo>> branchCollection
-            )
+        static public Dictionary<string, List<string>> getUniqueTypeLod(List<Types.GHObjectInfo> surfaceInfo)
         {
             var lodTypeDictionary = new Dictionary<string, List<string>>();
-            for (int i = 0; i < branchCollection.Count; i++)
+            for (int i = 0; i < surfaceInfo.Count; i++)
             {
                 // get building types present in input per LoD
-                string lod = branchCollection[i][lodIdx].ToString();
-                string bType = branchCollection[i][typeIdx].ToString();
+                string lod = surfaceInfo[i].Value.getLod();
+                string bType = surfaceInfo[i].Value.getObjectType();
 
                 if (!lodTypeDictionary.ContainsKey(lod))
                 {
@@ -169,19 +162,21 @@ namespace RhinoCityJSON
             return lodTypeDictionary;
         }
 
-        static public Dictionary<string, List<string>> getUniqueSurfaceLod(
-            int lodIdx,
-            int surfTypeIdx,
-            IList<List<Grasshopper.Kernel.Types.IGH_Goo>> branchCollection
-            )
+        static public Dictionary<string, List<string>> getUniqueSurfaceLod(List<Types.GHObjectInfo> surfaceInfo)
         {
             var lodSurfTypeDictionary = new Dictionary<string, List<string>>();
-            for (int i = 0; i < branchCollection.Count; i++)
+            for (int i = 0; i < surfaceInfo.Count; i++)
             {
-                string lod = branchCollection[i][lodIdx].ToString();
+                string lod = surfaceInfo[i].Value.getLod();
 
                 // get surface types present in input
-                string sType = branchCollection[i][surfTypeIdx].ToString();
+                var surfintoOtherData = surfaceInfo[i].Value.getOtherData();
+
+                if (!surfintoOtherData.ContainsKey("Surface type"))
+                {
+                    continue;
+                }
+                string sType = surfaceInfo[i].Value.getOtherData()["Surface type"];
 
                 if (!lodSurfTypeDictionary.ContainsKey(lod))
                 {
@@ -197,13 +192,10 @@ namespace RhinoCityJSON
             return lodSurfTypeDictionary;
         }
 
-       
+
         static public void createLayers(
             string layerBaseName,
-            int lodIdx,
-            int typeIdx,
-            int surfTypeIdx,
-            IList<List<Grasshopper.Kernel.Types.IGH_Goo>> branchCollection,
+            List<Types.GHObjectInfo> surfaceInfo,
             ref Dictionary<string, System.Guid> lodIdLookup,
             ref Dictionary<string, Dictionary<string, int>> typIdLookup,
             ref Dictionary<string, Dictionary<string, int>> surIdLookup
@@ -212,9 +204,9 @@ namespace RhinoCityJSON
             var activeDoc = Rhino.RhinoDoc.ActiveDoc;
 
             // get the lod lvls and types and surface types present in the surfaces 
-            var lodTypeDictionary = getUniqueTypeLod(lodIdx, typeIdx, branchCollection);
-            var lodList = getUniqueLoDList(lodIdx, branchCollection);
-            var lodSurfTypeDictionary = getUniqueSurfaceLod(lodIdx, surfTypeIdx, branchCollection);
+            var lodTypeDictionary = getUniqueTypeLod(surfaceInfo);
+            var lodList = getUniqueLoDList(surfaceInfo);
+            var lodSurfTypeDictionary = getUniqueSurfaceLod(surfaceInfo);
             var parentID = activeDoc.Layers.FindIndex(makeParentLayer(layerBaseName));
 
             // create the layers
@@ -233,15 +225,12 @@ namespace RhinoCityJSON
                 BakerySupport.getTypeColor()
                 );
 
-            if (surfTypeIdx != -1)
-            {
-                createSurfaceLayers(
-                    lodSurfTypeDictionary,
-                    ref typIdLookup,
-                    ref surIdLookup,
-                    BakerySupport.getSurfColor()
-                    );
-            }
+            createSurfaceLayers(
+                lodSurfTypeDictionary,
+                ref typIdLookup,
+                ref surIdLookup,
+                BakerySupport.getSurfColor()
+                );
         }
 
         static public void createLodLayer(
@@ -421,5 +410,18 @@ namespace RhinoCityJSON
 
             return matIdx;
         }
+
+        static public bool hasBuildingData(List<Types.GHObjectInfo> surfaceInfo)
+        {
+            for (int i = 0; i < surfaceInfo.Count; i++)
+            {
+                if (getParentName(surfaceInfo[i].Value.getObjectType()) == "Building")
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
     }
 }

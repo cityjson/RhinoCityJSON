@@ -61,10 +61,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Components\AttributeRemove.cs" />
     <Compile Include="Components\Bakery.cs" />
     <Compile Include="Components\BakeryTemplate.cs" />
+    <Compile Include="Components\AttributeAdd.cs" />
+    <Compile Include="Components\AttributeFilter.cs" />
     <Compile Include="Components\ExplodeMaterial.cs" />
-    <Compile Include="Components\Filter.cs" />
+    <Compile Include="Components\AttributeSelector.cs" />
     <Compile Include="Components\Manager.cs" />
     <Compile Include="Components\ManagerTemplate.cs" />
     <Compile Include="Components\Reader.cs" />
@@ -74,6 +77,7 @@
     <Compile Include="Components\ReaderTemplate.cs" />
     <Compile Include="SupportClasses\BakerySupport.cs" />
     <Compile Include="SupportClasses\CJT.cs" />
+    <Compile Include="SupportClasses\FilterSupport.cs" />
     <Compile Include="SupportClasses\DefaultValues.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -142,6 +146,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\settingdocsicon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\addAttribute.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\removeAttribute.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

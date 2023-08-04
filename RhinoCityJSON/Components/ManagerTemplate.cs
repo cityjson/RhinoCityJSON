@@ -18,180 +18,129 @@ namespace RhinoCityJSON.Components
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddBrepParameter("Template Geometry", "TG", "Geometry input", GH_ParamAccess.list);
-            pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.tree);
-            pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Object Info Values", "OiV", "Values of the semantic information output related to the objects", GH_ParamAccess.tree);
+            pManager.AddGenericParameter("Surface Info", "Si", "Information related to the template surfaces", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Object Info", "Oi", "Information related to the templated objects", GH_ParamAccess.list);
+
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.list);
-            pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
-            pManager.AddTextParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.item);
-            pManager.AddTextParameter("Object Info Keys", "Oik", "Keys of the Semantic information output related to the objects", GH_ParamAccess.list);
-            pManager.AddTextParameter("Object Info Values", "OiV", "Values of the semantic information output related to the objects", GH_ParamAccess.item);
+            pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Surface Information", "Si", "Information related to the surfaces", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Object Information", "Oi", "Information related to the Objects", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            var sKeys = new List<string>();
-            var siTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
-            var bKeys = new List<string>();
-            var biTree = new Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo>();
+            List<Types.GHObjectInfo> surfaceInfoList = new List<Types.GHObjectInfo>();
+            List<Types.GHObjectInfo> objectInfoList = new List<Types.GHObjectInfo>();
             var geoList = new List<Brep>();
 
             DA.GetDataList(0, geoList);
-            DA.GetDataList(1, sKeys);
-            DA.GetDataTree(2, out siTree);
-            DA.GetDataList(3, bKeys);
-            DA.GetDataTree(4, out biTree);
+            DA.GetDataList(1, surfaceInfoList);
+            DA.GetDataList(2, objectInfoList);
 
-            if (bKeys.Count > 0 && biTree.DataCount == 0 ||
-                bKeys.Count == 0 && biTree.DataCount > 0)
+            //check if template data
+            foreach (var objectInfo in objectInfoList)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.unevenFilterInput]);
-                return;
-            }
-
-            // find locations of crucial data
-            int tempIdxTempIdx = -1;
-            int tempIdxObIdx = -1;
-            int anchorIdx = -1;
-            int nameIdx = -1;
-            for (int i = 0; i < sKeys.Count(); i++)
-            {
-                if (sKeys[i] == "Template Idx")
+                if (objectInfo.Value.isSurface())
                 {
-                    tempIdxTempIdx = i;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all input objects are objects");
+                    return;
+                }
+                if (!objectInfo.Value.isTemplate())
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all input is a template object");
+                    return;
                 }
             }
 
-            for (int i = 0; i < bKeys.Count(); i++)
+            Dictionary<int, List<Brep>> geometryLookup =  new Dictionary<int, List<Brep>>();
+            Dictionary<int, List<Types.GHObjectInfo>> dataLookup =  new Dictionary<int, List<Types.GHObjectInfo>>();
+
+            for (int i = 0; i < surfaceInfoList.Count; i++)
             {
-                if (bKeys[i] == "Template Idx")
+                var surfaceInfo = surfaceInfoList[i];
+
+                if (!surfaceInfo.Value.isSurface())
                 {
-                    tempIdxObIdx = i;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all input surfaces are surfaces");
+                    return;
                 }
-            }
-
-            for (int i = 0; i < bKeys.Count(); i++)
-            {
-                if (bKeys[i] == "Object Anchor")
+                if (!surfaceInfo.Value.isTemplate())
                 {
-                    anchorIdx = i;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all input is a template surface");
+                    return;
                 }
-            }
 
-            for (int i = 0; i < bKeys.Count(); i++)
-            {
-                if (bKeys[i] == "Object Name")
+                if (dataLookup.ContainsKey(surfaceInfo.Value.getTemplateIdx()))
                 {
-                    nameIdx = i;
+                    dataLookup[surfaceInfo.Value.getTemplateIdx()].Add(surfaceInfo);
+                    geometryLookup[surfaceInfo.Value.getTemplateIdx()].Add(geoList[i]);
                 }
-            }
-
-            if (tempIdxTempIdx == -1 || tempIdxObIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Template Idx data can not be found");
-                return;
-            }
-
-            if (anchorIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Template Anchor data can not be found");
-                return;
-            }
-
-            if (nameIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No object names can be found");
-                return;
-            }
-
-            // copy geometry 
-            var obBranchCollection = biTree.Branches;
-            var surfBranchCollection = siTree.Branches;
-            var newGeoList = new List<Brep>();
-            var surfValueCollection = new Grasshopper.DataTree<string>();
-            var obValueCollection = new Grasshopper.DataTree<string>();
-            int offset = 0;
-
-            for (int i = 0; i < obBranchCollection.Count(); i++)
-            {
-                var obSematics = obBranchCollection[i];
-
-                bool found = false;
-                string idxNum = obSematics[tempIdxObIdx].ToString();
-                Point3d anchorPoint = new Point3d(0, 0, 0);
-                if (!Point3d.TryParse(obSematics[anchorIdx].ToString(), out anchorPoint)) { continue; }
-
-                for (int j = 0; j < surfBranchCollection.Count(); j++)
+                else
                 {
-                    var surfSemantics = surfBranchCollection[j];
-
-                    if (idxNum != surfSemantics[tempIdxTempIdx].ToString()) // TODO: make a dictionary in advance
-                    {
-                        continue;
-                    }
-
-                    found = true;
-
-                    var nPath = new Grasshopper.Kernel.Data.GH_Path(offset);
-                    offset++;
-
-                    var surface = geoList[j].DuplicateBrep();
-                    surface.Translate(anchorPoint.X, anchorPoint.Y, anchorPoint.Z);
-                    newGeoList.Add(surface);
-
-                    surfValueCollection.Add(obSematics[nameIdx].ToString(), nPath);
-                    for (int k = 0; k < surfSemantics.Count(); k++)
-                    {
-                        if (k == tempIdxTempIdx)
-                        {
-                            continue;
-                        }
-
-                        surfValueCollection.Add(surfSemantics[k].ToString(), nPath);
-                    }
-
+                    dataLookup.Add(surfaceInfo.Value.getTemplateIdx(), new List<Types.GHObjectInfo>());
+                    geometryLookup.Add(surfaceInfo.Value.getTemplateIdx(), new List<Brep>());
+                    dataLookup[surfaceInfo.Value.getTemplateIdx()].Add(surfaceInfo);
+                    geometryLookup[surfaceInfo.Value.getTemplateIdx()].Add(geoList[i]);
                 }
-                if (found)
+                
+            }
+
+            List<Brep> newGeoList = new List<Brep>();
+            List<Types.GHObjectInfo> newObjectList = new List<Types.GHObjectInfo>();
+            List<Types.GHObjectInfo> newSurfaceList = new List<Types.GHObjectInfo>();
+
+            int uniqueCounter = 0;
+            foreach (var objectInfo in objectInfoList)
+            {
+                if (!dataLookup.ContainsKey(objectInfo.Value.getTemplateIdx())) { continue;  }
+                Vector3d translation = new Vector3d(objectInfo.Value.getAnchor());
+
+                var geoLookupValue = geometryLookup[objectInfo.Value.getTemplateIdx()];
+                var surfLookupValue = dataLookup[objectInfo.Value.getTemplateIdx()];
+
+                for (int i = 0; i < geoLookupValue.Count; i++)
                 {
-                    var obPath = new Grasshopper.Kernel.Data.GH_Path(i);
-                    for (int j = 0; j < obSematics.Count; j++)
-                    {
-                        if (j == anchorIdx || j == tempIdxObIdx)
-                        {
-                            continue;
-                        }
+                    var geoInfo = geoLookupValue[i];
+                    var surfInfo = surfLookupValue[i];
 
-                        obValueCollection.Add(obSematics[j].ToString(), obPath);
-                    }
+                    string surfaceName = objectInfo.Value.getName() + "-" + uniqueCounter;
+
+                    Brep geoInfoCopy = geoInfo.DuplicateBrep();
+                    geoInfoCopy.Translate(translation);
+                    geoInfoCopy.SetUserString("_Geoname", surfaceName);
+                    geoInfoCopy.SetUserString("_ObjName", objectInfo.Value.getName());
+
+                    newGeoList.Add(geoInfoCopy);
+
+                    var objectInfoObject =
+                            new Types.ObjectInfo(
+                           objectInfo.Value.getName() + "-" + uniqueCounter,
+                           surfInfo.Value.getGeoType(),
+                           surfInfo.Value.getLod(),
+                           "",
+                           objectInfo.Value.getName(),
+                           surfInfo.Value.getOtherData()
+                           );
+
+                    newSurfaceList.Add(new Types.GHObjectInfo(objectInfoObject));
+                    uniqueCounter++;
                 }
-            }
 
-            // clean key lists
-            sKeys.RemoveAt(tempIdxTempIdx);
-            sKeys.Insert(0, "Object Name");
-
-            if (anchorIdx > tempIdxTempIdx)
-            {
-                bKeys.RemoveAt(anchorIdx);
-                bKeys.RemoveAt(tempIdxObIdx);
+                newObjectList.Add(new Types.GHObjectInfo(
+                    new Types.ObjectInfo(
+                    objectInfo.Value.getName(),
+                    objectInfo.Value.getObjectType(),
+                    objectInfo.Value.getParents(),
+                    objectInfo.Value.getChildren(),
+                    objectInfo.Value.getOtherData()
+                ))) ;
             }
-            else
-            {
-                bKeys.RemoveAt(tempIdxObIdx);
-                bKeys.RemoveAt(anchorIdx);
-            }
-
             DA.SetDataList(0, newGeoList);
-            DA.SetDataList(1, sKeys);
-            DA.SetDataTree(2, surfValueCollection);
-            DA.SetDataList(3, bKeys);
-            DA.SetDataTree(4, obValueCollection);
-
+            DA.SetDataList(1, newSurfaceList);
+            DA.SetDataList(2, newObjectList);
         }
 
         protected override System.Drawing.Bitmap Icon

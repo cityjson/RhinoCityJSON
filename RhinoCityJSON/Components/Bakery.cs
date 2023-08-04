@@ -18,9 +18,8 @@ namespace RhinoCityJSON.Components
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddBrepParameter("Geometry", "G", "Geometry Input", GH_ParamAccess.list);
-            pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Surface Info", "SiV", "Semantic information output related to the surfaces", GH_ParamAccess.tree);
-            pManager.AddGenericParameter("Materials", "M", "The material information", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Surface Info", "mSi", "Semantic information", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Materials", "M", "Material information", GH_ParamAccess.list);
             pManager.AddBooleanParameter("Activate", "A", "Activate bakery", GH_ParamAccess.item, false);
             pManager[0].Optional = true;
             pManager[1].Optional = true;
@@ -35,11 +34,11 @@ namespace RhinoCityJSON.Components
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             bool boolOn = false;
-            var keyList = new List<string>();
+            List<Types.GHObjectInfo> surfaceInfo = new List<Types.GHObjectInfo>();
             var brepList = new List<Brep>();
             var materialList = new List<Types.GHMaterial>();
 
-            DA.GetData(4, ref boolOn);
+            DA.GetData(3, ref boolOn);
 
             if (!boolOn)
             {
@@ -48,9 +47,8 @@ namespace RhinoCityJSON.Components
             }
 
             DA.GetDataList(0, brepList);
-            DA.GetDataList(1, keyList);
-            DA.GetDataTree(2, out Grasshopper.Kernel.Data.GH_Structure<Grasshopper.Kernel.Types.IGH_Goo> siTree);
-            DA.GetDataList(3, materialList);
+            DA.GetDataList(1, surfaceInfo);
+            DA.GetDataList(2, materialList);
 
             if (brepList.Count == 0)
             {
@@ -64,81 +62,23 @@ namespace RhinoCityJSON.Components
                 return;
             }
 
-            if (siTree.DataCount == 0)
+            if (surfaceInfo.Count == 0)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No Surface information input supplied");
                 return;
             }
+
+
+            if (!BakerySupport.hasBuildingData(surfaceInfo))
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No Building data can be detected, make sure you have used the info manager to merge data");
+                //return;
+            }
+
 
             var lodList = new List<string>();
             var lodTypeDictionary = new Dictionary<string, List<string>>();
             var lodSurfTypeDictionary = new Dictionary<string, List<string>>();
-
-            IList<List<Grasshopper.Kernel.Types.IGH_Goo>> branchCollection = siTree.Branches;
-
-            if (branchCollection.Count == 0)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No Surface information input supplied");
-                return;
-            }
-            if (brepList.Count != branchCollection.Count)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Geo and Surface information input do not comply");
-                return;
-            }
-
-            // get LoD and typelist
-            int lodIdx = -1;
-            int typeIdx = -1;
-            int nameIdx = -1;
-            int surfTypeIdx = -1;
-            List<int> materialNames = new List<int>();
-            for (int i = 0; i < keyList.Count; i++)
-            {
-                if (keyList[i].ToLower() == "geometry lod")
-                {
-                    lodIdx = i;
-                }
-                else if (keyList[i].ToLower() == "object type")
-                {
-                    typeIdx = i;
-                }
-                else if (keyList[i].ToLower() == "object name")
-                {
-                    nameIdx = i;
-                }
-                else if (keyList[i].ToLower() == "surface type")
-                {
-                    surfTypeIdx = i;
-                }
-                else if (keyList[i].ToLower().Split(' ')[0] == "surface" && keyList[i].ToLower().Split(' ')[1] == "material")
-                {
-                    materialNames.Add(i);
-                }
-            }
-
-            if (lodIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No LoD data is supplied");
-                return;
-            }
-
-            if (typeIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No Object type data is supplied");
-                return;
-            }
-
-            if (nameIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No Object name data is supplied");
-                return;
-            }
-
-            if (surfTypeIdx == -1)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No Surface type data is supplied");
-            }
 
             // create layers
             var lodId = new Dictionary<string, System.Guid>();
@@ -146,10 +86,7 @@ namespace RhinoCityJSON.Components
             var surId = new Dictionary<string, Dictionary<string, int>>();
             BakerySupport.createLayers(
                 "RCJ output",
-                lodIdx,
-                typeIdx,
-                surfTypeIdx,
-                branchCollection,
+                surfaceInfo,
                 ref lodId,
                 ref typId,
                 ref surId
@@ -170,16 +107,16 @@ namespace RhinoCityJSON.Components
             }
 
             // bake geo
-            var groupName = branchCollection[0][nameIdx].ToString() + branchCollection[0][lodIdx].ToString();
-            activeDoc.Groups.Add("LoD: " + branchCollection[0][lodIdx].ToString() + " - " + branchCollection[0][nameIdx].ToString());
+            var groupName = surfaceInfo[0].Value.getName() + surfaceInfo[0].Value.getLod();
+            activeDoc.Groups.Add("LoD: " + surfaceInfo[0].Value.getName() + " - " + surfaceInfo[0].Value.getLod());
             var groupId = activeDoc.Groups.Add(groupName);
             activeDoc.Groups.FindIndex(groupId).Name = groupName;
 
             var potetialGroupList = new List<System.Guid>();
 
-            for (int i = 0; i < branchCollection.Count; i++)
+            for (int i = 0; i < surfaceInfo.Count; i++)
             {
-                if (groupName != branchCollection[i][nameIdx].ToString() + branchCollection[i][lodIdx].ToString())
+                if (groupName != surfaceInfo[i].Value.getName() + surfaceInfo[i].Value.getLod())
                 {
                     if (potetialGroupList.Count > 1)
                     {
@@ -190,47 +127,86 @@ namespace RhinoCityJSON.Components
                     }
                     potetialGroupList.Clear();
 
-                    groupName = branchCollection[i][nameIdx].ToString() + branchCollection[i][lodIdx].ToString();
-                    groupId = activeDoc.Groups.Add("LoD: " + branchCollection[i][lodIdx].ToString() + " - " + branchCollection[i][nameIdx].ToString());
+                    groupName = surfaceInfo[i].Value.getName() + surfaceInfo[i].Value.getLod();
+                    groupId = activeDoc.Groups.Add("LoD: " + surfaceInfo[i].Value.getName() + " - " + surfaceInfo[i].Value.getLod());
                 }
 
                 var targetBrep = brepList[i];
-                string lod = branchCollection[i][lodIdx].ToString();
-                string bType = BakerySupport.getParentName(branchCollection[i][typeIdx].ToString());
+                string lod = surfaceInfo[i].Value.getLod();
+                string bType = BakerySupport.getParentName(surfaceInfo[i].Value.getObjectType());
+
 
                 string sType = "None";
-                if (surfTypeIdx != -1)
+                if (surfaceInfo[i].Value.getOtherData().ContainsKey("Surface type"))
                 {
-                    sType = branchCollection[i][surfTypeIdx].ToString();
+                    sType = surfaceInfo[i].Value.getOtherData()["Surface type"];
                 }
 
                 // create object attributes
                 Rhino.DocObjects.ObjectAttributes objectAttributes = new Rhino.DocObjects.ObjectAttributes();
-                objectAttributes.Name = branchCollection[i][nameIdx].ToString() + " - " + i;
+                var surfaceValues = surfaceInfo[i].Value;
+                objectAttributes.Name = surfaceValues.getName() + " - " + i;
+                objectAttributes.SetUserString("Object Name", surfaceValues.getName());
+                objectAttributes.SetUserString("Object Type", surfaceValues.getObjectType());
+                objectAttributes.SetUserString("LoD", surfaceValues.getLod());
+                objectAttributes.SetUserString("Geometry Name", surfaceValues.getGeoName());
+                objectAttributes.SetUserString("Geometry Type", surfaceValues.getGeoType());
 
-                // bind material to object
-                if (materialNames.Count > 0 && materialIdx.Count > 0)
+                if (surfaceInfo[i].Value.getParents().Count() > 0)
                 {
-                    string materialString = branchCollection[i][materialNames[0]].ToString();
+                    string combinatedString = "";
+                    for (int j = 0; j < surfaceInfo[i].Value.getParents().Count(); j++)
+                    {
+                        if (surfaceInfo[i].Value.getParents().Count() - 1 == j)
+                        {
+                            combinatedString += surfaceValues.getParents()[j];
+                            continue;
+                        }
+                        combinatedString += surfaceValues.getParents()[j] + ", ";
+                    }
+                    objectAttributes.SetUserString("Parents", combinatedString);
+                }
+
+                if (surfaceInfo[i].Value.getChildren().Count() > 0)
+                {
+                    string combinatedString = "";
+                    for (int j = 0; j < surfaceInfo[i].Value.getChildren().Count(); j++)
+                    {
+                        if (surfaceInfo[i].Value.getChildren().Count() - 1 == j)
+                        {
+                            combinatedString += surfaceValues.getChildren()[j];
+                            continue;
+                        }
+                        combinatedString += surfaceValues.getChildren()[j] + ", ";
+                    }
+                    objectAttributes.SetUserString("Children", combinatedString);
+                }
+
+                if (materialIdx.Count > 0)
+                {
+                    KeyValuePair<string, string> materialPair = surfaceInfo[i].Value.getMaterial();
+                    string materialString = materialPair.Value;
                     if (materialString != DefaultValues.defaultNoneValue)
                     {
-                        int materalNum = Int32.Parse(branchCollection[i][materialNames[0]].ToString());
+                        int materalNum = Int32.Parse(materialString);
                         objectAttributes.MaterialIndex = materialIdx[materalNum];
                         objectAttributes.MaterialSource = Rhino.DocObjects.ObjectMaterialSource.MaterialFromObject;
                     }
                 }
+                
 
-                for (int j = 0; j < branchCollection[i].Count; j++)
+                var otherData = surfaceInfo[i].Value.getOtherData();
+
+                foreach (var pair in otherData)
                 {
-                    string fullName = branchCollection[i][j].ToString();
-                    objectAttributes.SetUserString(keyList[j], fullName);
+                    objectAttributes.SetUserString(pair.Key, pair.Value);
                 }
 
                 if (bType != "Building")
                 {
                     objectAttributes.LayerIndex = typId[lod][bType];
                 }
-                else if (sType == "None" || surfTypeIdx == -1)
+                else if (sType == "None")
                 {
                     objectAttributes.LayerIndex = typId[lod][bType];
                 }

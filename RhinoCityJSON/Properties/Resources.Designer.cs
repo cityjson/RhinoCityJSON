@@ -63,6 +63,16 @@ namespace RhinoCityJSON.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        public static System.Drawing.Bitmap addAttribute {
+            get {
+                object obj = ResourceManager.GetObject("addAttribute", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         public static System.Drawing.Bitmap bakeryicon {
             get {
                 object obj = ResourceManager.GetObject("bakeryicon", resourceCulture);
@@ -136,6 +146,16 @@ namespace RhinoCityJSON.Properties {
         public static System.Drawing.Bitmap readericon {
             get {
                 object obj = ResourceManager.GetObject("readericon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        public static System.Drawing.Bitmap removeAttribute {
+            get {
+                object obj = ResourceManager.GetObject("removeAttribute", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
