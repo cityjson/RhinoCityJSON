@@ -63,7 +63,7 @@ namespace RhinoCityJSON.Components
             Point3d worldOrigin = new Point3d(0, 0, 0);
             bool translate = false;
             double rotationAngle = 0;
-            Box domainBox = new Box();
+            Brep domainBox = new Brep();
 
             if (settingsList.Count() > 0)
             {
@@ -78,10 +78,8 @@ namespace RhinoCityJSON.Components
             }
 
             // find out if domain has to be filtered
-            Point3d lll = domainBox.PointAt(0, 0, 0);
-            Point3d urr = domainBox.PointAt(1, 1, 1);
             bool filterDomain = true;
-            if (lll.Equals(urr)) { filterDomain = false; }
+            if (domainBox.GetArea() == 0) { filterDomain = false; }
 
             // get scale from current session
             double scaler = ReaderSupport.getDocScaler();
@@ -211,7 +209,7 @@ namespace RhinoCityJSON.Components
 
                         if (filterDomain)
                         {
-                            if (domainBox.Contains(LocationList[pointIdx], true))
+                            if (domainBox.IsPointInside(LocationList[pointIdx], 0.01, true))
                             {
                                 cityObject.addTemplate(templateIdx, LocationList[pointIdx]);
                             }

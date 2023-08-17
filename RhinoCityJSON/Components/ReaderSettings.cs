@@ -18,7 +18,7 @@ namespace RhinoCityJSON.Components
             pManager.AddBooleanParameter("Translate", "T", "Translate according to the stored translation vector", GH_ParamAccess.item, false);
             pManager.AddPointParameter("Model origin", "O", "The Origin of the model. This coordiante will be set as the {0,0,0} point for the imported JSON", GH_ParamAccess.list);
             pManager.AddNumberParameter("True north", "Tn", "The direction of the true north", GH_ParamAccess.list, 0.0);
-            pManager.AddBoxParameter("Domain", "D", "The domain within objects should be located to be loaded (disabled for Document Reader)", GH_ParamAccess.list);
+            pManager.AddGeometryParameter("Domain", "D", "The domain within objects should be located to be loaded (disabled for Document Reader)", GH_ParamAccess.list);
             pManager.AddTextParameter("LoD", "L", "Desired Lod, keep empty for all (disabled for Document Reader)", GH_ParamAccess.list, "");
 
             pManager[1].Optional = true; // origin is optional
@@ -39,8 +39,8 @@ namespace RhinoCityJSON.Components
             var north = 0.0;
             var northList = new List<double>();
             var loDList = new List<string>();
-            var domainList = new List<Rhino.Geometry.Box>();
-            var domain = new Rhino.Geometry.Box();
+            var domainList = new List<Rhino.Geometry.Brep>();
+            var domain = new Rhino.Geometry.Brep();
 
             DA.GetData(0, ref translate);
             DA.GetDataList(1, pList);

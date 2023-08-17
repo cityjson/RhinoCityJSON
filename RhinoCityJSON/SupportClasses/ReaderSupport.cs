@@ -92,7 +92,7 @@ namespace RhinoCityJSON
             return vertList;
         }
 
-        static public bool CheckInDomain(dynamic boundaries, List<Point3d> pointList, double scaler, Box domainBox)
+        static public bool CheckInDomain(dynamic boundaries, List<Point3d> pointList, double scaler, Brep domainBox)
         {
             if (boundaries[0][0].Type == Newtonsoft.Json.Linq.JTokenType.Integer)
             {
@@ -102,7 +102,7 @@ namespace RhinoCityJSON
                     {
                         Point3d p = pointList[idx];
 
-                        if (domainBox.Contains(p, true))
+                        if (domainBox.IsPointInside(p, 0.01, true))
                         {
                             return true;
                         }
@@ -192,7 +192,7 @@ namespace RhinoCityJSON
            ref Point3d worldOrigin,
            ref bool translate,
            ref double rotationAngle,
-           ref Box domainbox
+           ref Brep domainbox
            )
         {
             getSettings(ghSettings,

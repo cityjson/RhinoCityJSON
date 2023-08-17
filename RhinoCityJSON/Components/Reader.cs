@@ -82,7 +82,7 @@ namespace RhinoCityJSON.Components
             Point3d worldOrigin = new Point3d(0, 0, 0);
             bool translate = false;
             double rotationAngle = 0;
-            Box domainBox = new Box();
+            Brep domainBox = new Brep();
 
             if (settingsList.Count() > 0)
             {
@@ -103,10 +103,8 @@ namespace RhinoCityJSON.Components
             }
 
             // find out if domain has to be filtered
-            Point3d lll = domainBox.PointAt(0, 0, 0);
-            Point3d urr = domainBox.PointAt(1, 1, 1);
             bool filterDomain = true;
-            if (lll.Equals(urr)) { filterDomain = false; }
+            if (domainBox.GetArea() == 0) { filterDomain = false; }
 
             // hold translation value
             Vector3d firstTranslation = new Vector3d(0, 0, 0);
