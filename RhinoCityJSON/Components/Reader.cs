@@ -145,10 +145,14 @@ namespace RhinoCityJSON.Components
                 if (isFirst)
                 { // compute the translation of every object
                     var firstTransformationData =  Jcity.metadata.geographicalExtent;
-                    isFirst = false;
-                    firstTranslation.X = -(double) firstTransformationData[0];
-                    firstTranslation.Y = -(double) firstTransformationData[1];
-                    firstTranslation.Z = -(double) firstTransformationData[2];
+
+                    if (firstTransformationData != null)
+                    {
+                        isFirst = false;
+                        firstTranslation.X = -(double)firstTransformationData[0];
+                        firstTranslation.Y = -(double)firstTransformationData[1];
+                        firstTranslation.Z = -(double)firstTransformationData[2];
+                    }
                 }
 
                 // get vertices stored in a tile
