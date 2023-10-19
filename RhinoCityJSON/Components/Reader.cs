@@ -142,7 +142,7 @@ namespace RhinoCityJSON.Components
             {
                 if (isFirst)
                 { // compute the translation of every object
-                    var firstTransformationData =  Jcity.metadata.geographicalExtent;
+                    var firstTransformationData =  Jcity.transform.translate;
 
                     if (firstTransformationData != null)
                     {

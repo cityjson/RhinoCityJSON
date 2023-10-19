@@ -96,9 +96,18 @@ namespace RhinoCityJSON.Components
 
             var domainList = new List<Rhino.Geometry.Box>();
 
+            // get scale from current session
+            double scaler = ReaderSupport.getDocScaler();
+            if (scaler == -1)
+            {
+                scaler = 1;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noScale]);
+            }
+
             // hold translation value
-            Rhino.Geometry.Vector3d firstTranslation = new Rhino.Geometry.Vector3d(0, 0, 0);
+            Rhino.Geometry.Vector3d lllExtend = new Rhino.Geometry.Vector3d(0, 0, 0);
             bool isFirst = true;
+
 
             foreach (var path in pathList)
             {
@@ -112,78 +121,98 @@ namespace RhinoCityJSON.Components
                 }
 
                 // fetch metadata
-                if (Jcity.metadata != null)
+                if (Jcity.metadata == null)
                 {
-                    bool hasExtend = false;
-                    foreach (Newtonsoft.Json.Linq.JProperty metaGroup in Jcity.metadata)
-                    {
-                        var metaValue = metaGroup.Value;
-                        var metaName = metaGroup.Name;
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMetaDataFound]);
+                    return;
+                }
 
-                        if (metaValue.Count() == 0)
-                        {
-                            metadata.Add(metaName.ToString(), metaValue.ToString());
-                        }
-                        else
-                        {
-                            if (metaName.ToString() == "geographicalExtent" && metaValue.Count() == 6)
-                            {
-                                Rhino.Geometry.Box domain = new Rhino.Geometry.Box();
-                                if (!translate) 
-                                {
-                                    if (isFirst)
-                                    { // compute the translation of every object
-                                        isFirst = false;
-                                        firstTranslation.X = -(double)metaValue[0];
-                                        firstTranslation.Y = -(double)metaValue[1];
-                                        firstTranslation.Z = -(double)metaValue[2];
-                                    }
+                if (!Jcity.ContainsKey("transform"))
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMetaDataFound]);
+                    return;
+                }
+                var translationObject = Jcity.transform;
 
-                                    Rhino.Geometry.BoundingBox bbox = new Rhino.Geometry.BoundingBox(
-                                        (double)metaValue[0] + firstTranslation.X, (double)metaValue[1] + firstTranslation.Y, (double)metaValue[2] + firstTranslation.Z,
-                                        (double)metaValue[3] + firstTranslation.X, (double)metaValue[4] + firstTranslation.Y, (double)metaValue[5] + firstTranslation.Z
-                                        );
-                                    domain = new Rhino.Geometry.Box(bbox);
-                                }
-                                else
-                                {
-                                    Rhino.Geometry.BoundingBox bbox = new Rhino.Geometry.BoundingBox(
-                                        (double)metaValue[0], (double)metaValue[1], (double)metaValue[2],
-                                        (double)metaValue[3], (double)metaValue[4], (double)metaValue[5]
-                                        );
-                                    domain = new Rhino.Geometry.Box(bbox);
-                                }
+                if (!translationObject.ContainsKey("translate"))
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMetaDataFound]);
+                    return;
+                }
 
-                                Transform translateTransform = Transform.Translation(new Vector3d(-worldOrigin.X, -worldOrigin.Y, -worldOrigin.Z));
-                                Transform rotateTransform = Transform.Rotation(rotationAngle, new Point3d(0, 0, 0));
+                var translationtransObject = translationObject.translate;
+                var metaData = Jcity.metadata;
 
-                                domain.Transform(translateTransform);
-                                domain.Transform(rotateTransform);
+                if (!metaData.ContainsKey("geographicalExtent"))
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMetaDataFound]);
+                    return;
+                }
 
-                                domainList.Add(domain);
-                                hasExtend = true;
-                            }
-                            else
-                            {
-                                if (metaValue.Type == Newtonsoft.Json.Linq.JTokenType.Array) { continue; }
-                                foreach (Newtonsoft.Json.Linq.JProperty nestedMetaValue in metaValue)
-                                {
-                                    metadata.Add(metaName.ToString() + " " + nestedMetaValue.Name.ToString(), nestedMetaValue.Value.ToString());
-                                }
-                            }
-                        }
+                var geoExtendObject = metaData.geographicalExtent;
 
+                Rhino.Geometry.Box domain = new Rhino.Geometry.Box();
+                if (!translate)
+                {
+                    if (isFirst)
+                    { // compute the translation of every object
+                        isFirst = false;
+                        lllExtend.X = -(double)translationtransObject[0];
+                        lllExtend.Y = -(double)translationtransObject[1];
+                        lllExtend.Z = -(double)translationtransObject[2];
                     }
-                    if (!hasExtend)
-                    {
-                        domainList.Add(new Rhino.Geometry.Box());
-                    }
-                    nestedMetaData.Add(metadata);
+
+                    Rhino.Geometry.BoundingBox bbox = new Rhino.Geometry.BoundingBox(
+                        ((double)geoExtendObject[0] + lllExtend.X) * scaler,
+                        ((double)geoExtendObject[1] + lllExtend.Y) * scaler,
+                        ((double)geoExtendObject[2] + lllExtend.Z) * scaler,
+                        ((double)geoExtendObject[3] + lllExtend.X) * scaler,
+                        ((double)geoExtendObject[4] + lllExtend.Y) * scaler,
+                        ((double)geoExtendObject[5] + lllExtend.Z) * scaler
+                        );
+                    domain = new Rhino.Geometry.Box(bbox);
                 }
                 else
                 {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMetaDataFound]);
+                    Rhino.Geometry.BoundingBox bbox = new Rhino.Geometry.BoundingBox(
+                        (double)geoExtendObject[0] * scaler,
+                        (double)geoExtendObject[1] * scaler,
+                        (double)geoExtendObject[2] * scaler,
+                        (double)geoExtendObject[3] * scaler,
+                        (double)geoExtendObject[4] * scaler,
+                        (double)geoExtendObject[5] * scaler
+                        );
+                    domain = new Rhino.Geometry.Box(bbox);
                 }
+
+                Transform translateTransform = Transform.Translation(new Vector3d(-worldOrigin.X, -worldOrigin.Y, -worldOrigin.Z));
+                Transform rotateTransform = Transform.Rotation(rotationAngle, new Point3d(0, 0, 0));
+
+                domain.Transform(translateTransform);
+                domain.Transform(rotateTransform);
+
+                domainList.Add(domain);
+
+                foreach (Newtonsoft.Json.Linq.JProperty metaGroup in Jcity.metadata)
+                {
+                    var metaValue = metaGroup.Value;
+                    var metaName = metaGroup.Name;
+
+                    if (metaValue.Count() == 0)
+                    {
+                        metadata.Add(metaName.ToString(), metaValue.ToString());
+                    }
+                    else
+                    {
+                        if (metaValue.Type == Newtonsoft.Json.Linq.JTokenType.Array) { continue; }
+                        foreach (Newtonsoft.Json.Linq.JProperty nestedMetaValue in metaValue)
+                        {
+                            metadata.Add(metaName.ToString() + " " + nestedMetaValue.Name.ToString(), nestedMetaValue.Value.ToString());
+                        }
+                    }
+                }
+
+                nestedMetaData.Add(metadata);
 
                 // get materials
                 var appearance = Jcity.appearance;

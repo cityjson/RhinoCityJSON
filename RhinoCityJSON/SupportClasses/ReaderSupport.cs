@@ -19,7 +19,7 @@ namespace RhinoCityJSON
             dynamic Jcity,
             Vector3d firstTranslation,
             Point3d worldCenter,
-            double scaler,
+            double docScaler,
             double rotationAngle,
             bool translate,
             bool isTemplateSurf = false,
@@ -27,9 +27,9 @@ namespace RhinoCityJSON
             )
         {
 
-            double scaleX = scaler;
-            double scaleY = scaler;
-            double scaleZ = scaler;
+            double scaleX = docScaler;
+            double scaleY = docScaler;
+            double scaleZ = docScaler;
 
             if (!isTemplateSurf)
             {
@@ -42,15 +42,15 @@ namespace RhinoCityJSON
             Vector3d translation = new Vector3d();
             if (translate)
             {
-                translation.X = transformationData[0];
-                translation.Y = transformationData[1];
-                translation.Z = transformationData[2];
+                translation.X = transformationData[0] * docScaler;
+                translation.Y = transformationData[1] * docScaler;
+                translation.Z = transformationData[2] * docScaler;
             }
             else if (!isTemplateSurf && !isTemplateObb)
             {
-                translation.X = firstTranslation.X + (double)transformationData[0];
-                translation.Y = firstTranslation.Y + (double)transformationData[1];
-                translation.Z = firstTranslation.Z + (double)transformationData[2];
+                translation.X = (firstTranslation.X + (double)transformationData[0]) * docScaler;
+                translation.Y = (firstTranslation.Y + (double)transformationData[1]) * docScaler;
+                translation.Z = (firstTranslation.Z + (double)transformationData[2]) * docScaler;
             }
             else //TODO: matrix implementation
             {
