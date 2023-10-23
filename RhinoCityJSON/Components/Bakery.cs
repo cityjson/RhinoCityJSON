@@ -151,6 +151,7 @@ namespace RhinoCityJSON.Components
                 objectAttributes.SetUserString("LoD", surfaceValues.getLod());
                 objectAttributes.SetUserString("Geometry Name", surfaceValues.getGeoName());
                 objectAttributes.SetUserString("Geometry Type", surfaceValues.getGeoType());
+                objectAttributes.SetUserString("File Source", surfaceValues.getOriginalFileName());
 
                 if (surfaceInfo[i].Value.getParents().Count() > 0)
                 {

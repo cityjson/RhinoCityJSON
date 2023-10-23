@@ -138,8 +138,10 @@ namespace RhinoCityJSON.Components
             List<string> objectTypes = new List<string>();
             List<string> materialReferenceNames = new List<string>();
 
-            foreach (var Jcity in cityJsonCollection)
+            for (int i = 0; i < cityJsonCollection.Count; i++)
             {
+                var Jcity = cityJsonCollection[i];
+                
                 if (isFirst)
                 { // compute the translation of every object
                     var firstTransformationData =  Jcity.transform.translate;
@@ -175,6 +177,7 @@ namespace RhinoCityJSON.Components
                     cityObject.setParents(JCityObjectAttributes.parents);
                     cityObject.setChildren(JCityObjectAttributes.children);
                     cityObject.setAttributes(JCityObjectAttributesAttributes);
+                    cityObject.setOriginalFileName(pathList[i]);
 
                     if (JCityObjectAttributes.geometry == null)
                     {
@@ -252,12 +255,6 @@ namespace RhinoCityJSON.Components
             objectTypes = objectTypes.Distinct().ToList();
             materialReferenceNames = materialReferenceNames.Distinct().ToList();
 
-            List<string> surfaceKeyList = new List<string>();
-            ReaderSupport.populateSurfaceKeys(ref surfaceKeyList, surfaceTypes, materialReferenceNames);
-
-            List<string> objectKeyList = new List<string>();
-            ReaderSupport.populateObjectKeys(ref objectKeyList, objectTypes);
-
             // flatten data for grasshopper output
             List<Brep> flatSurfaceList = new List<Brep>();
             List<Types.GHObjectInfo> objectDataList = new List<Types.GHObjectInfo>();
@@ -274,6 +271,7 @@ namespace RhinoCityJSON.Components
                     cityObject.getType(),
                     cityObject.getParents(),
                     cityObject.getChildren(),
+                    cityObject.getOriginalFileName(),
                     additionalObjectData
                 )));
 
@@ -307,8 +305,9 @@ namespace RhinoCityJSON.Components
                             surfaceName,
                             geoType,
                             geoLoD,
-                            "",
+                            "",               
                             cityObject.getName(),
+                            cityObject.getOriginalFileName(),
                             additionalSurfaceData
                             );
 

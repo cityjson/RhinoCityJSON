@@ -85,6 +85,7 @@ namespace RhinoCityJSON.Components
                 currentSurfaceDataObject.Value.setObjectType(currentBuildingDataObject.Value.getObjectType());
                 currentSurfaceDataObject.Value.setParents(currentBuildingDataObject.Value.getParents());
                 currentSurfaceDataObject.Value.setChildren(currentBuildingDataObject.Value.getChildren());
+                currentSurfaceDataObject.Value.setOriginalFileName(currentBuildingDataObject.Value.getOriginalFileName());
                 currentSurfaceDataObject.Value.setIsObject(true);
 
                 var otherBuildingData = currentBuildingDataObject.Value.getOtherData();

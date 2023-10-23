@@ -114,8 +114,10 @@ namespace RhinoCityJSON.Components
             int uniqueCounter = 0;
             int templateBuffer = 0;
 
-            foreach (var Jcity in cityJsonCollection)
+            for (int i = 0; i < cityJsonCollection.Count; i++)
             {
+                var Jcity = cityJsonCollection[i];
+
                 if (Jcity["geometry-templates"] == null) { continue;}
 
                 // get vertices stored in a tile
@@ -191,6 +193,7 @@ namespace RhinoCityJSON.Components
                     cityObject.setParents(JCityObjectAttributes.parents);
                     cityObject.setChildren(JCityObjectAttributes.children);
                     cityObject.setAttributes(JCityObjectAttributesAttributes);
+                    cityObject.setOriginalFileName(pathList[i]);
 
                     if (JCityObjectAttributes.geometry == null)
                     {
@@ -286,6 +289,7 @@ namespace RhinoCityJSON.Components
                         cityObject.getTemplate().getAnchor(),
                         cityObject.getParents(),
                         cityObject.getChildren(),
+                        cityObject.getOriginalFileName(),
                         additionalObjectData
                     )));
                 }

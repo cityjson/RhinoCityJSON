@@ -122,6 +122,7 @@ namespace RhinoCityJSON.Components
                            surfInfo.Value.getLod(),
                            "",
                            objectInfo.Value.getName(),
+                           objectInfo.Value.getOriginalFileName(),
                            surfInfo.Value.getOtherData()
                            );
 
@@ -135,6 +136,7 @@ namespace RhinoCityJSON.Components
                     objectInfo.Value.getObjectType(),
                     objectInfo.Value.getParents(),
                     objectInfo.Value.getChildren(),
+                    objectInfo.Value.getOriginalFileName(),
                     objectInfo.Value.getOtherData()
                 ))) ;
             }

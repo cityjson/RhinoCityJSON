@@ -268,6 +268,8 @@ namespace RhinoCityJSON.Components
                         objectAttributes.SetUserString("Children", combinatedString);
                     }
 
+                    objectAttributes.SetUserString("File Source", objInfo.Value.getOriginalFileName());
+
                     foreach (var pair in objInfo.Value.getOtherData())
                     {
                         objectAttributes.SetUserString(pair.Key, pair.Value);

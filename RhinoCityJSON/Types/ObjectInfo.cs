@@ -13,6 +13,8 @@ namespace RhinoCityJSON.Types
         List<string> objectParents_ = new List<string>();
         List<string> objectChildren_ = new List<string>();
 
+        string originFileName_ = "";
+
         // data for templates
         int templateIdx_;
         Point3d templateObjectAnchor_;
@@ -42,6 +44,7 @@ namespace RhinoCityJSON.Types
             objectType_ = other.objectType_;
             objectParents_ = other.objectParents_;
             objectChildren_ = other.objectChildren_;
+            originFileName_ = other.originFileName_;
             templateIdx_ = other.templateIdx_;
             templateObjectAnchor_ = other.templateObjectAnchor_;
             surfaceGeoName_ = other.surfaceGeoName_;
@@ -60,6 +63,7 @@ namespace RhinoCityJSON.Types
             string type,
             List<string> parents,
             List<string> children,
+            string originFileName,
             Dictionary<string, string> otherData
             )
         {
@@ -68,6 +72,7 @@ namespace RhinoCityJSON.Types
             objectType_ = type;
             objectParents_ = parents;
             objectChildren_ = children;
+            originFileName_ = originFileName;
             otherData_ = otherData;
         }
 
@@ -78,12 +83,14 @@ namespace RhinoCityJSON.Types
             Point3d anchor,
             List<string> parents,
             List<string> children,
+            string originFileName,
             Dictionary<string, string> otherData
             )
         {
             isTemplate_ = true;
             objectName_ = name;
             objectType_ = type;
+            originFileName_ = originFileName;
             templateIdx_ = templateIdx;
             templateObjectAnchor_ = anchor;
             objectParents_ = parents;
@@ -97,6 +104,7 @@ namespace RhinoCityJSON.Types
             string lod,
             string surfaceType,
             string parentName,
+            string originFileName,
             Dictionary<string, string> otherData
             )
         {
@@ -106,6 +114,7 @@ namespace RhinoCityJSON.Types
             surfaceLod_ = lod;
             surfaceType_ = surfaceType;
             objectName_ = parentName;
+            originFileName_ = originFileName;
             otherData_ = otherData;
         }
 
@@ -136,6 +145,8 @@ namespace RhinoCityJSON.Types
         public void setParents(List<string> parents) { objectParents_ = parents; }
         public List<string> getChildren() { return objectChildren_; }
         public void setChildren(List<string> children) { objectChildren_ = children; }
+        public string getOriginalFileName() { return originFileName_; }
+        public void setOriginalFileName(string name) { originFileName_ = name; }
         public void addMaterial(string materialName, string MaterialIdx)
         {
             materialIdxPair_ = new KeyValuePair<string, string>(materialName, MaterialIdx);

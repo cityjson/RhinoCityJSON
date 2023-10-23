@@ -285,6 +285,7 @@ namespace RhinoCityJSON
             bool isTemplated_ = false;
             TemplateObject templateObb_; // TODO: allow for multiple templates 
 
+            string originFileName_ = "";
 
             bool hasGeo_ = false;
             bool isParent_ = false;
@@ -292,11 +293,9 @@ namespace RhinoCityJSON
             bool hasAttributes_ = false;
             bool isFilteredOut_ = false;
 
-
             Dictionary<string, dynamic> attributes_ = new Dictionary<string, dynamic>();
             List<string> parentList_ = new List<string>();
             List<string> childList_ = new List<string>();
-
 
             public string getName() { return name_; }
             public void setName(string name) { name_ = validifyString(name); }
@@ -311,6 +310,11 @@ namespace RhinoCityJSON
             }
 
             public TemplateObject getTemplate() { return templateObb_; }
+            public void setOriginalFileName(string path)
+            {
+                originFileName_ = System.IO.Path.GetFileName(path);
+            }
+            public string getOriginalFileName() { return originFileName_; }
             public Dictionary<string, dynamic> getAttributes() { return attributes_; }
             public bool hasGeo() { return hasGeo_; }
             public void setHasGeo(bool hasGeo) { hasGeo_ = hasGeo; }
