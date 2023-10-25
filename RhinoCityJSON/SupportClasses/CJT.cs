@@ -216,10 +216,9 @@ namespace RhinoCityJSON
                     else
                     {
                         Rhino.Collections.CurveList surfaceCurves = ringSet.getPolyStructure(vertList);
-
                         if (surfaceCurves.Count > 0)
                         {
-                            Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 0.1 * scaler);
+                            Rhino.Geometry.Brep[] planarFace = Brep.CreatePlanarBreps(surfaceCurves, 1e-2);
                             surfaceCurves.Clear();
                             if (planarFace != null)
                             {

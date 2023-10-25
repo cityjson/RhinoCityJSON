@@ -11,7 +11,7 @@ namespace RhinoCityJSON.Components
         public removeAtrribute()
           : base("Atribute Remover", "Remove",
               "Removes an attribute from the object info",
-              "RhinoCityJSON", "Processing")
+              "RhinoCityJSON", DefaultValues.defaultManagerFolder)
         {
         }
 

@@ -12,7 +12,7 @@ namespace RhinoCityJSON.Components
         public RhinoTemplateJSONReader()
           : base("Reader Templates", "TReader",
               "Reads the template data stored in a CityJSON file",
-              "RhinoCityJSON", "Reading")
+              "RhinoCityJSON", DefaultValues.defaultReaderFolder)
         {
         }
 

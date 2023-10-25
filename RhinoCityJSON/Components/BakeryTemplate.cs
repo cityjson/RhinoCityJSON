@@ -11,7 +11,7 @@ namespace RhinoCityJSON.Components
         public BakeryTemplate()
           : base("Template Bakery", "TBakery",
               "Bakes the template data to Rhino",
-              "RhinoCityJSON", "Baking")
+              "RhinoCityJSON", DefaultValues.defaultbakingFolder)
         {
         }
 

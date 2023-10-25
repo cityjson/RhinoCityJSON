@@ -13,7 +13,7 @@ namespace RhinoCityJSON.Components
         public ReaderDoc()
           : base("Reader Documents", "DReader",
               "Fetches the Metadata, Textures and Materials from a CityJSON file, Autoresolves when multiple inputs",
-              "RhinoCityJSON", "Reading")
+              "RhinoCityJSON", DefaultValues.defaultReaderFolder)
         {
         }
 

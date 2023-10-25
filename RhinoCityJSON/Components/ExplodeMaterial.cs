@@ -12,7 +12,7 @@ namespace RhinoCityJSON.Components
         public ExplodeMaterial()
           : base("Explode Material", "!Material",
               "Decomposits a material to its components",
-              "RhinoCityJSON", "Processing")
+              "RhinoCityJSON", DefaultValues.defaultManagerFolder)
         {
         }
 

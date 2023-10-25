@@ -9,7 +9,7 @@ namespace RhinoCityJSON.Components
         public ReaderSettings()
           : base("Settings Reader", "RSettings",
               "Sets the additional configuration for the Template and Document reader",
-              "RhinoCityJSON", "Reading")
+              "RhinoCityJSON", DefaultValues.defaultReaderFolder)
         {
         }
 

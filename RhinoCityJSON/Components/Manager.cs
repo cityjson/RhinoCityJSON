@@ -12,7 +12,7 @@ namespace RhinoCityJSON.Components
         public Manager()
           : base("Information manager", "IManage",
               "Filters the geometry based on the input semanic data and casts the building information to the surface information format to prepare for the bakery",
-              "RhinoCityJSON", "Processing")
+              "RhinoCityJSON", DefaultValues.defaultProcessingFolder)
         {
         }
 
@@ -65,36 +65,35 @@ namespace RhinoCityJSON.Components
             List<Types.GHObjectInfo> mergedSurfaceInfo = new List<Types.GHObjectInfo>();
 
             // make building dict
-            Dictionary<string, Types.GHObjectInfo> buildingDict = new Dictionary<string, Types.GHObjectInfo>();
+            Dictionary<string, Types.ObjectInfo> buildingDict = new Dictionary<string, Types.ObjectInfo>();
 
-            for (int i = 0; i < buildinInfo.Count; i++) { buildingDict.Add(buildinInfo[i].Value.getName(), buildinInfo[i]); }
+            for (int i = 0; i < buildinInfo.Count; i++) { buildingDict.Add(buildinInfo[i].Value.getName(), buildinInfo[i].Value); }
 
             for (int i = 0; i < surfaceInfo.Count; i++)
             {
                 var sourceSurfaceDataObject = surfaceInfo[i].Value;
+                var currentSurfaceDataObject = new Types.ObjectInfo(sourceSurfaceDataObject);
 
-                var currentSurfaceDataObject = new Types.GHObjectInfo(sourceSurfaceDataObject);
-
-                if (!buildingDict.ContainsKey(currentSurfaceDataObject.Value.getName()))
+                if (!buildingDict.ContainsKey(currentSurfaceDataObject.getName()))
                 {
                     continue;
                 }
 
-                var currentBuildingDataObject = buildingDict[currentSurfaceDataObject.Value.getName()];
+                var currentBuildingDataObject = buildingDict[currentSurfaceDataObject.getName()];
 
-                currentSurfaceDataObject.Value.setObjectType(currentBuildingDataObject.Value.getObjectType());
-                currentSurfaceDataObject.Value.setParents(currentBuildingDataObject.Value.getParents());
-                currentSurfaceDataObject.Value.setChildren(currentBuildingDataObject.Value.getChildren());
-                currentSurfaceDataObject.Value.setOriginalFileName(currentBuildingDataObject.Value.getOriginalFileName());
-                currentSurfaceDataObject.Value.setIsObject(true);
+                currentSurfaceDataObject.setObjectType(currentBuildingDataObject.getObjectType());
+                currentSurfaceDataObject.setParents(currentBuildingDataObject.getParents());
+                currentSurfaceDataObject.setChildren(currentBuildingDataObject.getChildren());
+                currentSurfaceDataObject.setOriginalFileName(currentBuildingDataObject.getOriginalFileName());
+                currentSurfaceDataObject.setIsObject(true);
 
-                var otherBuildingData = currentBuildingDataObject.Value.getOtherData();
+                var otherBuildingData = currentBuildingDataObject.getOtherData();
 
                 foreach (var otherPair in otherBuildingData)
                 {
-                    currentSurfaceDataObject.Value.addOtherData(otherPair.Key, otherPair.Value);
+                    currentSurfaceDataObject.addOtherData(otherPair.Key, otherPair.Value);
                 }
-                mergedSurfaceInfo.Add(currentSurfaceDataObject);
+                mergedSurfaceInfo.Add(new Types.GHObjectInfo(currentSurfaceDataObject));
             }
 
             // make a geoList
@@ -119,7 +118,6 @@ namespace RhinoCityJSON.Components
                     newGeoList.Add(geoList[i]);
                 }
             }
-
             DA.SetDataList(0, newGeoList);
             DA.SetDataList(1, mergedSurfaceInfo);
         }
@@ -128,7 +126,7 @@ namespace RhinoCityJSON.Components
         {
             get
             {
-                return RhinoCityJSON.Properties.Resources.divideicon;
+                return RhinoCityJSON.Properties.Resources.mergeicon;
             }
         }
 

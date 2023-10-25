@@ -10,7 +10,7 @@ namespace RhinoCityJSON.Components
         public AttributeSelector()
           : base("Attribute Selector", "Selector",
               "Fetches the required information form the object data",
-              "RhinoCityJSON", "Processing")
+              "RhinoCityJSON", DefaultValues.defaultManagerFolder)
         {
         }
 

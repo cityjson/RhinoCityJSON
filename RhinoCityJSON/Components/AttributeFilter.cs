@@ -10,7 +10,7 @@ namespace RhinoCityJSON.Components
         public AttributeFilter()
           : base("Attribute Filter", "Filter",
               "Filters objects from the object data",
-              "RhinoCityJSON", "Processing")
+              "RhinoCityJSON", DefaultValues.defaultManagerFolder)
         {
         }
 

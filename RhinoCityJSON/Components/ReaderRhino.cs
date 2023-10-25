@@ -8,8 +8,8 @@ namespace RhinoCityJSON.Components
     {
         public RhinoGeoReader()
           : base("RhinoCityJSONObject", "RCJObject",
-              "Fetches the attributes from an object",
-              "RhinoCityJSON", "Reading")
+              "Fetches the attributes from a rhino geo object",
+              "RhinoCityJSON", DefaultValues.defaultReaderFolder)
         {
         }
 
@@ -20,8 +20,7 @@ namespace RhinoCityJSON.Components
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddTextParameter("Surface Info Keys", "SiK", "Keys of the information output related to the surfaces", GH_ParamAccess.list);
-            pManager.AddTextParameter("Surface Info Values", "SiV", "Values of the information output related to the surfaces", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Merged Surface Information", "mSi", "Merged and filtered information output related to the surfaces", GH_ParamAccess.list);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -29,65 +28,78 @@ namespace RhinoCityJSON.Components
             var geometery = new List<Grasshopper.Kernel.Types.IGH_GeometricGoo>();
             DA.GetDataList(0, geometery);
 
-            if (geometery.Count > 1)
+            if (geometery.Count < 1)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noGeoFound]);
             }
 
-            var valueCollection = new Grasshopper.DataTree<string>();
-            var keyList = new List<string>();
-            var rawDict = new List<Dictionary<string, string>>();
+            List<Types.GHObjectInfo> mergedSurfaceInfo = new List<Types.GHObjectInfo>();
 
             var activeDoc = Rhino.RhinoDoc.ActiveDoc;
-
-            var l = new List<string>();
-            var b = new List<string>();
-
-            foreach (var geo in geometery)
+            foreach (var surface in geometery)
             {
-                Guid id = geo.ReferenceID;
+                var currentSurfaceObjectInfo = new Types.ObjectInfo();
+                currentSurfaceObjectInfo.setIsObject(true);
+                currentSurfaceObjectInfo.setIsSurface(true);
 
+                // get the attributes
+                Guid id = surface.ReferenceID;
                 var obb = activeDoc.Objects.FindId(id);
                 var obbAttributes = obb.Attributes;
+                System.Collections.Specialized.NameValueCollection userKeyStringList = obbAttributes.GetUserStrings();
 
-                System.Collections.Specialized.NameValueCollection keyValues = obbAttributes.GetUserStrings();
-                var localDict = new Dictionary<string, string>();
-
-                foreach (var key in keyValues.AllKeys)
+                foreach (var userKeyString in userKeyStringList.AllKeys)
                 {
-                    if (!keyList.Contains(key))
-                    {
-                        keyList.Add(key);
-                    }
+                    string userValueString = obbAttributes.GetUserString(userKeyString);
 
-                    localDict.Add(key, obbAttributes.GetUserString(key));
-                }
-                rawDict.Add(localDict);
-            }
-
-            int counter = 0;
-            foreach (var surfacesemantic in rawDict)
-            {
-                var nPath = new Grasshopper.Kernel.Data.GH_Path(counter);
-                foreach (var key in keyList)
-                {
-                    if (key == "Object Name")
+                    if (userKeyString == "Object Name")
                     {
-                        valueCollection.Add(surfacesemantic[key], nPath);
+                        currentSurfaceObjectInfo.setName(userValueString);
+                        continue;
+                    } 
+                    if (userKeyString == "File Source")
+                    {
+                        currentSurfaceObjectInfo.setOriginalFileName(userValueString);
+                        continue;
+                    } 
+                    if (userKeyString == "Geometry Name")
+                    {
+                        currentSurfaceObjectInfo.setGeoName(userValueString);
+                        continue;
                     }
-                    else if (surfacesemantic.ContainsKey(key))
+                    if (userKeyString == "Geometry Type")
                     {
-                        valueCollection.Add(surfacesemantic[key], nPath);
+                        currentSurfaceObjectInfo.setGeoType(userValueString);
+                        continue;
+                    }
+                    if (userKeyString == "LoD")
+                    {
+                        currentSurfaceObjectInfo.setLod(userValueString);
+                        continue;
+                    }
+                    if (userKeyString == "Object Type")
+                    {
+                        currentSurfaceObjectInfo.setObjectType(userValueString);
+                        continue;
+                    }
+                    if (userKeyString == "Parents")
+                    {
+                        currentSurfaceObjectInfo.setParents(new List<string>(userValueString.Split(',')));
+                        continue;
+                    }
+                    if (userKeyString == "Children")
+                    {
+                        currentSurfaceObjectInfo.setChildren(new List<string>(userValueString.Split(',')));
+                        continue;
                     }
                     else
                     {
-                        valueCollection.Add(DefaultValues.defaultNoneValue, nPath);
+                        currentSurfaceObjectInfo.addOtherData(userKeyString, userValueString);
                     }
                 }
-                counter++;
+                mergedSurfaceInfo.Add(new Types.GHObjectInfo(currentSurfaceObjectInfo));
             }
-            DA.SetDataList(0, keyList);
-            DA.SetDataTree(1, valueCollection);
+            DA.SetDataList(0, mergedSurfaceInfo);
         }
 
         protected override System.Drawing.Bitmap Icon

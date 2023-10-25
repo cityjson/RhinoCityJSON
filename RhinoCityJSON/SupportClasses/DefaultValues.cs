@@ -70,6 +70,12 @@ namespace RhinoCityJSON
         static public string defaultInheritanceAddition = "*";
         static public string defaultNoneValue = "None";
 
+        static public string defaultReaderFolder = "0: Reading";
+        static public string defaultWritingFolder = "1: Writing";
+        static public string defaultbakingFolder = "2: Baking";
+        static public string defaultManagerFolder = "3: Atribute managing";
+        static public string defaultProcessingFolder = "4: Processing";
+
         static public List<string> surfaceObjectKeys = new List<string>()
         {
             "Object Name",

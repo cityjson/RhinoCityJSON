@@ -11,7 +11,7 @@ namespace RhinoCityJSON.Components
         public addAtrribute()
           : base("Atribute Add", "Add",
               "Adds attribute to the object info",
-              "RhinoCityJSON", "Processing")
+              "RhinoCityJSON", DefaultValues.defaultManagerFolder)
         {
         }
 

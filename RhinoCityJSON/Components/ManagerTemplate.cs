@@ -11,7 +11,7 @@ namespace RhinoCityJSON.Components
         public Template2Object()
           : base("Template2Object", "T2O",
               "Convert template data to normal object data",
-              "RhinoCityJSON", "Processing")
+              "RhinoCityJSON", DefaultValues.defaultProcessingFolder)
         {
         }
 

@@ -19,7 +19,7 @@ namespace RhinoCityJSON.Components
         public RhinoCityJSONReader()
           : base("Reader Objects", "OReader",
               "Reads the object data stored in a CityJSON file",
-              "RhinoCityJSON", "Reading")
+              "RhinoCityJSON", DefaultValues.defaultReaderFolder)
         {
         }
 
@@ -176,8 +176,9 @@ namespace RhinoCityJSON.Components
                     cityObject.setType(JCityObjectAttributes.type.ToString());
                     cityObject.setParents(JCityObjectAttributes.parents);
                     cityObject.setChildren(JCityObjectAttributes.children);
-                    cityObject.setAttributes(JCityObjectAttributesAttributes);
                     cityObject.setOriginalFileName(pathList[i]);
+                    cityObject.setAttributes(JCityObjectAttributesAttributes);
+
 
                     if (JCityObjectAttributes.geometry == null)
                     {

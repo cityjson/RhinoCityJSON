@@ -51,7 +51,7 @@ namespace RhinoCityJSON.Types
             surfaceGeoType_ = other.surfaceGeoType_;
             surfaceLod_ = other.surfaceLod_;
             surfaceType_ = other.surfaceType_;
-            otherData_ = other.otherData_;
+            otherData_ = new Dictionary<string, string>(other.otherData_);
             isSurface_ = other.isSurface_;
             isTemplate_ = other.isTemplate_;
             isObject_ = other.isObject_;
@@ -73,7 +73,7 @@ namespace RhinoCityJSON.Types
             objectParents_ = parents;
             objectChildren_ = children;
             originFileName_ = originFileName;
-            otherData_ = otherData;
+            otherData_ = new Dictionary<string, string>(otherData);
         }
 
         public ObjectInfo( // template object
@@ -95,7 +95,7 @@ namespace RhinoCityJSON.Types
             templateObjectAnchor_ = anchor;
             objectParents_ = parents;
             objectChildren_ = children;
-            otherData_ = otherData;
+            otherData_ = new Dictionary<string, string>(otherData);
         }
 
         public ObjectInfo( // surface object
@@ -115,7 +115,7 @@ namespace RhinoCityJSON.Types
             surfaceType_ = surfaceType;
             objectName_ = parentName;
             originFileName_ = originFileName;
-            otherData_ = otherData;
+            otherData_ = new Dictionary<string, string>(otherData);
         }
 
         public ObjectInfo( // surface template object
@@ -169,6 +169,7 @@ namespace RhinoCityJSON.Types
             otherData_.Add(k, s);
         }
         public bool isSurface() { return isSurface_; }
+        public void setIsSurface(bool t) { isSurface_ = t; }
         public bool isTemplate() { return isTemplate_; }
         public bool isObject() { return isObject_; }
         public void setIsObject(bool b) { isObject_ = b; }
@@ -198,7 +199,7 @@ namespace RhinoCityJSON.Types
                 {
                     filterLookup.Add(filterLookup.Count, DefaultValues.objectKeys[i]);
                 }
-                for (int i = 0; i < DefaultValues.surfaceObjectKeys.Count; i++)
+                for (int i = 1; i < DefaultValues.surfaceObjectKeys.Count; i++) // pass over 0 to aviod dublicate name call
                 {
                     filterLookup.Add(filterLookup.Count, DefaultValues.surfaceObjectKeys[i]);
                 }
@@ -210,7 +211,7 @@ namespace RhinoCityJSON.Types
                     filterLookup.Add(filterLookup.Count, DefaultValues.surfaceTemplateKeys[i]);
                 }
             }
-            if (isObject())
+            else if (isObject())
             {
                 for (int i = 0; i < DefaultValues.objectKeys.Count; i++)
                 {
@@ -258,11 +259,10 @@ namespace RhinoCityJSON.Types
                     foreach (var parent in getChildren()) { childNames.Add(parent); }
                     return childNames;
                 }
-                if (idx == 4) { return new List<string>() { getName() }; }
-                if (idx == 5) { return new List<string>() { getGeoType() }; }
-                if (idx == 6) { return new List<string>() { getGeoName() }; }
-                if (idx == 7) { return new List<string>() { getLod() }; }
-                if (idx == 8) { return new List<string>() { getMaterial().Value }; }
+                if (idx == 4) { return new List<string>() { getGeoType() }; }
+                if (idx == 5) { return new List<string>() { getGeoName() }; }
+                if (idx == 6) { return new List<string>() { getLod() }; }
+                if (idx == 7) { return new List<string>() { getMaterial().Value }; }
             }
             else if (isTemplate() && isSurface())
             {
@@ -317,7 +317,7 @@ namespace RhinoCityJSON.Types
             }
 
             int adjustedIdx = idx;
-            if (isObject() && isSurface()) { adjustedIdx = idx - DefaultValues.objectKeysSize - DefaultValues.surfaceObjectKeysSize; }
+            if (isObject() && isSurface()) { adjustedIdx = idx - DefaultValues.objectKeysSize - DefaultValues.surfaceObjectKeysSize + 1; }
             else if (isObject()) { adjustedIdx = idx - DefaultValues.objectKeysSize; }
             else if (isSurface()) { adjustedIdx = idx - DefaultValues.surfaceObjectKeysSize; }
             else if (isTemplate()) { adjustedIdx = idx - DefaultValues.templateKeysSize; }
