@@ -20,6 +20,7 @@ namespace RhinoCityJSON.Components
             pManager.AddNumberParameter("True north", "Tn", "The direction of the true north", GH_ParamAccess.list, 0.0);
             pManager.AddGeometryParameter("Domain", "D", "The domain within objects should be located to be loaded (disabled for Document Reader)", GH_ParamAccess.list);
             pManager.AddTextParameter("LoD", "L", "Desired Lod, keep empty for all (disabled for Document Reader)", GH_ParamAccess.list, "");
+            pManager.AddBooleanParameter("Large files", "Alf", "Allow extremely large files", GH_ParamAccess.item, false);
 
             pManager[1].Optional = true; // origin is optional
             pManager[3].Optional = true; // origin is optional
@@ -33,6 +34,7 @@ namespace RhinoCityJSON.Components
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             bool translate = false;
+            bool largeFile = false;
             var p = new Rhino.Geometry.Point3d(0, 0, 0);
             bool setP = false;
             var pList = new List<Rhino.Geometry.Point3d>();
@@ -47,6 +49,7 @@ namespace RhinoCityJSON.Components
             DA.GetDataList(2, northList);
             DA.GetDataList(3, domainList);
             DA.GetDataList(4, loDList);
+            DA.GetData(5, ref largeFile);
 
             if (pList.Count > 1)
             {
@@ -107,7 +110,8 @@ namespace RhinoCityJSON.Components
                     p,
                     north,
                     domain,
-                    loDList
+                    loDList,
+                    largeFile
                     )
                 );
 

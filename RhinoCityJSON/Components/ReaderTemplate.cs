@@ -64,6 +64,7 @@ namespace RhinoCityJSON.Components
             bool translate = false;
             double rotationAngle = 0;
             Brep domainBox = new Brep();
+            bool allowLargeFile = false;
 
             if (settingsList.Count() > 0)
             {
@@ -74,7 +75,8 @@ namespace RhinoCityJSON.Components
                                 ref worldOrigin,
                                 ref translate,
                                 ref rotationAngle,
-                                ref domainBox);
+                                ref domainBox,
+                                ref allowLargeFile);
             }
 
             // find out if domain has to be filtered

@@ -83,6 +83,7 @@ namespace RhinoCityJSON.Components
             bool translate = false;
             double rotationAngle = 0;
             Brep domainBox = new Brep();
+            bool allowLargeFile = false;
 
             if (settingsList.Count() > 0)
             {
@@ -99,7 +100,8 @@ namespace RhinoCityJSON.Components
                                 ref worldOrigin,
                                 ref translate,
                                 ref rotationAngle,
-                                ref domainBox);
+                                ref domainBox,
+                                ref allowLargeFile);
             }
 
             // find out if domain has to be filtered
@@ -132,6 +134,23 @@ namespace RhinoCityJSON.Components
                 cityJsonCollection.Add(Jcity);
             }
 
+            // object Count
+            int totalCount = 0;
+            List<Newtonsoft.Json.Linq.JObject> jCityObjectCollection = new List<Newtonsoft.Json.Linq.JObject>();
+
+            for (int i = 0; i < cityJsonCollection.Count; i++)
+            {
+                var Jcity = cityJsonCollection[i];
+                Newtonsoft.Json.Linq.JObject jCityObjectList = Jcity.CityObjects;
+                totalCount += jCityObjectList.Count;
+                if (totalCount > 10000 && !allowLargeFile)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.largeFile]);
+                    return;
+                }
+                jCityObjectCollection.Add(jCityObjectList);
+            }
+
             bool isFirst = true;
             CJT.CityCollection ObjectCollection = new CJT.CityCollection();
             List<string> surfaceTypes = new List<string>();
@@ -157,11 +176,12 @@ namespace RhinoCityJSON.Components
 
                 // get vertices stored in a tile
                 List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, firstTranslation, worldOrigin, scaler, rotationAngle, translate);
+                Newtonsoft.Json.Linq.JObject jCityObjectList = jCityObjectCollection[i];
 
-                foreach (var JcityObject in Jcity.CityObjects)
+                foreach (var JcityObject in jCityObjectList)
                 {
                     // check if name is present
-                    if (ObjectCollection.getCollection().ContainsKey(JcityObject.Name)) {  continue; }
+                    if (ObjectCollection.getCollection().ContainsKey(JcityObject.Key)) {  continue; }
 
                     CJT.CityObject cityObject = new CJT.CityObject();
                     dynamic JCityObjectAttributes = JcityObject.Value;
@@ -172,7 +192,7 @@ namespace RhinoCityJSON.Components
                         foreach (var attribue in JCityObjectAttributesAttributes) { objectTypes.Add(attribue.Name); }
                     }
 
-                    cityObject.setName(JcityObject.Name);
+                    cityObject.setName(JcityObject.Key);
                     cityObject.setType(JCityObjectAttributes.type.ToString());
                     cityObject.setParents(JCityObjectAttributes.parents);
                     cityObject.setChildren(JCityObjectAttributes.children);
@@ -214,7 +234,7 @@ namespace RhinoCityJSON.Components
 
                         // pass if object has no geometry
                         if (!geoObject.hasGeometry()) { continue; }
-                        geoObject.setGeoName(JcityObject.Name + "-" + uniqueCounter.ToString());
+                        geoObject.setGeoName(JcityObject.Key + "-" + uniqueCounter.ToString());
                         geoObject.setGeoType(jGeoObject.type.ToString());
                         geoObject.setLod(lod);
 

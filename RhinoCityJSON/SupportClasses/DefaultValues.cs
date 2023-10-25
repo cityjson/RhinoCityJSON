@@ -28,7 +28,8 @@ namespace RhinoCityJSON
         noGeoFound,
         requiresNorth,
         unevenFilterInput,
-        incorrectSetComponent
+        incorrectSetComponent,
+        largeFile
     }
 
     static class ErrorCollection // TODO: put all the errors centrally 
@@ -58,7 +59,8 @@ namespace RhinoCityJSON
             {errorCodes.noGeoFound, "Geometry input is empty"},
             {errorCodes.requiresNorth, "True north rotation only functions if origin is given"},
             {errorCodes.unevenFilterInput, "Object info input is required to be either both null, or both filled"},
-            {errorCodes.incorrectSetComponent, "Incorrect settings component is used for this process"}
+            {errorCodes.incorrectSetComponent, "Incorrect settings component is used for this process"},
+            {errorCodes.largeFile, "+10k objects attempted to be opened, if desired enable 'allow extremely large files' via the settings component"}
         };
     }
 

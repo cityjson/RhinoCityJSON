@@ -83,12 +83,15 @@ namespace RhinoCityJSON.Components
             var lodId = new Dictionary<string, System.Guid>();
             var typId = new Dictionary<string, Dictionary<string, int>>();
             var surId = new Dictionary<string, Dictionary<string, int>>();
+            splitLayers = false;
+
             BakerySupport.createLayers(
                 "RCJ output",
                 surfaceInfo,
                 ref lodId,
                 ref typId,
-                ref surId
+                ref surId,
+                splitLayers
                 );
 
             // create materials

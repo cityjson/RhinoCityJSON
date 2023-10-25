@@ -73,6 +73,7 @@ namespace RhinoCityJSON.Components
             Point3d worldOrigin = new Point3d(0, 0, 0);
             bool translate = false;
             double rotationAngle = 0;
+            bool allowLargeFile = false;
 
             if (settingsList.Count() > 0)
             {
@@ -86,7 +87,8 @@ namespace RhinoCityJSON.Components
                                 settingsList[0],
                                 ref worldOrigin,
                                 ref translate,
-                                ref rotationAngle
+                                ref rotationAngle,
+                                ref allowLargeFile
                                 );
             }
 

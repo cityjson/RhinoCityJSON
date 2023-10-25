@@ -175,13 +175,15 @@ namespace RhinoCityJSON
           Types.GHReaderSettings ghSettings,
           ref Point3d worldOrigin,
           ref bool translate,
-          ref double rotationAngle
+          ref double rotationAngle,
+          ref bool allowLargeFile
           )
         {
             var CJSettings = ghSettings.Value;
             translate = CJSettings.getTranslate();
             rotationAngle = Math.PI * CJSettings.getTrueNorth() / 180.0;
             worldOrigin = CJSettings.getModelOrigin();
+            allowLargeFile = CJSettings.getAllowLargeFile();
             return errorCodes.noError;
         }
 
@@ -192,13 +194,15 @@ namespace RhinoCityJSON
            ref Point3d worldOrigin,
            ref bool translate,
            ref double rotationAngle,
-           ref Brep domainbox
+           ref Brep domainbox,
+           ref bool allowLargeFile
            )
         {
             getSettings(ghSettings,
                 ref worldOrigin,
                 ref translate,
-                ref rotationAngle);
+                ref rotationAngle,
+                ref allowLargeFile);
 
             var CJSettings = ghSettings.Value;
             domainbox = CJSettings.getDomain();

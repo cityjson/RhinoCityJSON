@@ -11,6 +11,7 @@ namespace RhinoCityJSON.Types
         double trueNorth_ = 0;
         Brep domain_ = new Brep();
         List<string> LoD_ = new List<string>();
+        bool allowLargeFile_ = false;
 
         bool isDocumentSetting_ = false;
         int dominantFile_ = 0;
@@ -26,6 +27,7 @@ namespace RhinoCityJSON.Types
             trueNorth_ = other.trueNorth_;
             domain_ = other.domain_;
             LoD_ = other.LoD_;
+            allowLargeFile_ = other.allowLargeFile_;
             dominantFile_ = other.dominantFile_;
             merge_ = other.merge_;
             mergeDistance_ = other.mergeDistance_;
@@ -38,7 +40,8 @@ namespace RhinoCityJSON.Types
             Point3d modelOrigin,
             double trueNorth,
             Brep domain,
-            List<string> LoDList
+            List<string> LoDList,
+            bool allowLargeFile
             )
         {
             translate_ = translate;
@@ -46,6 +49,7 @@ namespace RhinoCityJSON.Types
             trueNorth_ = trueNorth;
             domain_ = domain;
             LoD_ = LoDList;
+            allowLargeFile_ = allowLargeFile;
         }
 
         public ReaderSettings
@@ -66,6 +70,8 @@ namespace RhinoCityJSON.Types
         public double getTrueNorth() { return trueNorth_; }
         public Brep getDomain() { return domain_; }
         public List<string> getLoDList() { return LoD_; }
+        public bool getAllowLargeFile() { return allowLargeFile_; }
+
 
         public bool isDocSetting() { return isDocumentSetting_; }
         public int getDominantFile() { return dominantFile_; }

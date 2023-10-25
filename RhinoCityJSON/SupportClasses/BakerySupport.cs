@@ -123,6 +123,19 @@ namespace RhinoCityJSON
             return activeDoc.Layers.Add(parentlayer);
         }
 
+        static public List<string> getUniqueFileNameList(List<Types.GHObjectInfo> surfaceInfo)
+        {
+            List<string> uniqueFileNameList = new List<string>();
+
+            foreach (var semanticItem in surfaceInfo)
+            {
+                string originalFileName = semanticItem.Value.getOriginalFileName();
+                if (uniqueFileNameList.Contains(originalFileName)) { continue; }
+                uniqueFileNameList.Add(originalFileName);
+            }
+            return uniqueFileNameList;
+        }
+
         static public List<string> getUniqueLoDList(List<Types.GHObjectInfo> surfaceInfo)
         {
             var lodList = new List<string>();
@@ -198,7 +211,8 @@ namespace RhinoCityJSON
             List<Types.GHObjectInfo> surfaceInfo,
             ref Dictionary<string, System.Guid> lodIdLookup,
             ref Dictionary<string, Dictionary<string, int>> typIdLookup,
-            ref Dictionary<string, Dictionary<string, int>> surIdLookup
+            ref Dictionary<string, Dictionary<string, int>> surIdLookup,
+            bool splitLayers
             )
         {
             var activeDoc = Rhino.RhinoDoc.ActiveDoc;
@@ -208,6 +222,8 @@ namespace RhinoCityJSON
             var lodList = getUniqueLoDList(surfaceInfo);
             var lodSurfTypeDictionary = getUniqueSurfaceLod(surfaceInfo);
             var parentID = activeDoc.Layers.FindIndex(makeParentLayer(layerBaseName));
+
+            if (splitLayers)  { List<string> uniqueFileNameList = getUniqueFileNameList(surfaceInfo); }
 
             // create the layers
             createLoDLayers(
