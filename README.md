@@ -2,8 +2,8 @@
 
 [![GitHub license](https://img.shields.io/github/license/jaspervdv/RhinoCityJSON?style=for-the-badge)](https://github.com/jaspervdv/RhinoCityJSON/blob/master/LICENSE)
 
-A Rhino/Grasshopper plugin allowing the CityJSON format (https://www.cityjson.org/) to be directly used in Rhino 3D and Grasshopper without the loss of semantic information.
-The primary focus of the plugin was to function on the 3D BAG data (https://3dbag.nl/en/viewer). However, the plugin functions as well with other CityJSON files.
+A Rhino/Grasshopper plugin allowing the [CityJSON format](https://www.cityjson.org/) to be directly used in Rhino 3D and Grasshopper without the loss of semantic information.
+The primary focus of the plugin was to function on the [3D BAG data](https://3dbag.nl/en/viewer). However, the plugin functions as well with other CityJSON files.
 The plugin consists out of multiple Grasshopper components exposing data in a format that is directly usable in grasshopper, and allows all this data to be baked into Rhino.
 
 ![Example of the semantic data that can be imported to Rhino](https://raw.githubusercontent.com/cityjson/RhinoCityJSON/master/Images/Overview_1.jpg)
@@ -12,7 +12,6 @@ Currently only supports CityJSON 1.1 and 1.2.
 
 ## Known issues, bugs or missing features
 
-* Complex surfaces are not always correctly constructed.
 * 3D BAG does not include all the data the Normal bag has included.
 * Template handling is untested.
 * Many materials importing can be extremely slow (This sadly is an issue with Rhino).
@@ -23,7 +22,7 @@ Currently only supports CityJSON 1.1 and 1.2.
 
 ### Via Food4Rhino
 
-URL: https://www.food4rhino.com/en/app/rhino-cityjson
+URL: <https://www.food4rhino.com/en/app/rhino-cityjson>
 
 This is the easiest way to install the plugin. However newer features/updates will be released via that outlet only when deemed completely stable and finished.
 This means that updates will be less regular, less versions will be available and experimental features will not be available.
