@@ -24,7 +24,6 @@ namespace RhinoCityJSON.Components
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddBrepParameter("Geometry", "G", "Geometry output", GH_ParamAccess.item);
             pManager.AddGenericParameter("Surface Information", "Si", "Information related to the surfaces", GH_ParamAccess.item);
             pManager.AddGenericParameter("Object Information", "Oi", "Information related to the Objects", GH_ParamAccess.item);
         }
@@ -52,8 +51,6 @@ namespace RhinoCityJSON.Components
 
             Dictionary<string, Types.GHObjectInfo> splitObjectInfoDict = new Dictionary<string, Types.GHObjectInfo>();
             List<Types.GHObjectInfo> splitSurfaceInfo = new List<Types.GHObjectInfo>();
-
-            var newGeoList = new List<Brep>();
 
             foreach (var item in surfaceInfo)
             {
@@ -125,9 +122,8 @@ namespace RhinoCityJSON.Components
                 splitObjectInfo.Add(pair.Value);
             }
 
-            DA.SetDataList(0, newGeoList);
-            DA.SetDataList(1, splitSurfaceInfo);
-            DA.SetDataList(2, splitObjectInfo);
+            DA.SetDataList(0, splitSurfaceInfo);
+            DA.SetDataList(1, splitObjectInfo);
         }
 
         protected override System.Drawing.Bitmap Icon

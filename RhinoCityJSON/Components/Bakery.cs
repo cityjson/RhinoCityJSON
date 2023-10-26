@@ -18,15 +18,15 @@ namespace RhinoCityJSON.Components
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddBrepParameter("Geometry", "G", "Geometry Input", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Surface Info", "mSi", "Semantic information", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Merged Surface Info", "mSi", "Semantic information", GH_ParamAccess.list);
             pManager.AddGenericParameter("Materials", "M", "Material information", GH_ParamAccess.list);
             pManager.AddBooleanParameter("Activate", "A", "Activate bakery", GH_ParamAccess.item, false);
-            pManager.AddBooleanParameter("Layer per File", "LF", "Make a new layer cluster per source file", GH_ParamAccess.item, false);
+           // pManager.AddBooleanParameter("Layer per File", "LF", "Make a new layer cluster per source file", GH_ParamAccess.item, false);
             pManager[0].Optional = true;
             pManager[1].Optional = true;
             pManager[2].Optional = true;
             pManager[3].Optional = true;
-            pManager[4].Optional = true;
+            //pManager[4].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -42,7 +42,7 @@ namespace RhinoCityJSON.Components
             var materialList = new List<Types.GHMaterial>();
 
             DA.GetData(3, ref boolOn);
-            DA.GetData(4, ref splitLayers);
+            //DA.GetData(4, ref splitLayers);
 
             if (!boolOn)
             {
