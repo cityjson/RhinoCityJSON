@@ -10,6 +10,31 @@ The plugin consists out of multiple Grasshopper components exposing data in a fo
 
 Currently only supports CityJSON 1.1 and 1.2.
 
+## Table of Content
+
+* [Known issues, bugs or missing features](#known-issues-bugs-or-missing-features)
+* [How to install](#how-to-install)
+  * [Via Package Manager (Yak)](#via-package-manager-yak)
+  * [Via Food4Rhino](#via-food4rhino)
+  * [Via GitHub](#via-github)
+  * [Build/Compile locally](#buildcompile-locally)
+* [The GH components](#the-gh-components)
+  * [Reader Objects](#reader-objects)
+  * [Reader Template](#reader-template-buggy)
+  * [Document Reader](#document-reader)
+  * [RhinoCityJSONObject](#rhinocityjsonobject)
+  * [Settings](#settings)
+  * [Bakery](#bakery)
+  * [Template Bakery](#template-bakery-untested)
+  * [Attribute Add](#attribute-add)
+  * [Attribute Filter](#attribute-filter)
+  * [Attribute Remover](#attribute-remover)
+  * [Attribute Selector](#attribute-selector)
+  * [Information Manager](#information-manager)
+  * [Information splitter](#information-splitter)
+  * [Template2Object](#template2object)
+  * [Explode Material](#explode-material)
+
 ## Known issues, bugs or missing features
 
 * 3D BAG does not include all the data the Normal bag has included.
@@ -20,17 +45,25 @@ Currently only supports CityJSON 1.1 and 1.2.
 
 ## How to install
 
+### Via Package Manager (Yak)
+
+This is the easiest and recommended way to install the plugin. However newer features/updates will be released via this outlet only when deemed completely stable and finished. This means that less versions will be available and experimental features will not be available. For these the plugin has to be accessed via this GitHub page.
+
+Access the plugin manager by typing "PackageManager" in the rhino command prompt. This will open the Package manager. In the package manager search for RhinoCityJSON (make sure no spaces are present between the words). Select the plugin, select the desired version and press install. After restarting Rhino the plugin will function.
+
 ### Via Food4Rhino
 
-URL: <https://www.food4rhino.com/en/app/rhino-cityjson>
+URL: <https://www.food4rhino.com/en/app/rhinocityjson-0>
 
-This is the easiest way to install the plugin. However newer features/updates will be released via that outlet only when deemed completely stable and finished.
-This means that updates will be less regular, less versions will be available and experimental features will not be available.
+Before the integration of the package manager Food4Rhino was the primary source to acquire the plugin from. Example files and .gh files can be accessed from here. Also old versions that are not accessible via the package manager can be fetched from this location.
+
+Similar to the package manager newer features/updates will be released via that outlet only when deemed completely stable and finished.
+This means that less versions will be available and experimental features will not be available. For these the plugin has to be accessed via this GitHub page.
 
 ### Via GitHub
 
 More regularly updated GHA components are available from this github page.
-These can be found in the "Grasshopper component" folder. Note that, although these components are more up to date, they also are possibly experimental, unfinished and unstable.
+These can be found in the "dist" folder. Note that, although these components are more up to date, they also are possibly experimental, unfinished and unstable.
 
 ### Build/Compile locally
 

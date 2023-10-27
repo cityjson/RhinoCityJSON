@@ -167,7 +167,7 @@
   -->
   <PropertyGroup>
     <PostBuildEvent>Copy "$(TargetPath)" "$(TargetDir)$(ProjectName).gha"
-Copy "$(TargetPath)" "$(SolutionDir)Grasshopper Component\$(ProjectName).gha"
+Copy "$(TargetPath)" "$(SolutionDir)dist\$(ProjectName).gha"
 Erase "$(TargetPath)"
 </PostBuildEvent>
   </PropertyGroup>
