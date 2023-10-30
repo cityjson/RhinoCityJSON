@@ -39,7 +39,7 @@ Currently only supports CityJSON 1.1 and 1.2.
 
 * 3D BAG does not include all the data the Normal bag has included.
 * Template handling is untested.
-* Many materials importing can be extremely slow (This sadly is an issue with Rhino).
+* Material importing can be extremely slow (This sadly is an issue with Rhino).
 * Textures are not supported.
 * Rhino data can not be exported to the CityJSON format.
 
@@ -53,9 +53,9 @@ Access the plugin manager by typing "PackageManager" in the rhino command prompt
 
 ### Via Food4Rhino
 
-URL: <https://www.food4rhino.com/en/app/rhinocityjson-0>
+URL: https://www.food4rhino.com/en/app/rhinocityjson
 
-Before the integration of the package manager Food4Rhino was the primary source to acquire the plugin from. Example files and .gh files can be accessed from here. Also old versions that are not accessible via the package manager can be fetched from this location.
+Before the integration of the package manager Food4Rhino was the primary source to acquire the plugin from. The package manager install, example files and the old .gh files can be accessed from here.
 
 Similar to the package manager newer features/updates will be released via that outlet only when deemed completely stable and finished.
 This means that less versions will be available and experimental features will not be available. For these the plugin has to be accessed via this GitHub page.
