@@ -16,7 +16,7 @@ namespace RhinoCityJSON.Components
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddBooleanParameter("Translate", "T", "Translate according to the stored translation vector", GH_ParamAccess.item, false);
-            pManager.AddPointParameter("Model origin", "O", "The Origin of the model. This coordiante will be set as the {0,0,0} point for the imported JSON", GH_ParamAccess.list);
+            pManager.AddPointParameter("Model origin", "O", "The origin of the model. This coordiante will be set as the {0,0,0} point for the imported JSON", GH_ParamAccess.list);
             pManager.AddNumberParameter("True north", "Tn", "The direction of the true north", GH_ParamAccess.list, 0.0);
             pManager.AddGeometryParameter("Domain", "D", "The domain within objects should be located to be loaded (disabled for Document Reader)", GH_ParamAccess.list);
             pManager.AddTextParameter("LoD", "L", "Desired Lod, keep empty for all (disabled for Document Reader)", GH_ParamAccess.list, "");
@@ -84,15 +84,16 @@ namespace RhinoCityJSON.Components
                 domain = domainList[0];
             }
 
-
             foreach (string lod in loDList)
             {
                 if (lod != "")
                 {
-                    if (lod == "0" || lod == "0.0" || lod == "0.1" || lod == "0.2" || lod == "0.3" ||
-                        lod == "1" || lod == "1.0" || lod == "1.1" || lod == "1.2" || lod == "1.3" ||
-                        lod == "2" || lod == "2.0" || lod == "2.1" || lod == "2.2" || lod == "2.3" ||
-                        lod == "3" || lod == "3.0" || lod == "3.1" || lod == "3.2" || lod == "3.3")
+                    string simpleLoD = lod.Trim();
+
+                    if (simpleLoD == "0" || simpleLoD == "0.0" || simpleLoD == "0.1" || simpleLoD == "0.2" || simpleLoD == "0.3" ||
+                        simpleLoD == "1" || simpleLoD == "1.0" || simpleLoD == "1.1" || simpleLoD == "1.2" || simpleLoD == "1.3" ||
+                        simpleLoD == "2" || simpleLoD == "2.0" || simpleLoD == "2.1" || simpleLoD == "2.2" || simpleLoD == "2.3" ||
+                        simpleLoD == "3" || simpleLoD == "3.0" || simpleLoD == "3.1" || simpleLoD == "3.2" || simpleLoD == "3.3")
                     {
                     }
                     else
