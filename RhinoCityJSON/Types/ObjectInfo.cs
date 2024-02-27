@@ -140,7 +140,7 @@ namespace RhinoCityJSON.Types
         public string getGeoType() { return surfaceGeoType_; }
         public void setGeoType(string type) { surfaceGeoType_ = type; }
         public string getLod() { return surfaceLod_; }
-        public void setLod(string lod) { surfaceLod_ = lod; } 
+        public void setLod(string lod) { surfaceLod_ = lod; }
         public List<string> getParents() { return objectParents_; }
         public void setParents(List<string> parents) { objectParents_ = parents; }
         public List<string> getChildren() { return objectChildren_; }
@@ -158,7 +158,8 @@ namespace RhinoCityJSON.Types
         public Point3d getAnchor() { return templateObjectAnchor_; }
         public void setAnchor(Point3d p) { templateObjectAnchor_ = p; }
         public Dictionary<string, string> getOtherData() { return otherData_; }
-        public void addOtherData(string k, string s) {
+        public void addOtherData(string k, string s)
+        {
 
             if (otherData_.ContainsKey(k))
             {
@@ -241,163 +242,55 @@ namespace RhinoCityJSON.Types
             return filterLookup;
         }
 
-        public List<string> getItemByIdx(int idx)
+        public List<string> getItemByName(string name)
         {
-            if (isObject() && isSurface())
+            if (name == "Object Name") { return new List<string>() { getName() }; };
+            if (name == "Object Type") { return new List<string>() { getObjectType() }; };
+            if (name == "Object Parent")
             {
-                if (idx == 0) { return new List<string>() { getName() }; }
-                if (idx == 1) { return new List<string>() { getObjectType() }; }
-                if (idx == 2)
-                {
-                    List<string> parentNames = new List<string>();
-                    foreach (var parent in getParents()) { parentNames.Add(parent); }
-                    return parentNames;
-                }
-                if (idx == 3)
-                {
-                    List<string> childNames = new List<string>();
-                    foreach (var parent in getChildren()) { childNames.Add(parent); }
-                    return childNames;
-                }
-                if (idx == 4) { return new List<string>() { getGeoType() }; }
-                if (idx == 5) { return new List<string>() { getGeoName() }; }
-                if (idx == 6) { return new List<string>() { getLod() }; }
-                if (idx == 7) { return new List<string>() { getMaterial().Value }; }
+                List<string> parentNames = new List<string>();
+                foreach (var parent in getParents()) { parentNames.Add(parent); }
+                return parentNames;
             }
-            else if (isTemplate() && isSurface())
+            if (name == "Object Child")
             {
-                if (idx == 0) { return new List<string>() { getTemplateIdx().ToString() }; }
-                if (idx == 1) { return new List<string>() { getGeoType() }; }
-                if (idx == 2) { return new List<string>() { getLod() }; }
-                if (idx == 3) { return new List<string>() { getMaterial().Value }; }
+                List<string> childNames = new List<string>();
+                foreach (var parent in getChildren()) { childNames.Add(parent); }
+                return childNames;
             }
-            else if (isObject())
+            if (name == "Geometry Type") { return new List<string>() { getGeoType() }; };
+            if (name == "Geometry Name") { return new List<string>() { getGeoName() }; };
+            if (name == "Geometry LoD") { return new List<string>() { getLod() }; };
+            if (name == "Surface Material") { return new List<string>() { getMaterial().Value }; };
+            if (name == "Template Idx") { return new List<string>() { getTemplateIdx().ToString() }; };
+
+            if (otherData_.ContainsKey(name))
             {
-                if (idx == 0) { return new List<string>() { getName() }; }
-                if (idx == 1) { return new List<string>() { getObjectType() }; }
-                if (idx == 2)
-                {
-                    List<string> parentNames = new List<string>();
-                    foreach (var parent in getParents()) { parentNames.Add(parent); }
-                    return parentNames;
-                }
-                if (idx == 3)
-                {
-                    List<string> childNames = new List<string>();
-                    foreach (var parent in getChildren()) { childNames.Add(parent); }
-                    return childNames;
-                }
-            }
-            else if (isSurface())
-            {
-                if (idx == 0) { return new List<string>() { getName() }; }
-                if (idx == 1) { return new List<string>() { getGeoType() }; }
-                if (idx == 2) { return new List<string>() { getGeoName() }; }
-                if (idx == 3) { return new List<string>() { getLod() }; }
-                if (idx == 4) { return new List<string>() { getMaterial().Value }; }
-            }
-            else if (isTemplate())
-            {
-                if (idx == 0) { return new List<string>() { getName() }; }
-                if (idx == 1) { return new List<string>() { getObjectType() }; }
-                if (idx == 2)
-                {
-                    List<string> parentNames = new List<string>();
-                    foreach (var parent in getParents()) { parentNames.Add(parent); }
-                    return parentNames;
-                }
-                if (idx == 3)
-                {
-                    List<string> childNames = new List<string>();
-                    foreach (var parent in getChildren()) { childNames.Add(parent); }
-                    return childNames;
-                }
-                if (idx == 4) { return new List<string>() { getTemplateIdx().ToString() }; }
-                if (idx == 5) { return new List<string>() { getAnchor().ToString() }; }
+                return new List<string>() { otherData_[name] };
             }
 
-            int adjustedIdx = idx;
-            if (isObject() && isSurface()) { adjustedIdx = idx - DefaultValues.objectKeysSize - DefaultValues.surfaceObjectKeysSize + 1; }
-            else if (isObject()) { adjustedIdx = idx - DefaultValues.objectKeysSize; }
-            else if (isSurface()) { adjustedIdx = idx - DefaultValues.surfaceObjectKeysSize; }
-            else if (isTemplate()) { adjustedIdx = idx - DefaultValues.templateKeysSize; }
-            //else return new List<string>();
-
-            string[] keys = getOtherData().Keys.ToArray();
-            string reqKey = keys[adjustedIdx];
-
-            return new List<string>() { getOtherData()[reqKey] };
+            return new List<string>();
         }
 
-        public Types.ObjectInfo removeItemByIndex(int idx)
+        public Types.ObjectInfo removeItemByName(string name)
         {
-            bool found = true;
-            if (isObject() && isSurface()) // TODO: add warnings when deleting things
-            {
-                if (idx > 8) { found = false; }
-                else if (idx == 0) { }
-                else if (idx == 1) { objectType_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 2) { objectParents_ = new List<string>(); }
-                else if (idx == 3) { objectChildren_ = new List<string>(); }
-                else if (idx == 4) { objectName_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 5) { surfaceGeoType_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 6) { surfaceGeoName_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 7) { surfaceLod_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 8) { materialIdxPair_ = new KeyValuePair<string, string>("", DefaultValues.defaultNoneValue); }
-            }
-            else if (isTemplate() && isSurface())
-            {
-                if (idx > 3) { found = false; }
-                if (idx == 0) { templateIdx_ = new int(); }
-                else if (idx == 1) { surfaceGeoType_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 2) { surfaceLod_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 3) { materialIdxPair_ = new KeyValuePair<string, string>("", DefaultValues.defaultNoneValue); }
-            }
-            else if (isObject())
-            {
-                if (idx > 3) { found = false; }
-                if (idx == 0) { objectName_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 1) { objectType_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 2) { objectParents_ = new List<string>(); }
-                else if (idx == 3) { objectChildren_ = new List<string>(); }
-            }
-            else if (isSurface())
-            {
-                if (idx > 4) { found = false; }
-                if (idx == 0) { objectName_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 1) { surfaceGeoType_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 2) { surfaceGeoType_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 3) { surfaceLod_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 4) { materialIdxPair_ = new KeyValuePair<string, string>("", DefaultValues.defaultNoneValue); }
-            }
-            else if (isTemplate())
-            {
-                if (idx > 5) { found = false; }
-                if (idx == 0) { objectName_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 1) { objectType_ = DefaultValues.defaultNoneValue; }
-                else if (idx == 2) { objectParents_ = new List<string>(); }
-                else if (idx == 3) { objectChildren_ = new List<string>(); }
-                else if (idx == 4) { templateIdx_ = new int(); }
-                else if (idx == 5) { templateObjectAnchor_ = new Point3d(); }
-            }
-            if (!found)
-            {
+            // TODO: look into opbject name changing
+            if (name == "Object Type") { objectType_ = DefaultValues.defaultNoneValue; }
+            if (name == "Object Parent") { objectParents_ = new List<string>(); }
+            if (name == "Object Child") { objectChildren_ = new List<string>(); }
+            if (name == "Geometry Type") { surfaceGeoType_ = DefaultValues.defaultNoneValue; ; }
+            if (name == "Geometry Name") { surfaceGeoName_ = DefaultValues.defaultNoneValue; };
+            if (name == "Geometry LoD") { surfaceLod_ = DefaultValues.defaultNoneValue; };
+            if (name == "Surface Material") { materialIdxPair_ = new KeyValuePair<string, string>("", DefaultValues.defaultNoneValue); }
+            if (name == "Template Idx") { templateIdx_ = new int(); }
 
-                int adjustedIdx = idx;
-                if (isObject() && isSurface()) { adjustedIdx = idx - DefaultValues.objectKeysSize - DefaultValues.surfaceObjectKeysSize; }
-                else if (isObject()) { adjustedIdx = idx - DefaultValues.objectKeysSize; }
-                else if (isSurface()) { adjustedIdx = idx - DefaultValues.surfaceObjectKeysSize; }
-                else if (isTemplate()) { adjustedIdx = idx - DefaultValues.templateKeysSize; }
-                //else return new List<string>();
-
-                string[] keys = getOtherData().Keys.ToArray();
-                string reqKey = keys[adjustedIdx];
-
-                otherData_.Remove(reqKey);
+            if (otherData_.ContainsKey(name))
+            {
+                otherData_.Remove(name);
             }
-
             return new ObjectInfo(this);
         }
+
     }
 
     public class GHObjectInfo : GH_Goo<ObjectInfo>

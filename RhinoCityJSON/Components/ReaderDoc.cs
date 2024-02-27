@@ -106,6 +106,7 @@ namespace RhinoCityJSON.Components
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noScale]);
             }
 
+
             // hold translation value
             Rhino.Geometry.Vector3d lllExtend = new Rhino.Geometry.Vector3d(0, 0, 0);
             bool isFirst = true;
@@ -122,11 +123,40 @@ namespace RhinoCityJSON.Components
                     return;
                 }
 
+                // get LoD (this is not part of metadata and can still be generated without valid metadata
+                foreach (var objectGroup in Jcity.CityObjects)
+                {
+                    foreach (var cObject in objectGroup)
+                    {
+                        if (cObject.geometry == null) // parents
+                        {
+                            continue;
+                        }
+
+                        foreach (var boundaryGroup in cObject.geometry)
+                        {
+                            string currentLoD = boundaryGroup.lod.ToString();
+
+                            if (!lodLevels.Contains(currentLoD))
+                            {
+                                Rhino.RhinoApp.WriteLine(currentLoD);
+                                Rhino.RhinoApp.WriteLine(" ");
+
+                                lodLevels.Add(currentLoD);
+                            }
+
+                        }
+                    }
+                }
+
+                lodLevels.Sort();
+                DA.SetDataList(1, lodLevels);
+
                 // fetch metadata
                 if (Jcity.metadata == null)
                 {
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMetaDataFound]);
-                    return;
+                    continue;
                 }
 
                 if (!Jcity.ContainsKey("transform"))
@@ -276,28 +306,7 @@ namespace RhinoCityJSON.Components
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noMaterialsFound]);
                 }
 
-                // get LoD
-                foreach (var objectGroup in Jcity.CityObjects)
-                {
-                    foreach (var cObject in objectGroup)
-                    {
-                        if (cObject.geometry == null) // parents
-                        {
-                            continue;
-                        }
-
-                        foreach (var boundaryGroup in cObject.geometry)
-                        {
-                            string currentLoD = boundaryGroup.lod;
-
-                            if (!lodLevels.Contains(currentLoD))
-                            {
-                                lodLevels.Add(currentLoD);
-                            }
-
-                        }
-                    }
-                }
+                
             }
 
             // make tree from meta data
@@ -327,12 +336,7 @@ namespace RhinoCityJSON.Components
                 domainTree.Add(domain, nPath);
             }
 
-
-
-            lodLevels.Sort();
-
             DA.SetDataList(0, objectDataList);
-            DA.SetDataList(1, lodLevels);
             DA.SetDataList(2, materialList);
             DA.SetDataTree(3, domainTree);
         }

@@ -35,7 +35,7 @@ namespace RhinoCityJSON
 
             for (int i = 0; i < filterLookup.Count(); i++)
             {
-                vallist.ListItems.Add(new Grasshopper.Kernel.Special.GH_ValueListItem(filterLookup[i].ToString(), i.ToString()));
+                vallist.ListItems.Add(new Grasshopper.Kernel.Special.GH_ValueListItem(filterLookup[i].ToString(), '"' + filterLookup[i].ToString() + '"'));
             }
 
             vallist.Description = vallist.ListItems.Count.ToString() + "types were found in the input";
@@ -66,7 +66,7 @@ namespace RhinoCityJSON
 
             for (int i = 0; i < filterLookup.Count(); i++)
             {
-                vallist.ListItems.Add(new Grasshopper.Kernel.Special.GH_ValueListItem(filterLookup[i].ToString(), i.ToString()));
+                vallist.ListItems.Add(new Grasshopper.Kernel.Special.GH_ValueListItem(filterLookup[i].ToString(), '"' + filterLookup[i].ToString() + '"'));
             }
 
             vallist.Description = vallist.ListItems.Count.ToString() + "types were found int the input";
