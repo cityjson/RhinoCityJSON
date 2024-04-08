@@ -47,6 +47,8 @@ namespace RhinoCityJSON
 
         static public Grasshopper.Kernel.Special.GH_ValueList ReplaceValueList(Grasshopper.Kernel.Special.GH_ValueList vallist, Types.ObjectInfo firstItem, Dictionary<int, string> filterLookup)
         {
+            // get the old item that was selected
+            string oldSelection = vallist.SelectedItems.ToArray()[0].Name.ToString();
             var oldPivot = vallist.Attributes.Pivot;
             if (firstItem.isSurface())
             {
@@ -64,17 +66,17 @@ namespace RhinoCityJSON
             vallist.Attributes.Pivot = oldPivot;
             vallist.ListItems.Clear();
 
+            int oldItemIdx = -1;
             for (int i = 0; i < filterLookup.Count(); i++)
             {
                 vallist.ListItems.Add(new Grasshopper.Kernel.Special.GH_ValueListItem(filterLookup[i].ToString(), '"' + filterLookup[i].ToString() + '"'));
+                if (oldSelection == filterLookup[i].ToString()) { oldItemIdx = i;  }
             }
 
             vallist.Description = vallist.ListItems.Count.ToString() + "types were found int the input";
-            return vallist;
 
-            //Grasshopper.Instances.ActiveCanvas.Document.AddObject(vallist, false);
+            if (oldItemIdx != -1) { vallist.SelectItem(oldItemIdx); } 
+            return vallist;
         }
     }
 }
-
-

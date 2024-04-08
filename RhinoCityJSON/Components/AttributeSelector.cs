@@ -61,8 +61,6 @@ namespace RhinoCityJSON.Components
                 var firstInput = this.Params.Input[1];
                 oldSurfaceKeySelector = firstInput.Sources[0];
 
-                Rhino.RhinoApp.WriteLine(oldSurfaceKeySelector.Type.Name);
-
                 if (oldSurfaceKeySelector.Type.Name != "GH_String")
                 {
                     Grasshopper.Kernel.Special.GH_ValueList oldVallist = (Grasshopper.Kernel.Special.GH_ValueList)oldSurfaceKeySelector;
