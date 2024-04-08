@@ -66,6 +66,7 @@
     <Compile Include="Components\BakeryTemplate.cs" />
     <Compile Include="Components\AttributeAdd.cs" />
     <Compile Include="Components\AttributeFilter.cs" />
+    <Compile Include="Components\AllAtributes.cs" />
     <Compile Include="Components\ExplodeMaterial.cs" />
     <Compile Include="Components\AttributeSelector.cs" />
     <Compile Include="Components\ManagerReversed.cs" />
@@ -156,6 +157,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\mergeicon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\attribute.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
