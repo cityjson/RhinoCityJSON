@@ -134,7 +134,7 @@ namespace RhinoCityJSON
             {
                 return false;
             }
-            else if (file.version != "1.1" && file.version != "1.0")
+            else if (file.version != "1.1" && file.version != "1.0" && file.version != "2.0")
             {
                 return false; //TODO: adress this
             }
