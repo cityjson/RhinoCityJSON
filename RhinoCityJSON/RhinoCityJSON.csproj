@@ -108,22 +108,13 @@
     <None Include="Resources\lodicon.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\readericon.png" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Resources\settingsicon.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\sreadericon.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\bakeryicon.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\divideicon.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\metaicon.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\rreadericon.png" />
@@ -136,9 +127,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\templatebakeryicon.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\ematerialicon.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\settingdocsicon.png" />
@@ -160,6 +148,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\filtericon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ematerialicon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\metaicon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\readericon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\sreadericon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

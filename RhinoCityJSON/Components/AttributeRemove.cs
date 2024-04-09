@@ -9,7 +9,7 @@ namespace RhinoCityJSON.Components
     public class removeAtrribute : GH_Component
     {
         public removeAtrribute()
-          : base("Atribute Remover", "Remove",
+          : base("Attribute Remover", "Remove",
               "Removes an attribute from the object info",
               "RhinoCityJSON", DefaultValues.defaultManagerFolder)
         {

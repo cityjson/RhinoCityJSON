@@ -9,7 +9,7 @@ namespace RhinoCityJSON.Components
     public class addAtrribute : GH_Component
     {
         public addAtrribute()
-          : base("Atribute Add", "Add",
+          : base("Attribute Add", "Add",
               "Adds attribute to the object info",
               "RhinoCityJSON", DefaultValues.defaultManagerFolder)
         {
