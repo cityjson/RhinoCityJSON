@@ -61,7 +61,12 @@ namespace RhinoCityJSON.Components
                     {
                         currentSurfaceObjectInfo.setOriginalFileName(userValueString);
                         continue;
-                    } 
+                    }
+                    if (userKeyString == "Geometry Super Name")
+                    {
+                        currentSurfaceObjectInfo.setSuperName(userValueString);
+                        continue;
+                    }
                     if (userKeyString == "Geometry Name")
                     {
                         currentSurfaceObjectInfo.setGeoName(userValueString);

@@ -323,6 +323,7 @@ namespace RhinoCityJSON.Components
 
                         var objectInfoObject =
                              new Types.ObjectInfo(
+                            geoName,
                             surfaceName,
                             geoType,
                             geoLoD,

@@ -117,6 +117,7 @@ namespace RhinoCityJSON.Components
 
                     var objectInfoObject =
                             new Types.ObjectInfo(
+                           objectInfo.Value.getName(),
                            objectInfo.Value.getName() + "-" + uniqueCounter,
                            surfInfo.Value.getGeoType(),
                            surfInfo.Value.getLod(),

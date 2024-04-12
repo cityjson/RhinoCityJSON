@@ -9,5 +9,8 @@ namespace RhinoCityJSON
         {
             return new List<Point3d>();
         }
+
+
+
     }
 }

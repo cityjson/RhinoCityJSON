@@ -95,6 +95,15 @@ namespace RhinoCityJSON.Components
                 }
                 for (int j = 0; j < values.Count; j++) { values[j].Value.setGeoType(attributeValeList.Branches[j][0].ToString()); }
             }
+            else if (attributeName == "Geometry Super Name")
+            {
+                if (!isSingular)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No multiple entries allowed for this attibute");
+                    return;
+                }
+                for (int j = 0; j < values.Count; j++) { values[j].Value.setSuperName(attributeValeList.Branches[j][0].ToString()); }
+            }
             else if (attributeName == "Geometry Name")
             {
                 if (!isSingular)

@@ -20,6 +20,7 @@ namespace RhinoCityJSON.Types
         Point3d templateObjectAnchor_;
 
         // data for surfaces
+        string surfaceSuperName_ = "";
         string surfaceGeoName_ = "";
         string surfaceGeoType_ = "";
         string surfaceLod_ = "";
@@ -48,6 +49,7 @@ namespace RhinoCityJSON.Types
             templateIdx_ = other.templateIdx_;
             templateObjectAnchor_ = other.templateObjectAnchor_;
             surfaceGeoName_ = other.surfaceGeoName_;
+            surfaceSuperName_ = other.surfaceSuperName_;
             surfaceGeoType_ = other.surfaceGeoType_;
             surfaceLod_ = other.surfaceLod_;
             surfaceType_ = other.surfaceType_;
@@ -99,6 +101,7 @@ namespace RhinoCityJSON.Types
         }
 
         public ObjectInfo( // surface object
+            string superGeoName,
             string geoName,
             string geoType,
             string lod,
@@ -109,6 +112,7 @@ namespace RhinoCityJSON.Types
             )
         {
             isSurface_ = true;
+            surfaceSuperName_ = superGeoName;
             surfaceGeoName_ = geoName;
             surfaceGeoType_ = geoType;
             surfaceLod_ = lod;
@@ -133,6 +137,8 @@ namespace RhinoCityJSON.Types
 
         public string getName() { return objectName_; }
         public void setName(string n) { objectName_ = n; }
+        public string getSuperName() { return surfaceSuperName_; }
+        public void setSuperName(string name) { surfaceSuperName_ = name; }
         public string getGeoName() { return surfaceGeoName_; }
         public void setGeoName(string name) { surfaceGeoName_ = name; }
         public string getObjectType() { return objectType_; }
@@ -259,6 +265,7 @@ namespace RhinoCityJSON.Types
                 return childNames;
             }
             if (name == "Geometry Type") { return new List<string>() { getGeoType() }; };
+            if (name == "Geometry Super Name") { return new List<string>() { getSuperName() }; };
             if (name == "Geometry Name") { return new List<string>() { getGeoName() }; };
             if (name == "Geometry LoD") { return new List<string>() { getLod() }; };
             if (name == "Surface Material") { return new List<string>() { getMaterial().Value }; };

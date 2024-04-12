@@ -68,6 +68,7 @@ namespace RhinoCityJSON.Components
                 }
 
                 Types.ObjectInfo splitsurface = new Types.ObjectInfo(
+                        mergedSurfaceData.getSuperName(),
                         mergedSurfaceData.getGeoName(),
                         mergedSurfaceData.getGeoType(),
                         mergedSurfaceData.getLod(),

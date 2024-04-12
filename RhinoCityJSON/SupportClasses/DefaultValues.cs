@@ -29,7 +29,10 @@ namespace RhinoCityJSON
         requiresNorth,
         unevenFilterInput,
         incorrectSetComponent,
-        largeFile
+        largeFile,
+        noObject,
+        unevenPathInput,
+        outputDirNotReal,
     }
 
     static class ErrorCollection // TODO: put all the errors centrally 
@@ -60,7 +63,10 @@ namespace RhinoCityJSON
             {errorCodes.requiresNorth, "True north rotation only functions if origin is given"},
             {errorCodes.unevenFilterInput, "Object info input is required to be either both null, or both filled"},
             {errorCodes.incorrectSetComponent, "Incorrect settings component is used for this process"},
-            {errorCodes.largeFile, "+10k objects attempted to be opened, if desired enable 'allow extremely large files' via the settings component"}
+            {errorCodes.largeFile, "+10k objects attempted to be opened, if desired enable 'allow extremely large files' via the settings component"},
+            {errorCodes.noObject, "Object name can not be found in the target file"},
+            {errorCodes.unevenPathInput, "Path lists do not have the same lenght"},
+            {errorCodes.outputDirNotReal, "output folder does not exist"}
         };
     }
 
@@ -82,6 +88,7 @@ namespace RhinoCityJSON
         {
             "Object Name",
             "Geometry Type",
+            "Geometry Super Name",
             "Geometry Name",
             "Geometry LoD",
             "Surface Material"

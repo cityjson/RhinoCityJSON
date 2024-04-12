@@ -174,6 +174,7 @@ namespace RhinoCityJSON.Components
                     var surfaceValues = surfInfo.Value;
                     objectAttributes.Name = surfaceValues.getName() + " - " + i;
                     objectAttributes.SetUserString("LoD", surfaceValues.getLod());
+                    objectAttributes.SetUserString("Geometry Super Name", surfaceValues.getSuperName());
                     objectAttributes.SetUserString("Geometry Name", surfaceValues.getGeoName());
                     objectAttributes.SetUserString("Geometry Type", surfaceValues.getGeoType());
 

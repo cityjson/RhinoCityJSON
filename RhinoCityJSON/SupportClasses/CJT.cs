@@ -91,11 +91,13 @@ namespace RhinoCityJSON
             Dictionary<string, List<int>> surfaceMaterialValues_ = new Dictionary<string, List<int>>();
             string geoType_ = "";
             string GeoName_ = "";
+            string GeoSuperName_ = "";
             bool hasSurfaceData_ = false;
             bool hasGeometry_ = false;
 
             public List<SurfaceObject> getBoundaries() { return boundaries_; }
             public void setBoundaries(List<SurfaceObject> boundaries) { boundaries_ = boundaries; }
+            public void addBoundary(SurfaceObject boundary) { boundaries_.Add(boundary); }
             public string getLoD() { return lod_; }
             public void setLod(string lod) { lod_ = lod; }
             public List<Dictionary<string, dynamic>> getSurfaceData() { return surfaceData_; }
@@ -121,6 +123,7 @@ namespace RhinoCityJSON
                     hasSurfaceData_ = true;
                 }
             }
+            public void addSurfaceData(Dictionary<string, dynamic> surfaceDataItem) { surfaceData_.Add(surfaceDataItem); }
             public List<int> getSurfaceTypeValues() { return surfaceTypeValues_; }
             public int getSurfaceTypeValue(int i) { return surfaceTypeValues_[i]; }
             public void setSurfaceTypeValues(dynamic surfaceTypeValues) { surfaceTypeValues_ = flattenValues(surfaceTypeValues); }
@@ -144,6 +147,8 @@ namespace RhinoCityJSON
             public void setGeoType(string geoType) { geoType_ = geoType; }
             public string getGeoName() { return GeoName_; }
             public void setGeoName(string geoName) { GeoName_ = geoName; }
+            public string getSuperName() { return GeoSuperName_; }
+            public void setSuperName(string geoName) { GeoSuperName_ = geoName; }
 
             List<int> flattenValues(dynamic nestedValues)
             {

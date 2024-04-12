@@ -86,7 +86,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <None Include="Components\Inject.cs" />
+    <Compile Include="Components\InjectGeo.cs" />
     <Compile Include="RhinoCityJSONInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SupportClasses\ReaderSupport.cs" />
@@ -160,6 +160,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\sreadericon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\injectGeoicon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
