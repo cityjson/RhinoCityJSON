@@ -207,7 +207,8 @@ namespace RhinoCityJSON
                 {
                     foreach (string objectName in injectedObjectNameList)
                     {
-                        if (objectName != JcityObject.Key) { continue; }
+                        if (objectName != JcityObject.Key) { continue; } // pass over if object name is not included in the input data
+
                         dynamic JCityObjectAttributes = JcityObject.Value;
 
                         if (!append && !removedObjectHash.Contains(objectName)) //remove geo
@@ -217,86 +218,60 @@ namespace RhinoCityJSON
                             removedObjectHash.Add(objectName);
                         }
 
-                        foreach (var geoNamePair in GeometeryNameLookup)
+                        string currentKey = "";
+                        foreach (var geoKey in GeometeryNameLookup.Keys)
                         {
-                            if (!geoNamePair.Key.Contains(objectName)) {  continue; } // check for partial key
-
-                            CJT.GeoObject currentGeoObject = geoNamePair.Value;
-                            Newtonsoft.Json.Linq.JObject geoJObject = new Newtonsoft.Json.Linq.JObject();
-                            Newtonsoft.Json.Linq.JArray boundariesJArray = new Newtonsoft.Json.Linq.JArray();
-
-                            // generate geometry
-                            string geotype = currentGeoObject.getGeoType();
-
-                            if (geotype == "MultiSurface")
+                            if (geoKey.Contains(objectName))
                             {
-                                foreach (CJT.SurfaceObject geoBoundary in currentGeoObject.getBoundaries())
-                                {
-                                    Brep brepBoundary = geoBoundary.getShape();
-                                    Newtonsoft.Json.Linq.JArray ringJArray = new Newtonsoft.Json.Linq.JArray();
-                                    foreach (BrepLoop surfaceLoop in brepBoundary.Loops)
-                                    {
-                                        Newtonsoft.Json.Linq.JArray vertJArray = new Newtonsoft.Json.Linq.JArray();
-                                        foreach (BrepTrim surfaceTrim in surfaceLoop.Trims)
-                                        {
-                                            Point3d surfaceVertex = surfaceTrim.StartVertex.Location;
-
-                                            int[] roundedCoordinate = new int[] {
-                                                (int)Math.Floor(surfaceVertex.X/scalerArray[0]),
-                                                (int)Math.Floor(surfaceVertex.Y/scalerArray[1]),
-                                                (int)Math.Floor(surfaceVertex.Z/scalerArray[2])
-                                            };
-
-                                            int vertIndx = vertsJArray.Count;
-
-                                            for (int j = 0; j < vertsJArray.Count; j++)
-                                            {
-                                                Newtonsoft.Json.Linq.JArray jsonVert = vertsJArray[j].ToObject< Newtonsoft.Json.Linq.JArray>();
-
-                                                if (
-                                                    (int)jsonVert[0] != roundedCoordinate[0] ||
-                                                    (int)jsonVert[1] != roundedCoordinate[1] ||
-                                                    (int)jsonVert[2] != roundedCoordinate[2]
-                                                    )
-                                                {
-                                                    continue;
-                                                }
-                                                vertIndx = j;
-                                                break;
-                                            }
-
-                                            Newtonsoft.Json.Linq.JArray roundedCoordinateJArray = new Newtonsoft.Json.Linq.JArray();
-
-                                            foreach (var coordinateValue in roundedCoordinate)
-                                            {
-                                                roundedCoordinateJArray.Add(coordinateValue);
-                                            }
-
-                                            if (vertIndx == vertsJArray.Count) { vertsJArray.Add(roundedCoordinateJArray);  }
-                                            vertJArray.Add(vertIndx);
-                                        }
-                                        ringJArray.Add(vertJArray);
-                                    }
-                                    boundariesJArray.Add(ringJArray);
-                                }
-                            }
-
-                            Newtonsoft.Json.Linq.JArray GeoArray = JCityObjectAttributes["geometry"];
-                            geoJObject.Add("boundaries", boundariesJArray);
-                            int intLod;
-                            bool lodIsInt = int.TryParse(currentGeoObject.getLoD(), out intLod);
-
-                            if (!lodIsInt)
-                            {
-                                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidJSON]);
-                                return;
-                            }
-
-                            geoJObject.Add("lod", intLod);
-                            geoJObject.Add("type", geotype);
-                            GeoArray.Add(geoJObject);
-                            //TODO: inject the data
+                                currentKey = geoKey;
+                                break;
+                            } // check for partial key
                         }
+
+                        if (currentKey == "") { continue; }
+
+                        CJT.GeoObject currentGeoObject = GeometeryNameLookup[currentKey];
+                        Newtonsoft.Json.Linq.JObject geoJObject = new Newtonsoft.Json.Linq.JObject();
+                        Newtonsoft.Json.Linq.JArray boundariesJArray = new Newtonsoft.Json.Linq.JArray();
+
+                        // generate geometry
+                        string geotype = currentGeoObject.getGeoType();
+
+                        if (geotype == "MultiSurface")
+                        {
+                            Newtonsoft.Json.Linq.JArray currentShape = writerSupport.rhinoSurfacesToJarray(currentGeoObject, vertsJArray, scalerArray);
+
+                            foreach (var surface in currentShape)
+                            {
+                                boundariesJArray.Add(surface);
+                            }
+                        }
+                        else if (geotype == "Solid")
+                        {
+                            Newtonsoft.Json.Linq.JArray currentSurfaceCollection = writerSupport.rhinoSurfacesToJarray(currentGeoObject, vertsJArray, scalerArray);
+                            boundariesJArray.Add(currentSurfaceCollection);
+                        }
+                        else
+                        {
+                            AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidJSON]); //TODO: inprove this error
+                            return;
+                        }
+
+                        Newtonsoft.Json.Linq.JArray GeoArray = JCityObjectAttributes["geometry"];
+                        geoJObject.Add("boundaries", boundariesJArray);
+                        double intLod;
+                        bool lodIsDouble = double.TryParse(currentGeoObject.getLoD(), out intLod);
+
+                        if (!lodIsDouble)
+                        {
+                            Rhino.RhinoApp.WriteLine(currentGeoObject.getLoD());
+                            AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidJSON]);
+                            return;
+                        }
+
+                        geoJObject.Add("lod", intLod);
+                        geoJObject.Add("type", geotype);
+                        GeoArray.Add(geoJObject);
                     }
                 }
 
