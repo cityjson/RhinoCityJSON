@@ -359,6 +359,11 @@ namespace RhinoCityJSON
 
             foreach (var lodTypeLink in lodSurfTypeDictionary)
             {
+                if (!typIdLookup[lodTypeLink.Key].ContainsKey("Building"))
+                {
+                    continue;
+                }
+
                 var targeLId = activeDoc.Layers.FindIndex(typIdLookup[lodTypeLink.Key]["Building"]).Id;
                 var cleanedSurfTypeList = getCleanedTypes(lodTypeLink.Value);
 
