@@ -67,11 +67,13 @@
     <Compile Include="Components\AttributeAdd.cs" />
     <Compile Include="Components\AttributeFilter.cs" />
     <Compile Include="Components\AllAttributes.cs" />
+    <Compile Include="Components\AttributePainter.cs" />
     <Compile Include="Components\ExplodeMaterial.cs" />
     <Compile Include="Components\AttributeSelector.cs" />
     <Compile Include="Components\ManagerReversed.cs" />
     <Compile Include="Components\Manager.cs" />
     <Compile Include="Components\ManagerTemplate.cs" />
+    <Compile Include="Components\MergeData.cs" />
     <Compile Include="Components\Reader.cs" />
     <Compile Include="Components\ReaderDoc.cs" />
     <Compile Include="Components\ReaderRhino.cs" />
@@ -86,7 +88,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Components\InjectGeo.cs" />
+    <None Include="Components\InjectGeo.cs" />
     <Compile Include="RhinoCityJSONInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SupportClasses\ReaderSupport.cs" />
@@ -163,6 +165,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\injectGeoicon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\paintAttribute.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\mergeData.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

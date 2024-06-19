@@ -145,11 +145,17 @@
   <data name="keyselectoricon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\keyselectoricon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="mergeData" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\mergeData.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="mergeicon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\mergeicon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="metaicon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\metaicon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="paintAttribute" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\paintAttribute.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="readericon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\readericon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
