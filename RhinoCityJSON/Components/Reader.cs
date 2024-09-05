@@ -56,13 +56,11 @@ namespace RhinoCityJSON.Components
             List<Types.GHReaderSettings> settingsList = new List<Types.GHReaderSettings>();
 
             bool boolOn = false;
-
             if (!DA.GetDataList(0, pathList)) return;
             DA.GetData(1, ref boolOn);
             DA.GetDataList(2, settingsList);
 
             var activeDoc = Rhino.RhinoDoc.ActiveDoc;
-
 
             errorCodes inputError = ReaderSupport.checkInput(
                 boolOn,

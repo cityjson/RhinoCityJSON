@@ -192,7 +192,7 @@ namespace RhinoCityJSON
                     List<int> outerRing = ringSet.getOuterRing();
                     if (ringSet.getInnerRingList().Count == 0 && outerRing.Count <= 4)
                     {
-                        NurbsSurface nSurface;
+                        NurbsSurface nSurface = null;
                         if (outerRing.Count == 3)
                         {
                             nSurface = NurbsSurface.CreateFromCorners(
@@ -201,7 +201,7 @@ namespace RhinoCityJSON
                                 vertList[outerRing[2]]
                                 );
                         }
-                        else
+                        else if(outerRing.Count == 3)
                         {
                             nSurface = NurbsSurface.CreateFromCorners(
                                 vertList[outerRing[0]],
