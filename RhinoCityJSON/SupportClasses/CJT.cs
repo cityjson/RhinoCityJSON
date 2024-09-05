@@ -201,7 +201,7 @@ namespace RhinoCityJSON
                                 vertList[outerRing[2]]
                                 );
                         }
-                        else if(outerRing.Count == 3)
+                        else if(outerRing.Count > 3)
                         {
                             nSurface = NurbsSurface.CreateFromCorners(
                                 vertList[outerRing[0]],
