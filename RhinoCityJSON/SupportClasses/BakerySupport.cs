@@ -71,8 +71,13 @@ namespace RhinoCityJSON
         {
             return new Dictionary<string, System.Drawing.Color>{
                 { "GroundSurface", System.Drawing.Color.Gray },
+                { "FloorSurface", System.Drawing.Color.DarkSlateGray },
                 { "WallSurface", System.Drawing.Color.LightBlue },
-                { "RoofSurface", System.Drawing.Color.Red }
+                { "InteriorWallSurface", System.Drawing.Color.SkyBlue },
+                { "RoofSurface", System.Drawing.Color.Red },
+                { "CeilingSurface", System.Drawing.Color.DarkRed },
+                { "Window", System.Drawing.Color.Blue },
+                { "Door", System.Drawing.Color.Brown }
             };
         }
 
