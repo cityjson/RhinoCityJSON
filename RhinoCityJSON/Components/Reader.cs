@@ -197,7 +197,6 @@ namespace RhinoCityJSON.Components
                     cityObject.setOriginalFileName(pathList[i]);
                     cityObject.setAttributes(JCityObjectAttributesAttributes);
 
-
                     if (JCityObjectAttributes.geometry == null)
                     {
                         cityObject.setIsFilteredout();

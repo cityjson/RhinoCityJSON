@@ -227,10 +227,18 @@ namespace RhinoCityJSON
                             surfaceCurves.Clear();
                             if (planarFace != null)
                             {
-                                SurfaceObject surfaceObject = new SurfaceObject();
-                                surfaceObject.setShape(planarFace[0]);
-                                surfaceObject.setSemanticValue(counter);
-                                boundaries_.Add(surfaceObject);
+                                foreach (Rhino.Geometry.Brep planarSubFace in planarFace)
+                                {
+                                    SurfaceObject surfaceObject = new SurfaceObject();
+                                    surfaceObject.setShape(planarSubFace);
+                                    surfaceObject.setSemanticValue(counter);
+                                    boundaries_.Add(surfaceObject);
+                                }
+
+                            }
+                            else
+                            {
+                                //todo: find solution
                             }
                         }
                     }
