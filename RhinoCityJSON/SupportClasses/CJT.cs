@@ -234,7 +234,6 @@ namespace RhinoCityJSON
                                     surfaceObject.setSemanticValue(counter);
                                     boundaries_.Add(surfaceObject);
                                 }
-
                             }
                             else
                             {

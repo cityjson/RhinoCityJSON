@@ -1,6 +1,6 @@
 ---
 name: RhinoCityJSON
-version: 0.6.5
+version: 0.6.6
 authors:
 - Jasper van der Vaart
 description: Grasshopper plugin allowing the CityJSON format to be opened in Rhino 3D and Grasshopper without the loss of semantic information. The primary focus of the plugin is to function on the 3D BAG data. However, the plugin is able to process other CityJSON files as well. The plugin consists out of multiple Grasshopper components exposing data in a format that is directly usable in grasshopper, and allows all this data to be baked into Rhino.

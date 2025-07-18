@@ -220,16 +220,22 @@ namespace RhinoCityJSON.Components
                 }
                 else
                 {
-                    if (!surId[lod].ContainsKey("Other"))
+                    if (!surId[lod].ContainsKey(sType))
                     {
                         Rhino.DocObjects.Layer otherTypeLayer = new Rhino.DocObjects.Layer();
-                        otherTypeLayer.Name = "Other";
-                        otherTypeLayer.Color = System.Drawing.Color.Gray;
+                        otherTypeLayer.Name = sType;
+
+                        Random rnd = new Random();
+                        int aValue = rnd.Next(0, 255);
+                        int rValue = rnd.Next(0, 255);
+                        int bValue = rnd.Next(0, 255);        
+
+                        otherTypeLayer.Color = System.Drawing.Color.FromArgb(aValue, rValue, bValue);
                         otherTypeLayer.ParentLayerId = activeDoc.Layers.FindIndex(typId[lod]["Building"]).Id;
                         var idx = activeDoc.Layers.Add(otherTypeLayer);
-                        surId[lod].Add("Other", idx);
+                        surId[lod].Add(sType, idx);
                     }
-                    objectAttributes.LayerIndex = surId[lod]["Other"];
+                    objectAttributes.LayerIndex = surId[lod][sType];
                 }
                 potetialGroupList.Add(activeDoc.Objects.AddBrep(targetBrep, objectAttributes));
             }
