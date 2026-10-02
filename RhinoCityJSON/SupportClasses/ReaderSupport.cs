@@ -213,17 +213,7 @@ namespace RhinoCityJSON
             {
                 if (lod != "")
                 {
-                    if (lod == "0" || lod == "0.0" || lod == "0.1" || lod == "0.2" || lod == "0.3" ||
-                        lod == "1" || lod == "1.0" || lod == "1.1" || lod == "1.2" || lod == "1.3" ||
-                        lod == "2" || lod == "2.0" || lod == "2.1" || lod == "2.2" || lod == "2.3" ||
-                        lod == "3" || lod == "3.0" || lod == "3.1" || lod == "3.2" || lod == "3.3")
-                    {
-                        setLoD = true;
-                    }
-                    else
-                    {
-                        return errorCodes.invalidLod;
-                    }
+                    setLoD = true;
                 }
             }
             return errorCodes.noError;

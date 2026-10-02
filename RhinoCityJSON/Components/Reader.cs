@@ -354,6 +354,14 @@ namespace RhinoCityJSON.Components
                 }
             }
 
+            if (setLoD)
+            {
+                if (flatSurfaceList.Count() == 0 || surfaceDataList.Count() == 0)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.missingLoDGeo]);
+                }
+            }
+
             DA.SetDataList(0, flatSurfaceList);
             DA.SetDataList(1, surfaceDataList);
             DA.SetDataList(2, objectDataList);
