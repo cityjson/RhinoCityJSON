@@ -20,6 +20,7 @@ namespace RhinoCityJSON.Components
             pManager.AddNumberParameter("True north", "Tn", "The direction of the true north", GH_ParamAccess.list, 0.0);
             pManager.AddGeometryParameter("Domain", "D", "The domain within objects should be located to be loaded (disabled for Document Reader)", GH_ParamAccess.list);
             pManager.AddTextParameter("LoD", "L", "Desired Lod, keep empty for all (disabled for Document Reader)", GH_ParamAccess.list, "");
+            pManager.AddTextParameter("Target CRS", "CRS", "Target CRS to project to (disabled for Document Reader)", GH_ParamAccess.item, "");
             pManager.AddBooleanParameter("Large files", "Alf", "Allow extremely large files", GH_ParamAccess.item, false);
 
             pManager[1].Optional = true; // origin is optional
@@ -41,6 +42,7 @@ namespace RhinoCityJSON.Components
             var north = 0.0;
             var northList = new List<double>();
             var loDList = new List<string>();
+            var tCRS = "";
             var domainList = new List<Rhino.Geometry.Brep>();
             var domain = new Rhino.Geometry.Brep();
 
@@ -49,7 +51,8 @@ namespace RhinoCityJSON.Components
             DA.GetDataList(2, northList);
             DA.GetDataList(3, domainList);
             DA.GetDataList(4, loDList);
-            DA.GetData(5, ref largeFile);
+            DA.GetData(5, ref tCRS);
+            DA.GetData(6, ref largeFile);
 
             if (pList.Count > 1)
             {
@@ -104,6 +107,17 @@ namespace RhinoCityJSON.Components
 
             }
 
+            if (tCRS != "")
+            {      
+                var projInstance = RhinoCityJSON.SupportClasses.ProjSupport.Instance;
+                if (!projInstance.crsExists(tCRS))
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidCrs] + ": "  + tCRS);
+                    tCRS = "Invalid";
+                }
+
+            }
+
             Types.GHReaderSettings readerSettings = new Types.GHReaderSettings(
                     new Types.ReaderSettings(
                     translate,
@@ -111,6 +125,7 @@ namespace RhinoCityJSON.Components
                     north,
                     domain,
                     loDList,
+                    tCRS,
                     largeFile
                     )
                 );

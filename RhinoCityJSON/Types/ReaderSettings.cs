@@ -11,6 +11,7 @@ namespace RhinoCityJSON.Types
         double trueNorth_ = 0;
         Brep domain_ = new Brep();
         List<string> LoD_ = new List<string>();
+        string tCRS_ = "";
         bool allowLargeFile_ = false;
 
         bool isDocumentSetting_ = false;
@@ -41,6 +42,7 @@ namespace RhinoCityJSON.Types
             double trueNorth,
             Brep domain,
             List<string> LoDList,
+            string tCRS,
             bool allowLargeFile
             )
         {
@@ -49,6 +51,7 @@ namespace RhinoCityJSON.Types
             trueNorth_ = trueNorth;
             domain_ = domain;
             LoD_ = LoDList;
+            tCRS_ = tCRS;
             allowLargeFile_ = allowLargeFile;
         }
 
