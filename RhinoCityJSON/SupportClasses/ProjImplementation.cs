@@ -15,8 +15,6 @@ namespace RhinoCityJSON.SupportClasses
         private const uint LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;
 
         private static readonly object Sync = new object();
-
-        // Keep these alive for as long as PROJ is used.
         private static IntPtr _nativeDdirectoryCookie = IntPtr.Zero;
         private static IntPtr _projModule = IntPtr.Zero;
         private static bool _initialized = false;
@@ -128,10 +126,10 @@ namespace RhinoCityJSON.SupportClasses
 
         public bool crsExists(string crs)
         {
-            if (string.IsNullOrWhiteSpace(crs))  { Rhino.RhinoApp.WriteLine("1");  return false; }
+            if (string.IsNullOrWhiteSpace(crs))  { return false; }
 
             IntPtr obj = proj_create(context_, crs);
-            if(obj == IntPtr.Zero) { Rhino.RhinoApp.WriteLine("2"); return false;  }
+            if(obj == IntPtr.Zero) { return false;  }
 
             int isCrs = proj_is_crs(obj);
             proj_destroy(obj);

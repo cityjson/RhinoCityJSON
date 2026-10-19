@@ -65,6 +65,7 @@ namespace RhinoCityJSON.Components
             double rotationAngle = 0;
             Brep domainBox = new Brep();
             bool allowLargeFile = false;
+            string tCrs = "";
 
             if (settingsList.Count() > 0)
             {
@@ -76,7 +77,14 @@ namespace RhinoCityJSON.Components
                                 ref translate,
                                 ref rotationAngle,
                                 ref domainBox,
+                                ref tCrs,
                                 ref allowLargeFile);
+            }
+
+            if (tCrs == "Invalid")
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidCrs]);
+                return;
             }
 
             // find out if domain has to be filtered

@@ -28,6 +28,7 @@ namespace RhinoCityJSON.Types
             trueNorth_ = other.trueNorth_;
             domain_ = other.domain_;
             LoD_ = other.LoD_;
+            tCRS_ = other.tCRS_;
             allowLargeFile_ = other.allowLargeFile_;
             dominantFile_ = other.dominantFile_;
             merge_ = other.merge_;
@@ -74,6 +75,7 @@ namespace RhinoCityJSON.Types
         public Brep getDomain() { return domain_; }
         public List<string> getLoDList() { return LoD_; }
         public bool getAllowLargeFile() { return allowLargeFile_; }
+        public string getTCrs() { return tCRS_; }
 
 
         public bool isDocSetting() { return isDocumentSetting_; }

@@ -104,7 +104,6 @@ namespace RhinoCityJSON.Components
                         AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.invalidLod]);
                     }
                 }
-
             }
 
             if (tCRS != "")
@@ -115,7 +114,6 @@ namespace RhinoCityJSON.Components
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidCrs] + ": "  + tCRS);
                     tCRS = "Invalid";
                 }
-
             }
 
             Types.GHReaderSettings readerSettings = new Types.GHReaderSettings(

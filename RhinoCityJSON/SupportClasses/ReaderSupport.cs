@@ -195,6 +195,7 @@ namespace RhinoCityJSON
            ref bool translate,
            ref double rotationAngle,
            ref Brep domainbox,
+           ref string tCrs,
            ref bool allowLargeFile
            )
         {
@@ -208,6 +209,8 @@ namespace RhinoCityJSON
             domainbox = CJSettings.getDomain();
 
             loDList = CJSettings.getLoDList();
+
+            tCrs = CJSettings.getTCrs();
 
             foreach (string lod in loDList)
             {
