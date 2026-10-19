@@ -140,6 +140,33 @@ namespace RhinoCityJSON.Components
                 cityJsonCollection.Add(Jcity);
             }
 
+            List<string> crsList = ReaderSupport.getCRS(ref cityJsonCollection);
+
+            var projInstance = RhinoCityJSON.SupportClasses.ProjSupport.Instance;
+            for (int i = 0; i < crsList.Count; i++)
+            {
+                string currentCRS = crsList[i];
+                if (!projInstance.crsExists(currentCRS))
+                {
+                    if (tCrs == "")
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.invalidCrs] + ": " + currentCRS + " in file" + pathList[i]);
+                        continue;
+                    }
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidCrs] + ": " + currentCRS + " in file" + pathList[i]);
+                    return;
+                }
+            }
+
+            if (tCrs == "")
+            {
+                if (crsList.Any(o => o != crsList[0]))
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.differentCrs]);
+                }
+            }
+
+
             // object Count
             int totalCount = 0;
             List<Newtonsoft.Json.Linq.JObject> jCityObjectCollection = new List<Newtonsoft.Json.Linq.JObject>();
@@ -154,9 +181,6 @@ namespace RhinoCityJSON.Components
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.largeFile]);
                     return;
                 }
-
-                //TODO: check crs validity
-                //TODO: check if all crs same
 
                 jCityObjectCollection.Add(jCityObjectList);
             }

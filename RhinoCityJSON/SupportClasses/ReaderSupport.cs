@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Rhino.Geometry;
+using Newtonsoft.Json;
 
 namespace RhinoCityJSON
 {
@@ -403,6 +404,33 @@ namespace RhinoCityJSON
                 }
             }
             return errorCodes.noError;
+        }
+
+        public static List<string> getCRS(ref List<dynamic> cityCollection)
+        {
+            List<string> crsList = new List<string>();
+
+            for (int i = 0; i < cityCollection.Count; i++)
+            {
+                var Jcity = cityCollection[i];
+                var metaData = Jcity.metadata;
+
+                if (metaData == null)
+                {
+                    crsList.Add("");
+                    continue;
+                }
+
+                var crs = metaData.referenceSystem;
+
+                if (crs == null)
+                {
+                    crsList.Add("");
+                    continue;
+                }
+                crsList.Add(crs.ToString());
+            }
+            return crsList;
         }
     }
 }
