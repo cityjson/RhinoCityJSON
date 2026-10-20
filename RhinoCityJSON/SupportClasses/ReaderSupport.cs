@@ -28,37 +28,16 @@ namespace RhinoCityJSON
             )
         {
 
-            double scaleX = docScaler;
-            double scaleY = docScaler;
-            double scaleZ = docScaler;
+            // get the cityJSON document data
+            var translationCityData = Jcity.transform.translate;
+            Vector3d translationCityVector;
+            if (isTemplateSurf) { translationCityVector = new Vector3d(0, 0, 0); }
+            else { translationCityVector = new Vector3d((double)translationCityData[0], (double)translationCityData[1], (double)translationCityData[2]); }
 
-            if (!isTemplateSurf)
-            {
-                scaleX = (double) Jcity.transform.scale[0] * scaleX;
-                scaleY = (double) Jcity.transform.scale[1] * scaleY;
-                scaleZ = (double) Jcity.transform.scale[2] * scaleZ;
-            }
-
-            var transformationData = Jcity.transform.translate;
-            Vector3d translation = new Vector3d();
-            if (translate)
-            {
-                translation.X = transformationData[0] * docScaler;
-                translation.Y = transformationData[1] * docScaler;
-                translation.Z = transformationData[2] * docScaler;
-            }
-            else if (!isTemplateSurf && !isTemplateObb)
-            {
-                translation.X = (firstTranslation.X + (double)transformationData[0]) * docScaler;
-                translation.Y = (firstTranslation.Y + (double)transformationData[1]) * docScaler;
-                translation.Z = (firstTranslation.Z + (double)transformationData[2]) * docScaler;
-            }
-            else //TODO: matrix implementation
-            {
-                translation.X = 0;
-                translation.Y = 0;
-                translation.Z = 0;
-            }
+            var scalingCityData = Jcity.transform.scale;
+            Vector3d scaleCityVector;
+            if (isTemplateSurf) {  scaleCityVector = new Vector3d(1, 1, 1); }
+            else { scaleCityVector = new Vector3d((double)scalingCityData[0], (double)scalingCityData[1], (double)scalingCityData[2]); }
 
             // ceate vertlist
             dynamic jsonverts;
@@ -75,20 +54,25 @@ namespace RhinoCityJSON
             List<Rhino.Geometry.Point3d> vertList = new List<Rhino.Geometry.Point3d>();
             foreach (var jsonvert in jsonverts)
             {
-                double x = jsonvert[0];
-                double y = jsonvert[1];
-                double z = jsonvert[2];
+                // get the cityjson document vert coordinate
+                double vertX = (double)jsonvert[0] * scaleCityVector[0] + translationCityVector[0];
+                double vertY = (double)jsonvert[1] * scaleCityVector[1] + translationCityVector[1];
+                double vertZ = (double)jsonvert[2] * scaleCityVector[2] + translationCityVector[2];
 
-                double tX = x * scaleX - worldCenter.X + translation.X;
-                double tY = y * scaleY - worldCenter.Y + translation.Y;
-                double tZ = z * scaleZ - worldCenter.Z + translation.Z;
+                //TODO: compute the reprojected vert coordinate
+
+                // compute the local rhino document coordinate
+                vertX = docScaler * vertX + firstTranslation.X - worldCenter.X;
+                vertY = docScaler * vertY + firstTranslation.Y - worldCenter.Y;
+                vertZ = docScaler * vertZ + firstTranslation.Z - worldCenter.Z;
 
                 Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(
-                    tX * Math.Cos(rotationAngle) - tY * Math.Sin(rotationAngle),
-                    tY * Math.Cos(rotationAngle) + tX * Math.Sin(rotationAngle),
-                    tZ
-                    );
-                vertList.Add(vert);
+                     vertX * Math.Cos(rotationAngle) - vertY * Math.Sin(rotationAngle),
+                     vertY * Math.Cos(rotationAngle) + vertX * Math.Sin(rotationAngle),
+                     vertZ
+                     );
+                
+                 vertList.Add(vert);
             }
             return vertList;
         }

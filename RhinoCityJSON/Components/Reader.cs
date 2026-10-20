@@ -150,9 +150,22 @@ namespace RhinoCityJSON.Components
                 {
                     if (tCrs == "")
                     {
+                        if (currentCRS == "")
+                        {
+                            AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.missingCrs] + " : " + pathList[i]);
+                            continue;
+                        }
+
                         AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.invalidCrs] + ": " + currentCRS + " in file" + pathList[i]);
                         continue;
                     }
+
+                    if (currentCRS == "")
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.missingCrs] + " : " + pathList[i]);
+                        return;
+                    }
+
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ErrorCollection.errorCollection[errorCodes.invalidCrs] + ": " + currentCRS + " in file" + pathList[i]);
                     return;
                 }
@@ -195,7 +208,7 @@ namespace RhinoCityJSON.Components
             {
                 var Jcity = cityJsonCollection[i];
                 
-                if (isFirst)
+                if (isFirst && !translate)
                 { // compute the translation of every object
                     var firstTransformationData =  Jcity.transform.translate;
 
