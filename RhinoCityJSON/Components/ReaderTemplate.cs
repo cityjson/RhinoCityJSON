@@ -123,6 +123,9 @@ namespace RhinoCityJSON.Components
             
             int uniqueCounter = 0;
             int templateBuffer = 0;
+            var projInstance = RhinoCityJSON.SupportClasses.ProjSupport.Instance;
+            // hold translation value
+            Vector3d firstTranslation = new Vector3d(0, 0, 0);
 
             for (int i = 0; i < cityJsonCollection.Count; i++)
             {
@@ -130,9 +133,22 @@ namespace RhinoCityJSON.Components
 
                 if (Jcity["geometry-templates"] == null) { continue;}
 
+                if (isFirst && !translate)
+                { // compute the translation of every object
+                    var firstTransformationData = Jcity.transform.translate;
+
+                    if (firstTransformationData != null)
+                    {
+                        isFirst = false;
+                        firstTranslation.X = -(double)firstTransformationData[0];
+                        firstTranslation.Y = -(double)firstTransformationData[1];
+                        firstTranslation.Z = -(double)firstTransformationData[2];
+                    }
+                }
+
                 // get vertices stored in a tile
-                List<Rhino.Geometry.Point3d> LocationList = ReaderSupport.getVerts(Jcity, new Vector3d(0, 0, 0) , worldOrigin, scaler, rotationAngle, translate, false, true);
-                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, new Vector3d(0, 0, 0), new Point3d(0, 0, 0), scaler, 0.0, false, true);
+                List<Rhino.Geometry.Point3d> LocationList = ReaderSupport.getVerts(Jcity, firstTranslation, worldOrigin, scaler, rotationAngle, projInstance);
+                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, new Vector3d(0, 0, 0), new Point3d(0, 0, 0), scaler, 0.0, projInstance, "", "", true);
 
                 isFirst = false;
 

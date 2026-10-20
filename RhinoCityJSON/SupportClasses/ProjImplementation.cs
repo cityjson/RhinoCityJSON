@@ -93,6 +93,19 @@ namespace RhinoCityJSON.SupportClasses
     {
         private IntPtr context_;
 
+        private struct PJ_COORD
+        {
+            public double x;
+            public double y;
+            public double z;
+            public double t;
+        }
+
+        private IntPtr transformer_;
+
+        private const int PJ_FWD = 1;
+
+        // wrapped functions
         [DllImport("proj_9.dll", CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr proj_context_create();
 
@@ -108,6 +121,17 @@ namespace RhinoCityJSON.SupportClasses
         [DllImport("proj_9.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern void proj_context_set_search_paths( IntPtr context,  int count, [In] string[] paths);
 
+        [DllImport("proj_9.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr proj_create_crs_to_crs( IntPtr context, string sourceCrs, string targetCrs, IntPtr area);
+
+        [DllImport("proj_9.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr proj_normalize_for_visualization(  IntPtr context,  IntPtr transformation);
+
+        [DllImport("proj_9.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern PJ_COORD proj_trans(  IntPtr transformation,  int direction,  PJ_COORD coordinate);
+
+
+        // applied code
         public ProjImplementation()
         {
             ProjLoader.EnsureLoaded();
@@ -124,6 +148,38 @@ namespace RhinoCityJSON.SupportClasses
             proj_context_set_search_paths( context_, 1, new[] { dataPath });
         }
 
+        public void initTransform(string sourceCrs, string targetCrs)
+        {
+            IntPtr rawTransform = proj_create_crs_to_crs(
+              context_,
+              sourceCrs,
+              targetCrs,
+              IntPtr.Zero);
+
+            if (rawTransform == IntPtr.Zero)
+            {
+                throw new InvalidOperationException( $"Could not create transformation from " +  $"{sourceCrs} to {targetCrs}.");
+            }
+
+            try
+            {
+                transformer_ = proj_normalize_for_visualization(  context_, rawTransform);
+                if (transformer_ == IntPtr.Zero) { throw new Exception("Failed to normalize PROJ transformation."); }
+            }
+            finally
+            {
+                proj_destroy(rawTransform);
+            }
+            return;
+        }
+
+        public void discardTransform()
+        {
+            if (transformer_ == IntPtr.Zero)  { return; }
+            proj_destroy(transformer_);
+            return;
+        }
+
         public bool crsExists(string crs)
         {
             if (string.IsNullOrWhiteSpace(crs))  { return false; }
@@ -135,6 +191,34 @@ namespace RhinoCityJSON.SupportClasses
             proj_destroy(obj);
 
             return isCrs != 0;
+        }
+
+
+        public List<double> ReprojectPoint(List<double> point)
+        {
+            if (transformer_ == IntPtr.Zero)
+            {
+                throw new InvalidOperationException( "Transformation has not been initialized.");
+            }
+
+            var input = new PJ_COORD
+            {
+                x = point[0],
+                y = point[1],
+                z = point[2],
+                t = double.PositiveInfinity
+            };
+
+            PJ_COORD output = proj_trans(transformer_, PJ_FWD, input);
+
+            if (double.IsNaN(output.x) || double.IsInfinity(output.x) ||
+                double.IsNaN(output.y) || double.IsInfinity(output.y) ||
+                double.IsNaN(output.z) || double.IsInfinity(output.z)
+                )
+            {
+                throw new InvalidOperationException("PROJ returned invalid coordinates.");
+            }
+            return new List<double> { output.x, output.y, output.z };
         }
     }
 }

@@ -222,7 +222,7 @@ namespace RhinoCityJSON.Components
                 }
 
                 // get vertices stored in a tile
-                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, firstTranslation, worldOrigin, scaler, rotationAngle, translate);
+                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, firstTranslation, worldOrigin, scaler, rotationAngle, projInstance, crsList[i], tCrs);
                 Newtonsoft.Json.Linq.JObject jCityObjectList = jCityObjectCollection[i];
 
                 foreach (var JcityObject in jCityObjectList)

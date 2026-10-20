@@ -22,9 +22,10 @@ namespace RhinoCityJSON
             Point3d worldCenter,
             double docScaler,
             double rotationAngle,
-            bool translate,
-            bool isTemplateSurf = false,
-            bool isTemplateObb = false
+            RhinoCityJSON.SupportClasses.ProjImplementation projInstance,
+            string currentCRS = "",
+            string targedCrs = "",
+            bool isTemplateSurf = false
             )
         {
 
@@ -38,6 +39,11 @@ namespace RhinoCityJSON
             Vector3d scaleCityVector;
             if (isTemplateSurf) {  scaleCityVector = new Vector3d(1, 1, 1); }
             else { scaleCityVector = new Vector3d((double)scalingCityData[0], (double)scalingCityData[1], (double)scalingCityData[2]); }
+
+            if (!isTemplateSurf && !string.IsNullOrWhiteSpace(targedCrs))
+            {
+                projInstance.initTransform(currentCRS, targedCrs);
+            }
 
             // ceate vertlist
             dynamic jsonverts;
@@ -54,26 +60,38 @@ namespace RhinoCityJSON
             List<Rhino.Geometry.Point3d> vertList = new List<Rhino.Geometry.Point3d>();
             foreach (var jsonvert in jsonverts)
             {
+                List<double> vertCoords = new List<double> {0,0,0 };
+
                 // get the cityjson document vert coordinate
-                double vertX = (double)jsonvert[0] * scaleCityVector[0] + translationCityVector[0];
-                double vertY = (double)jsonvert[1] * scaleCityVector[1] + translationCityVector[1];
-                double vertZ = (double)jsonvert[2] * scaleCityVector[2] + translationCityVector[2];
+                vertCoords[0] = (double)jsonvert[0] * scaleCityVector[0] + translationCityVector[0];
+                vertCoords[1] = (double)jsonvert[1] * scaleCityVector[1] + translationCityVector[1];
+                vertCoords[2] = (double)jsonvert[2] * scaleCityVector[2] + translationCityVector[2];
 
                 //TODO: compute the reprojected vert coordinate
+                if (!isTemplateSurf && !string.IsNullOrWhiteSpace(targedCrs))
+                {
+                    vertCoords = projInstance.ReprojectPoint(vertCoords);
+                }
 
                 // compute the local rhino document coordinate
-                vertX = docScaler * vertX + firstTranslation.X - worldCenter.X;
-                vertY = docScaler * vertY + firstTranslation.Y - worldCenter.Y;
-                vertZ = docScaler * vertZ + firstTranslation.Z - worldCenter.Z;
+                vertCoords[0] = docScaler * vertCoords[0] + firstTranslation.X - worldCenter.X;
+                vertCoords[1] = docScaler * vertCoords[1] + firstTranslation.Y - worldCenter.Y;
+                vertCoords[2] = docScaler * vertCoords[2] + firstTranslation.Z - worldCenter.Z;
 
                 Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(
-                     vertX * Math.Cos(rotationAngle) - vertY * Math.Sin(rotationAngle),
-                     vertY * Math.Cos(rotationAngle) + vertX * Math.Sin(rotationAngle),
-                     vertZ
+                     vertCoords[0] * Math.Cos(rotationAngle) - vertCoords[1] * Math.Sin(rotationAngle),
+                     vertCoords[1] * Math.Cos(rotationAngle) + vertCoords[0] * Math.Sin(rotationAngle),
+                     vertCoords[2]
                      );
                 
                  vertList.Add(vert);
             }
+
+            if (!isTemplateSurf && !string.IsNullOrWhiteSpace(targedCrs))
+            {
+                projInstance.discardTransform();
+            }
+
             return vertList;
         }
 
