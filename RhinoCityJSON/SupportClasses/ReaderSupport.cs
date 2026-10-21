@@ -15,6 +15,26 @@ namespace RhinoCityJSON
         }
 
 
+        static public Vector3d correctTranslation(Vector3d translation, RhinoCityJSON.SupportClasses.ProjImplementation projInstance, string currentCRS, string targedCrs)
+        {
+            if (currentCRS == targedCrs)
+            {
+                return translation;
+            }
+
+            if (!string.IsNullOrWhiteSpace(targedCrs))
+            {
+                projInstance.initTransform(currentCRS, targedCrs);
+                List<double> correctedTranslation = projInstance.ReprojectPoint(new List<double> { translation.X, translation.Y, translation.Z });
+                translation.X = correctedTranslation[0];
+                translation.Y = correctedTranslation[1];
+                translation.Z = correctedTranslation[2];
+                projInstance.discardTransform();
+            }
+            return translation;
+        }
+
+
         /// @brief 
         static public List<Rhino.Geometry.Point3d> getVerts(
             dynamic Jcity,
@@ -74,9 +94,9 @@ namespace RhinoCityJSON
                 }
 
                 // compute the local rhino document coordinate
-                vertCoords[0] = docScaler * vertCoords[0] + firstTranslation.X - worldCenter.X;
-                vertCoords[1] = docScaler * vertCoords[1] + firstTranslation.Y - worldCenter.Y;
-                vertCoords[2] = docScaler * vertCoords[2] + firstTranslation.Z - worldCenter.Z;
+                vertCoords[0] = docScaler * vertCoords[0] - firstTranslation.X - worldCenter.X;
+                vertCoords[1] = docScaler * vertCoords[1] - firstTranslation.Y - worldCenter.Y;
+                vertCoords[2] = docScaler * vertCoords[2] - firstTranslation.Z - worldCenter.Z;
 
                 Rhino.Geometry.Point3d vert = new Rhino.Geometry.Point3d(
                      vertCoords[0] * Math.Cos(rotationAngle) - vertCoords[1] * Math.Sin(rotationAngle),

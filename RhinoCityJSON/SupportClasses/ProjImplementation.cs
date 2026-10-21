@@ -193,7 +193,6 @@ namespace RhinoCityJSON.SupportClasses
             return isCrs != 0;
         }
 
-
         public List<double> ReprojectPoint(List<double> point)
         {
             if (transformer_ == IntPtr.Zero)

@@ -215,14 +215,18 @@ namespace RhinoCityJSON.Components
                     if (firstTransformationData != null)
                     {
                         isFirst = false;
-                        firstTranslation.X = -(double)firstTransformationData[0];
-                        firstTranslation.Y = -(double)firstTransformationData[1];
-                        firstTranslation.Z = -(double)firstTransformationData[2];
+                        firstTranslation.X = (double)firstTransformationData[0];
+                        firstTranslation.Y = (double)firstTransformationData[1];
+                        firstTranslation.Z = (double)firstTransformationData[2];
                     }
                 }
 
                 // get vertices stored in a tile
-                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, firstTranslation, worldOrigin, scaler, rotationAngle, projInstance, crsList[i], tCrs);
+                Vector3d correctedFirstTranslation;
+                if (!translate) {  correctedFirstTranslation = ReaderSupport.correctTranslation(firstTranslation, projInstance, crsList[0], tCrs);  }
+                else { correctedFirstTranslation = firstTranslation; } 
+               
+                List<Rhino.Geometry.Point3d> vertList = ReaderSupport.getVerts(Jcity, correctedFirstTranslation, worldOrigin, scaler, rotationAngle, projInstance, crsList[i], tCrs);
                 Newtonsoft.Json.Linq.JObject jCityObjectList = jCityObjectCollection[i];
 
                 foreach (var JcityObject in jCityObjectList)
