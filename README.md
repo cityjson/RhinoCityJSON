@@ -151,9 +151,11 @@ Inputs:
 * Translation. If true, the geometry will be placed in the rhino model as if the Rhino world coordinates comply 1:1 with the coordinate system that is used in the CityJSON file.
 * Model Origin. If a point/coordinate is supplied this coordinate will be translated to be at the origin of the Rhino model (0,0,0).
 * True north. If a value is supplied the geometry will be rotated around the Model Origin coordinate to comply with this True North.
-* LoD. If a value is supplied only the data related to that LoD is loaded (multiple values allowed).
 * Domain. Box within the objects stored in the files are loaded into grasshopper.
 Objects falling completely outside will be ignored.
+* LoD. If a value is supplied only the data related to that LoD is loaded (multiple values allowed).
+* CRS. If a value is supplied the data will be reprojected to this CRS
+* Large Files, if true, extremely large files can be loaded. If false these files will be prohibited from being loaded.
 
 Outputs:
 
