@@ -73,6 +73,10 @@ However, the build output path has to be set to function correctly.
 It is recommended to set this to the Grasshopper component directory path, or a subfolder of the Grasshopper component directory path.
 This path can be easily found by opening Grasshopper, going to File->Special Folders->Component Folder.
 
+## How to use
+
+See the [manual](./Manual.md).
+
 ## The GH components
 
 A simple summary of the plugin's component.
