@@ -29,13 +29,13 @@ Following the `Information manager` component the `Bakery` component is required
 
 Similar to the `Reader Objects` component the `Bakery` component has an `Activate` input. This works similar to the one of the `Reader Objects` component. If the input is true, the `Bakery` component will bake. I would recommend connecting a grasshopper native `Button` component. We only want to bake on pressing this button. If a toggle is used the bakery would bake the data to rhino every time the data-stream is updated.
 
-![Inactive script that will bring the CityJSON data into grasshopper and move it to rhino](./images/manual/bake_simple_2.jpg)
+![Inactive script that will bring the CityJSON data into grasshopper and move it to rhino](./Images/manual/bake_simple_2.jpg)
 
 Now the `Boolean toggle` component connected to the `Reader Objects` component can be set to true again. This will rerun the script. Once the script is finished the button connected to the `Bakery` component can be pressed. This will bake the data to Rhino.
 
 The data will stored in a layer structure containing some of the attribute data. The other data can be found in the "Attribute User Text" window in rhino. This window can be found under the "Properties" tab.
 
-![On the left the layer structure and on the right the attribute data of the baked geometry](./images/manual/bake_semantic_example.jpg)
+![On the left the layer structure and on the right the attribute data of the baked geometry](./Images/manual/bake_semantic_example.jpg)
 
 ## 1.3 Fine tuning the CityJSON data input
 
