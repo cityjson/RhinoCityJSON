@@ -43,16 +43,6 @@ The default behavior of the `Reader Objects` component might not be ideal for ev
 
 ![Inactive script that will bring the CityJSON data into grasshopper and move it to rhino with the settings component connected](./Images/manual/read_settings_1.jpg)
 
-### LoD filtering
-
-By default the `Reader Objects` component loads in all the geometry that is available from the input file(s). This can be, depending on the input file(s), a heavy operation which is not always completeely required. If only the geometry of a certain LoD is required the `Settings Reader` component can be used to force the `Reader Objects` component  to only load the required LoD. This can be done by creating a grasshopper native `Panel` component and typing the required LoD. If multiple LoD are required, every LoD must be on its own line and the `Panel` component must have multiline data toggled on. The output of the `Panel` component must be connected to the `LoD` input of the `Settings Reader` component.
-
-![Inactive script that will bring the LoD0 and 2.2 CityJSON data into grasshopper and move it to rhino](./Images/manual/read_settings_LoD_1.jpg)
-
-The `Settings Reader` component allows non-standard LoD, but it will give a warning if it encounters an unexpected LoD. This will not effect the subsequent processes.
-
-![make sure the multiline data is toggled on for the panel component](./Images/manual/read_settings_LoD_2.jpg)
-
 ### Placement of the data
 
 By default the `Reader Objects` component attempts to place the CityJSON geometry near the Rhino origin (0,0,0). This is not a precise operation and can be undesirable. The `Reader Objects` component computes the translation required based on the first file it receives. So, changing the files, or the order can also cause unpredictable behavior.
@@ -78,6 +68,28 @@ This setting is very useful if you have a mass study of a building that is place
 Possibly the XY plane of this mass study does not coincide with the true north. Modeling off grid can be challenging and more error prone. To prevent thsi is possible to rotate the CityJSON geometry around the local rhino origin. This can be done with the `True north` input of the `Settings Reader` component. This input takes a number value representing the XY rotation around local (0,0,0) counterclockwise in degrees.
 
 ![Inactive script that was used to transform the example](./Images/manual/translate_4.jpg)
+
+### filtering of geometry
+
+By default the `Reader Objects` component loads in all the geometry that is available from the input file(s). This can be, depending on the input file(s), a heavy operation which is not always completeely required. If only the geometry of a certain LoD is required the `Settings Reader` component can be used to force the `Reader Objects` component to only load the required LoD. This can be done by creating a grasshopper native `Panel` component and typing the required LoD. If multiple LoD are required, every LoD must be on its own line and the `Panel` component must have multiline data toggled on. The output of the `Panel` component must be connected to the `LoD` input of the `Settings Reader` component.
+
+![Inactive script that will bring the LoD0 and 2.2 CityJSON data into grasshopper and move it to rhino](./Images/manual/read_settings_LoD_1.jpg)
+
+The `Settings Reader` component allows non-standard LoD, but it will give a warning if it encounters an unexpected LoD. This will not effect the subsequent processes.
+
+![make sure the multiline data is toggled on for the panel component](./Images/manual/read_settings_LoD_2.jpg)
+
+The geometry that the `Reader Objects` component loads in can also be limited by a spatial domain. If only a small area of the file is of importance this can drastically limit the memory usage. The domain can be constructed with any volumetric shape in Rhino or grasshopper (boxes, spheres, cones, and more). If Rhino geometry is used it has to be loaded into grasshopper with a native `geometry` component. The shape has to be fed into the `Domain` input of the `Settings Reader` component.
+
+<p align="center">
+  <img src="./Images/manual/domain_1.jpg" alt= "example of how a box shape can be used to limit the geometry that is being loaded in"/>
+</p>
+
+The domain is applied **After** the translation and rotation operations of the `Reader Objects` component. This means that the domain should be placed in local Rhino 3D space and not the CityJSON 3D space. The geometry that is filtered out is any shape that does not have a vertex that lies inside of the domain shape.
+
+![Inactive script that will bring CityJSON data that falls within the domain into grasshopper and move it to rhino](./Images/manual/domain_2.jpg)
+
+Currently only a single shape domain is supported, multiple shapes will cause issues.
 
 ### Reproject the data
 
