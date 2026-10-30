@@ -39,6 +39,60 @@ The data will stored in a layer structure containing some of the attribute data.
 
 ## 1.3 Fine tuning the CityJSON data input
 
+The default behavior of the `Reader Objects` component might not be ideal for every situation. To be more flexible the default behavior can be changed. This can be done with the `Settings Reader` component. The `Settings Reader` component's output connects tot the `Reader Objects` component's `Settings` input. For the best workflow with large files it is recommended to disable the `Reader Objects` component while dialing in the settings. Once you are done, the `Reader Objects` component can be activated again.
+
+![Inactive script that will bring the CityJSON data into grasshopper and move it to rhino with the settings component connected](./Images/manual/read_settings_1.jpg)
+
+### LoD filtering
+
+By default the `Reader Objects` component loads in all the geometry that is available from the input file(s). This can be, depending on the input file(s), a heavy operation which is not always completeely required. If only the geometry of a certain LoD is required the `Settings Reader` component can be used to force the `Reader Objects` component  to only load the required LoD. This can be done by creating a grasshopper native `Panel` component and typing the required LoD. If multiple LoD are required, every LoD must be on its own line and the `Panel` component must have multiline data toggled on. The output of the `Panel` component must be connected to the `LoD` input of the `Settings Reader` component.
+
+![Inactive script that will bring the LoD0 and 2.2 CityJSON data into grasshopper and move it to rhino](./Images/manual/read_settings_LoD_1.jpg)
+
+The `Settings Reader` component allows non-standard LoD, but it will give a warning if it encounters an unexpected LoD. This will not effect the subsequent processes.
+
+![make sure the multiline data is toggled on for the panel component](./Images/manual/read_settings_LoD_2.jpg)
+
+### Placement of the data
+
+By default the `Reader Objects` component attempts to place the CityJSON geometry near the Rhino origin (0,0,0). This is not a precise operation and can be undesirable. The `Reader Objects` component computes the translation required based on the first file it receives. So, changing the files, or the order can also cause unpredictable behavior.
+
+<p align="center">
+  <img src="./Images/manual/translate_1.jpg" alt= "example of how the The default behavior of the Reader Objects influences the placement of the CityJSON file"/>
+</p>
+
+To resolve this local placement issue the `Translation` input of the `Settings Reader` component can be set to true with the help of a `Boolean toggle` component. This will place the CityJSON geometry at the coordinates that the geometry actually has.
+
+The geometry will often be placed far from the local Rhino origin (0,0,0). To solve this a coordinate can be fed to the `Settings Reader` component via the `model origin` input. This input coordinate will be considered the origin and will place all the geometry in such a way that this coordinate becomes the local Rhino origin (0,0,0).
+
+<p align="center">
+  <img src="./Images/manual/translate_2.jpg" alt= "example of how the The default behavior of the Reader Objects influences the placement of the CityJSON file"/>
+</p>
+
+This setting is very useful if you have a mass study of a building that is placed near the local Rhino origin. Using this setting will place the mass in the middle of the environment and doesn’t require you to move the mass far away from the local origin or have to create new geometry far from the origin.
+
+<p align="center">
+  <img src="./Images/manual/translate_3.jpg" alt= "example of how the The default behavior of the Reader Objects influences the placement of the CityJSON file"/>
+</p>
+
+Possibly the XY plane of this mass study does not coincide with the true north. Modeling off grid can be challenging and more error prone. To prevent thsi is possible to rotate the CityJSON geometry around the local rhino origin. This can be done with the `True north` input of the `Settings Reader` component. This input takes a number value representing the XY rotation around local (0,0,0) counterclockwise in degrees.
+
+![Inactive script that was used to transform the example](./Images/manual/translate_4.jpg)
+
+### Reproject the data
+
+Sometimes the data is not utilizing the same CRS. If you attempt to load this data at once via the `Reader Objects` component it will return an error. If you load it in by using two separate `Reader Objects` components you will notice that the data does not align and needs to manually corrected. To avoid this you can reproject the data to a different CRS. This will force the data to utilize a common CRS and be properly aligned.
+
+The `Settings Reader` component's `Target CRS` input can be used for this. The input has to be a single string that represents the target CRS. The RhinoCityJSON plugin uses [PROJ](https://proj.org/en/stable/) to reproject data and thus accepts all the formats of defining a CRS that proj accepts. For example if the target CRS is EPSG:7415 (RD + NAP height) the input strings that would suit are: "EPSG:7415", "https://www.opengis.net/def/crs/EPSG/0/7415", or "urn:ogc:def:crs:EPSG::7415"
+
+![Inactive script that can reproject the input data to EPSG:7415](./Images/manual/reproject_1.jpg)
+
+### Extremely large files
+
+The `Reader Objects` component will stop functioning if it encounters a very large amount of data. This is to protect the user from accidentally freezing their session. If it is desired to load in a very large amount of data the `Settings Reader` component's `Large Files` input can be used to tell the `Reader Objects` component that. The input can be a grasshopper native `Boolean toggle` component. If set to true the `Reader Objects` component will not terminate the process for this reason anymore.
+
+![Inactive script that allows the opening of extremely large files](./Images/manual/large_1.jpg)
+
 ## 1.4 Fetching document data and materials
 
 ## 1.5 Opening Template data
