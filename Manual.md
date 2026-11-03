@@ -69,7 +69,7 @@ Possibly the XY plane of this mass study does not coincide with the true north. 
 
 ![Inactive script that was used to transform the example](./Images/manual/translate_4.jpg)
 
-### filtering of geometry
+### Filtering of geometry
 
 By default the `Reader Objects` component loads in all the geometry that is available from the input file(s). This can be, depending on the input file(s), a heavy operation which is not always completeely required. If only the geometry of a certain LoD is required the `Settings Reader` component can be used to force the `Reader Objects` component to only load the required LoD. This can be done by creating a grasshopper native `Panel` component and typing the required LoD. If multiple LoD are required, every LoD must be on its own line and the `Panel` component must have multiline data toggled on. The output of the `Panel` component must be connected to the `LoD` input of the `Settings Reader` component.
 
@@ -107,4 +107,38 @@ The `Reader Objects` component will stop functioning if it encounters a very lar
 
 ## 1.4 Fetching document data and materials
 
+The data that is stored central in the file can be fetched with the `Reader Documents` component. A set of this data can expand the city objects which are processed in session, like the materials. However, this data can also be used to evaluate the model before bringing all the city data into the session, like the LoDs in the file and the spatial domain.
+
+The `Reader Documents` component can be connected to the other objects in the same manner as the `Reader Objects` component: `Path`, `Activate`, and `Settings`. It is recommended to use the same data/component instances for the `Reader Documents` component input that were used for the `Reader Objects` component. Separate unique data sources could result in mismatching data between the two components.
+
+![Inactive script that loads in the document data and the city object data](./Images/manual/documents_settings_1.jpg)
+
 ## 1.5 Opening Template data
+
+Due to the different nature of the template data the `Reader Objects` component only processes normal city objects. To access template data in the CityJSON files the `Reader Templates` component is required. This component will read the template data and place the geometry at the locations of the template itself (usually a the local Rhino origin 0,0,0).
+
+The `Reader Templates` component can be connected to the data input in the same manner as the `Reader Objects` and `Reader Documents` components’: `Path`, `Activate`, and `Settings`. It is recommended to use the same data/component instances for the `Reader Templates` component input that were used for the `Reader Objects` and `Reader Documents` components. Separate unique data sources could result in mismatching data between the two components.
+
+There are two different workflows to process template data. The data can be brought into rhino as block instances. This means that every template is converted in a block, and instances of these blocks are placed at their anchor locations. Editing a block will result in a change of every instance of that block. If this behavior is not desired the template data can also be converted to normal data and stored in rhino as normal city objects.
+
+![Inactive script that loads in the template city object data and the normal city object data](./Images/manual/read_template_1.jpg)
+
+To bring the template data in rhino as blocks the `Template Bakery` component is required. This component will bake the data in Rhino. Connect the `Template Geometry`, `Surface Information`, and `Object Information` outputs of the `Reader Templates` component to the `Merged Surface Information` inputs of the `Template Bakery` component.
+
+Similar to the normal `Bakery` component the `Template Bakery` component has an `Activate` input. This works identical to the one of the normal `Bakery` component. If the input is true, the `Template Bakery` component will bake. I would recommend connecting a grasshopper native `Button` component. We only want to bake on pressing this button. If a toggle is used the bakery would bake the data to rhino every time the data-stream is updated.
+
+<p align="center">
+  <img src="./Images/manual/read_template_3.jpg" alt= "On the left the layer structure and on the right the attribute data of the baked geometry"/>
+</p>
+
+The block data is stored in a layer structure that is separate from the normal city object's layer structure. This layer structure contains some of the attribute data. The other data can be found in the "Attribute User Text" window in rhino. This window can be found under the "Properties" tab.
+
+![Inactive script that loads in the template city object data and the normal city object data. This approach use the normal object data pipeline to make it easy to edit the data](./Images/manual/read_template_2.jpg)
+
+To bring the template data in rhino as normal city objects the `Template2Object` component is required. This will copy all the template instances to normal city objects. This means that output of this component can be used in the same manner as the output of the `Reader Objects` component. Effectively the `Reader Templates` and the `Template2Object` component can together be seen as a single template to object reader.
+
+To use the `Template2Object` component connect the `Template Geometry`, `Surface Information`, and `Object Information` outputs of the `Reader Templates` component to the `Merged Surface Information` inputs of the `Template2Object` component. The output of the `Template2Object` component can be fed into a `Information manager` component as you would do with the `Reader Objects` component's output.
+
+## 2.0 Accessing and editing CityJSON data in grasshopper
+
+## 2.1 Accessing and editing CityJSON materials in grasshopper

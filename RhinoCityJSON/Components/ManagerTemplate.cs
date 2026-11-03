@@ -40,9 +40,26 @@ namespace RhinoCityJSON.Components
             DA.GetDataList(1, surfaceInfoList);
             DA.GetDataList(2, objectInfoList);
 
+            Rhino.RhinoApp.WriteLine(objectInfoList.Count.ToString());
+
+            if (geoList.Count != 0)
+            {
+                if (geoList[0] == null)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, ErrorCollection.errorCollection[errorCodes.noGeoFound]);
+                    return;
+                }
+            }
+
             //check if template data
             foreach (var objectInfo in objectInfoList)
             {
+                if (objectInfo == null)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No object information could be found");
+                    return;
+                }
+
                 if (objectInfo.Value.isSurface())
                 {
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Not all input objects are objects");
