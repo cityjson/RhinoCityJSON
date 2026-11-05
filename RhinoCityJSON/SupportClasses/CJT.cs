@@ -249,6 +249,12 @@ namespace RhinoCityJSON
             private List<RingStructure> boundaries2Rings(dynamic JBoundaryList)
             {
                 List<RingStructure> ringCollection = new List<RingStructure>();
+
+                if (JBoundaryList == null)
+                {
+                    return ringCollection;
+                }
+
                 if (JBoundaryList.Count == 0)
                 {
                     return ringCollection;
